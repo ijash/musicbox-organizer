@@ -71,12 +71,12 @@
 ### Implementation for User Story 1
 
 - [ ] T026 [US1] Implement DeviceManager::enumerate_devices() in platform backends to return Vec<Device> per research.md device detection pattern (polling 500ms on Linux/Win, event-driven on macOS)
-- [ ] T027 [US1] Create export_service.rs stub in src/services/export_service.rs with validate_device() method: reject internal drives, check is_removable=true and is_write_protected=false
+- [ ] T027 [US1] Create export_service.rs stub in src/services/export_service.rs with validate_device() method: reject internal drives, check is_removable=true and is_write_protected=false (cite spec.md FR-006, SC-004)
 - [ ] T028 [P] [US1] Create export dialog UI in src/ui/export_dialog.rs: device list widget, device name/capacity/filesystem/available space display per contracts/export-dialog-ui.md (cite spec.md FR-002)
 - [ ] T029 [P] [US1] Implement device list refresh button: call DeviceManager::enumerate_devices() on click, update UI list
 - [ ] T030 [US1] Implement device selection (user clicks device): set selected_device_id, display export options panel (cite contracts/export-dialog-ui.md)
 - [ ] T031 [US1] Implement "No devices" empty state in export dialog: show message "No removable devices detected. Connect a USB drive or SD card to proceed." and disable Export button (cite spec.md FR-001)
-- [ ] T032 [US1] Implement device disconnection detection: call DeviceManager::detect_disconnection() periodically (500ms poll or event-driven per platform); if device missing >5s, show alert (cite spec.md FR-009)
+- [ ] T032 [US1] Implement device disconnection detection: call DeviceManager::detect_disconnection() periodically (500ms poll or event-driven per platform); if device missing >5s, show alert (cite spec.md FR-009, SC-006)
 - [ ] T033 [US1] Add logging for device enumeration (device count, names) for debugging
 
 **Checkpoint**: User Story 1 complete. Users can open Export dialog, see connected devices, select one. Export button ready (disabled until device selected).
