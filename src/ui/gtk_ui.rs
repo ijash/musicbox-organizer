@@ -1,12 +1,11 @@
 #[cfg(target_os = "linux")]
 pub mod linux {
     use gtk::prelude::*;
-    use gtk::traits::SettingsExt;
     use gtk::{
         Box as GtkBox, Button, CellRendererText, CheckButton, ComboBoxText, CssProvider, Dialog,
         DialogFlags, Entry, FileChooserAction, FileChooserDialog, Frame, Label, ListStore,
         Orientation, ProgressBar, ResponseType, ScrolledWindow, StyleContext, TreeView,
-        TreeViewColumn, Window, WindowPosition, WindowType, STYLE_PROVIDER_PRIORITY_APPLICATION,
+        TreeViewColumn, Window, WindowPosition, WindowType, STYLE_PROVIDER_PRIORITY_USER,
     };
     use crate::models::{FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, SessionState, Track};
     use crate::services::{
@@ -19,10 +18,59 @@ pub mod linux {
     use std::path::{Path, PathBuf};
     use std::rc::Rc;
 
+    const LIGHT_CSS: &str = "
+        window, dialog, popover {
+            background-color: #f6f8fa;
+            color: #24292f;
+        }
+        frame, frame > border {
+            border-color: #d0d7de;
+        }
+        treeview {
+            background-color: #ffffff;
+            color: #24292f;
+        }
+        treeview:selected, treeview:selected:focus {
+            background-color: #0969da;
+            color: #ffffff;
+        }
+        treeview header button {
+            background-color: #eaeef2;
+            color: #24292f;
+            font-weight: bold;
+            border-color: #d0d7de;
+        }
+        entry, combobox button {
+            background-color: #ffffff;
+            color: #24292f;
+            border-color: #d0d7de;
+        }
+        button {
+            background-color: #f3f4f6;
+            color: #24292f;
+            border-color: #d0d7de;
+        }
+        button:hover {
+            background-color: #e5e7eb;
+        }
+        progressbar progress {
+            background-color: #0969da;
+        }
+        progressbar trough {
+            background-color: #eaeef2;
+        }
+        label {
+            color: #24292f;
+        }
+    ";
+
     const DARK_CSS: &str = "
-        window, dialog, popover, frame {
-            background-color: #23272e;
-            color: #dcdfe4;
+        window, dialog, popover {
+            background-color: #1e2227;
+            color: #abb2bf;
+        }
+        frame, frame > border {
+            border-color: #3e4451;
         }
         treeview {
             background-color: #282c34;
@@ -32,19 +80,21 @@ pub mod linux {
             background-color: #2c5a85;
             color: #ffffff;
         }
-        header, treeview header button {
+        treeview header button {
             background-color: #21252b;
             color: #abb2bf;
+            font-weight: bold;
+            border-color: #3e4451;
         }
         entry, combobox button {
-            background-color: #1e2227;
+            background-color: #1b1d23;
             color: #ffffff;
             border-color: #3e4451;
         }
         button {
-            background-color: #353b45;
-            color: #ffffff;
-            border-color: #4b5263;
+            background-color: #2c313a;
+            color: #dcdfe4;
+            border-color: #3e4451;
         }
         button:hover {
             background-color: #3e4451;
@@ -53,7 +103,10 @@ pub mod linux {
             background-color: #61afef;
         }
         progressbar trough {
-            background-color: #1e2227;
+            background-color: #1b1d23;
+        }
+        label {
+            color: #abb2bf;
         }
     ";
 
@@ -105,11 +158,35 @@ pub mod linux {
 
         let undo_btn = Button::with_label("↺ Undo");
         let redo_btn = Button::with_label("↻ Redo");
-        let theme_btn = Button::with_label("◐ Theme");
+        let theme_btn = Button::with_label("🌙 Theme: Light");
         header_box.pack_end(&theme_btn, false, false, 0);
         header_box.pack_end(&redo_btn, false, false, 0);
         header_box.pack_end(&undo_btn, false, false, 0);
         root_box.pack_start(&header_box, false, false, 0);
+
+        let apply_theme = {
+            let css_provider = css_provider.clone();
+            let theme_btn = theme_btn.clone();
+            move |dark: bool| {
+                if let Some(screen) = gtk::gdk::Screen::default() {
+                    let css = if dark { DARK_CSS } else { LIGHT_CSS };
+                    css_provider.load_from_data(css.as_bytes()).ok();
+                    StyleContext::add_provider_for_screen(
+                        &screen,
+                        &css_provider,
+                        STYLE_PROVIDER_PRIORITY_USER,
+                    );
+                }
+                if dark {
+                    theme_btn.set_label("☀ Theme: Dark");
+                } else {
+                    theme_btn.set_label("🌙 Theme: Light");
+                }
+            }
+        };
+
+        // Enforce internal theme immediately on startup (does not follow system theme)
+        apply_theme(*is_dark_mode.borrow());
 
         // --- Action Buttons Toolbar ---
         let toolbar_box = GtkBox::new(Orientation::Horizontal, 8);
@@ -374,27 +451,11 @@ pub mod linux {
         // Theme Toggle (FR-017, FR-018)
         {
             let is_dark_mode = Rc::clone(&is_dark_mode);
-            let css_provider = css_provider.clone();
-            theme_btn.connect_clicked(move |btn| {
+            let apply_theme = apply_theme.clone();
+            theme_btn.connect_clicked(move |_| {
                 let mut dark = is_dark_mode.borrow_mut();
                 *dark = !*dark;
-                if let Some(screen) = gtk::gdk::Screen::default() {
-                    if *dark {
-                        css_provider.load_from_data(DARK_CSS.as_bytes()).ok();
-                        StyleContext::add_provider_for_screen(
-                            &screen,
-                            &css_provider,
-                            STYLE_PROVIDER_PRIORITY_APPLICATION,
-                        );
-                        btn.set_label("☀ Light");
-                    } else {
-                        StyleContext::remove_provider_for_screen(&screen, &css_provider);
-                        btn.set_label("◐ Theme");
-                    }
-                }
-                if let Some(settings) = gtk::Settings::default() {
-                    settings.set_gtk_application_prefer_dark_theme(*dark);
-                }
+                apply_theme(*dark);
             });
         }
 
