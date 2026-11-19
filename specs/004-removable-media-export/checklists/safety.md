@@ -34,7 +34,7 @@
 - [x] CHK010 Is the reformat warning dialog wording specified verbatim or with exact requirements (what text, device name included, data-loss message present)? [Clarity, Spec §FR-004]
 - [x] CHK011 Is "prominent warning dialog" quantified with visual/modal specification (modal blocks further action until confirm/cancel)? [Clarity, Spec §FR-004, SC-002]
 - [x] CHK012 Is the "dismissible warning" behavior defined (which button dismisses: Cancel only, or both Cancel + X)? [Clarity, Gap]
-- [ ] CHK013 Can the success criteria "no accidental reformats possible" be objectively verified (i.e., what test proves accidental reformat cannot occur)? [Measurability, Spec §SC-002]
+- [x] CHK013 Can the success criteria "no accidental reformats possible" be objectively verified (i.e., what test proves accidental reformat cannot occur)? [Measurability, Spec §SC-002]
 
 ## Requirement Clarity: Device Constraints
 
@@ -56,7 +56,7 @@
 
 ## Requirement Coverage: Platform Specificity
 
-- [ ] CHK023 Are platform-specific device detection APIs mentioned or deferred? (spec says platform-native but does not name APIs) [Gap, Plan §Architecture]
+- [x] CHK023 Are platform-specific device detection APIs mentioned or deferred? (spec says platform-native but does not name APIs) [Gap, Plan §Architecture]
 - [x] CHK024 Is the "eject device" operation specified as platform-appropriate but does not mandate specific commands? [Clarity, Spec §FR-013]
 - [x] CHK025 Are cross-platform test scenarios (USB 2.0, USB 3.0, SD card reader on Windows/macOS/Linux) explicit in SC-005 or test plan? [Coverage, Spec §SC-005]
 
