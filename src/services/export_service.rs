@@ -2,7 +2,7 @@ use crate::models::{ExportJob, Track};
 use crate::services::DeviceManager;
 use std::error::Error;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Handles MP3 export to removable media with progress tracking
 /// cite: data-model.md ExportJob state machine (PENDING→IN_PROGRESS→COMPLETED/FAILED/ABORTED)
@@ -18,37 +18,93 @@ impl ExportService {
     /// Start export job: validate device, check space, begin copy
     pub fn export(&self, job: &mut ExportJob, dest_path: &Path) -> Result<(), Box<dyn Error>> {
         // Validate device exists and has sufficient space
-        let total_size: u64 = job.tracks.iter().map(|t| t.file_size_bytes).sum();
         let is_removable = self.device_manager.check_removable(&job.device_id)?;
         if !is_removable {
-            job.fail("Device is internal (not removable). Select a USB or SD card instead.".to_string());
-            return Err("Device is internal".into());
+            let msg = "Device is internal (not removable). Select a USB or SD card instead.".to_string();
+            job.fail(msg.clone()).ok();
+            return Err(msg.into());
         }
         if job.total_bytes > 0 && !self.device_manager.is_sufficient_space(job.total_bytes)? {
-            job.fail("Insufficient space on device".to_string());
-            return Err("Device has insufficient space".into());
+            let msg = format!(
+                "Insufficient space. Device does not have enough space for {} bytes.",
+                job.total_bytes
+            );
+            job.fail(msg.clone()).ok();
+            return Err(msg.into());
         }
 
-        // Mark job as in-progress
-        job.start();
+        // Handle reformat before export if enabled
+        if job.reformat_enabled {
+            if !job.reformat_confirmed {
+                let msg = "Reformat requested but not confirmed by user".to_string();
+                job.fail(msg.clone()).ok();
+                return Err(msg.into());
+            }
+            job.start_formatting().map_err(|e| -> Box<dyn Error> { e.into() })?;
+            self.device_manager.format_device(&job.device_id, crate::models::FileSystem::FAT32)
+                .map_err(|e| {
+                    job.fail(format!("Format failed: {}", e)).ok();
+                    e
+                })?;
+            job.format_complete().map_err(|e| -> Box<dyn Error> { e.into() })?;
+        } else {
+            job.start().map_err(|e| -> Box<dyn Error> { e.into() })?;
+        }
 
-        // Copy each track
+        // Ensure dest_path directory exists
+        if !dest_path.exists() {
+            fs::create_dir_all(dest_path)?;
+        }
+
+        // Copy each track with [XXYY-filename.mp3] naming convention and disconnection check
+        let mut copy_err = None;
         for (idx, track) in job.tracks.iter_mut().enumerate() {
+            // Check for device disconnection before copying next file
+            if !dest_path.exists() || self.device_manager.check_removable(&job.device_id).is_err() {
+                copy_err = Some("Device disconnected during export. Please reconnect and retry.".to_string());
+                break;
+            }
+
             let source = Path::new(&track.source_path);
-            let dest_file = dest_path.join(&track.xxyy_name);
+            let formatted_filename = if track.xxyy_name.starts_with('[') && track.xxyy_name.ends_with(']') {
+                track.xxyy_name.clone()
+            } else {
+                format!("[{}-{}]", track.xxyy_name, track.filename)
+            };
+            let dest_file = dest_path.join(&formatted_filename);
 
             // Copy file
-            fs::copy(source, &dest_file)
-                .map_err(|e| format!("Failed to copy {}: {}", track.filename, e))?;
+            if let Err(e) = fs::copy(source, &dest_file) {
+                copy_err = Some(format!("Failed to copy {}: {}", track.filename, e));
+                break;
+            }
 
             // Update progress
-            track.file_size_bytes = fs::metadata(&dest_file)?.len();
-            job.bytes_written += track.file_size_bytes;
-            job.files_written = idx + 1;
+            match fs::metadata(&dest_file) {
+                Ok(meta) => {
+                    track.file_size_bytes = meta.len();
+                    job.bytes_written += track.file_size_bytes;
+                    job.files_written = idx + 1;
+                }
+                Err(e) => {
+                    copy_err = Some(format!("Failed to read metadata for {}: {}", track.filename, e));
+                    break;
+                }
+            }
         }
 
-        job.complete();
+        if let Some(msg) = copy_err {
+            job.fail(msg.clone()).ok();
+            return Err(msg.into());
+        }
+
+        job.complete().map_err(|e| -> Box<dyn Error> { e.into() })?;
         Ok(())
+    }
+
+    /// Eject/unmount device safely
+    pub fn eject(&self, device_id: &str) -> Result<(), Box<dyn Error>> {
+        self.device_manager.eject_device(device_id)
     }
 
     /// Copy single track with overwrite check
@@ -90,6 +146,7 @@ impl ExportService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
     fn test_calculate_total_size() {

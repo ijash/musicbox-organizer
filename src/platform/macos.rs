@@ -29,6 +29,11 @@ impl DeviceManager for MacOSDeviceManager {
         Ok(true)
     }
 
+    fn is_sufficient_space(&self, _required_bytes: u64) -> Result<bool, Box<dyn Error>> {
+        // TODO: Query free space via statfs
+        Ok(true)
+    }
+
     fn format_device(&self, _device_id: &str, _filesystem: FileSystem) -> Result<(), Box<dyn Error>> {
         // TODO: Format via diskutil or platform native API
         Ok(())

@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +29,16 @@ impl ProjectFile {
             tracks: Vec::new(),
             version: "1.0".to_string(),
         }
+    }
+
+    pub fn load<P: AsRef<std::path::Path>>(path: P) -> Result<Self, String> {
+        let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        Self::parse(&content)
+    }
+
+    pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), String> {
+        let content = self.serialize();
+        std::fs::write(path, content).map_err(|e| e.to_string())
     }
 
     pub fn parse(content: &str) -> Result<Self, String> {

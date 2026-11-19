@@ -25,7 +25,7 @@ impl FormatService {
         }
 
         // Mark as formatting
-        job.start_formatting();
+        job.start_formatting().map_err(|e| -> Box<dyn Error> { e.into() })?;
 
         // Format device via platform-specific manager
         self.device_manager
@@ -37,7 +37,7 @@ impl FormatService {
             })?;
 
         // Signal format complete; job advances to IN_PROGRESS
-        job.format_complete();
+        job.format_complete().map_err(|e| -> Box<dyn Error> { e.into() })?;
         Ok(())
     }
 
@@ -55,7 +55,7 @@ impl FormatService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{Device, ExportStatus, FileSystem as FS};
+    use crate::models::{ExportStatus, FileSystem as FS};
 
     #[test]
     fn test_format_requires_confirmation() {

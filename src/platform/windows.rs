@@ -28,6 +28,11 @@ impl DeviceManager for WindowsDeviceManager {
         Ok(true)
     }
 
+    fn is_sufficient_space(&self, _required_bytes: u64) -> Result<bool, Box<dyn Error>> {
+        // TODO: Query free space via Win32 GetDiskFreeSpaceExW
+        Ok(true)
+    }
+
     fn format_device(&self, _device_id: &str, _filesystem: FileSystem) -> Result<(), Box<dyn Error>> {
         // TODO: Implement FAT32/exFAT format via Win32 FormatEx or command-line tool
         Ok(())

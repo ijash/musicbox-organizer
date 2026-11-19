@@ -113,14 +113,10 @@ impl ExportJob {
 
     pub fn fail(&mut self, error_msg: String) -> Result<(), String> {
         match self.status {
-            ExportStatus::FORMATTING | ExportStatus::IN_PROGRESS => {
+            ExportStatus::PENDING | ExportStatus::FORMATTING | ExportStatus::IN_PROGRESS => {
                 self.status = ExportStatus::FAILED;
                 self.error_message = Some(error_msg);
                 self.completed_at = Some(Utc::now());
-                // On failure during format: revert to PENDING for retry
-                if self.reformat_enabled && self.status == ExportStatus::FAILED {
-                    self.status = ExportStatus::PENDING;
-                }
                 Ok(())
             }
             _ => Err(format!("Cannot fail from {:?} state", self.status)),
