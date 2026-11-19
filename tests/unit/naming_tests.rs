@@ -39,3 +39,25 @@ fn test_format_export_filename() {
 fn test_out_of_bounds_index() {
     assert!(track_index_to_xxyy(17576).is_err());
 }
+
+#[test]
+fn test_reorder_and_sequence_update() {
+    use musicbox_organizer::models::{OrganizerTrack, SessionState, TrackMetadata};
+    use std::path::PathBuf;
+
+    let mut state = SessionState::new(PathBuf::from("/tmp"));
+    state.tracks = vec![
+        OrganizerTrack::new(0, PathBuf::from("first.mp3"), TrackMetadata::default(), "AAAA".into()),
+        OrganizerTrack::new(1, PathBuf::from("second.mp3"), TrackMetadata::default(), "AAAB".into()),
+    ];
+
+    state.move_track(1, 0).unwrap();
+
+    assert_eq!(state.tracks[0].original_filename, "second.mp3");
+    assert_eq!(state.tracks[0].index, 0);
+    assert_eq!(state.tracks[0].xxyy_prefix, "AAAA");
+
+    assert_eq!(state.tracks[1].original_filename, "first.mp3");
+    assert_eq!(state.tracks[1].index, 1);
+    assert_eq!(state.tracks[1].xxyy_prefix, "AAAB");
+}

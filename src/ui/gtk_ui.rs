@@ -1,14 +1,18 @@
 #[cfg(target_os = "linux")]
 pub mod linux {
     use gtk::prelude::*;
+    use gtk::traits::SettingsExt;
     use gtk::{
         Box as GtkBox, Button, CellRendererText, CheckButton, ComboBoxText, Dialog,
         DialogFlags, Entry, FileChooserAction, FileChooserDialog, Frame, Label, ListStore,
         Orientation, ProgressBar, ResponseType, ScrolledWindow, TreeView, TreeViewColumn,
         Window, WindowPosition, WindowType,
     };
-    use crate::models::{FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, Track};
-    use crate::services::{create_device_manager, ExportService, naming};
+    use crate::models::{FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, SessionState, Track};
+    use crate::services::{
+        create_device_manager, AudioPreviewPlayer, DirectoryScanner, ExportService, Id3Service,
+        RtfExporter, naming,
+    };
     use crate::ui::ExportDialog;
     use crate::ui::warnings::ReformatWarningDialog;
     use std::cell::RefCell;
@@ -31,11 +35,13 @@ pub mod linux {
             }),
         ));
 
+        let session_state = Rc::new(RefCell::new(SessionState::new(PathBuf::from("."))));
         let dialog_state = Rc::new(RefCell::new(ExportDialog::new()));
+        let audio_player = Rc::new(RefCell::new(AudioPreviewPlayer::new()));
 
         let window = Window::new(WindowType::Toplevel);
         window.set_title("MusicBox Organizer");
-        window.set_default_size(780, 620);
+        window.set_default_size(840, 680);
         window.set_position(WindowPosition::Center);
 
         let root_box = GtkBox::new(Orientation::Vertical, 10);
@@ -44,7 +50,7 @@ pub mod linux {
         root_box.set_margin_top(16);
         root_box.set_margin_bottom(16);
 
-        // --- Header & Project Bar ---
+        // --- Top Header Bar ---
         let header_box = GtkBox::new(Orientation::Horizontal, 10);
         let project_label = Label::new(None);
         let p = project.borrow();
@@ -56,19 +62,47 @@ pub mod linux {
         drop(p);
         header_box.pack_start(&project_label, true, true, 0);
 
-        let add_track_btn = Button::with_label("+ Add Audio File");
-        let save_project_btn = Button::with_label("Save Project (.txt)");
-        let open_project_btn = Button::with_label("Open Project (.txt)");
-        header_box.pack_end(&save_project_btn, false, false, 0);
-        header_box.pack_end(&open_project_btn, false, false, 0);
-        header_box.pack_end(&add_track_btn, false, false, 0);
+        let undo_btn = Button::with_label("↺ Undo");
+        let redo_btn = Button::with_label("↻ Redo");
+        let theme_btn = Button::with_label("◐ Theme");
+        header_box.pack_end(&theme_btn, false, false, 0);
+        header_box.pack_end(&redo_btn, false, false, 0);
+        header_box.pack_end(&undo_btn, false, false, 0);
         root_box.pack_start(&header_box, false, false, 0);
+
+        // --- Action Buttons Toolbar ---
+        let toolbar_box = GtkBox::new(Orientation::Horizontal, 8);
+        let scan_dir_btn = Button::with_label("📁 Scan Folder...");
+        let add_track_btn = Button::with_label("+ Add MP3 File");
+        let move_up_btn = Button::with_label("▲ Move Up");
+        let move_down_btn = Button::with_label("▼ Move Down");
+        let export_rtf_btn = Button::with_label("📄 Export RTF");
+        let save_project_btn = Button::with_label("💾 Save Project (.txt)");
+        let open_project_btn = Button::with_label("📂 Open Project (.txt)");
+
+        toolbar_box.pack_start(&scan_dir_btn, false, false, 0);
+        toolbar_box.pack_start(&add_track_btn, false, false, 0);
+        toolbar_box.pack_start(&move_up_btn, false, false, 0);
+        toolbar_box.pack_start(&move_down_btn, false, false, 0);
+        toolbar_box.pack_end(&save_project_btn, false, false, 0);
+        toolbar_box.pack_end(&open_project_btn, false, false, 0);
+        toolbar_box.pack_end(&export_rtf_btn, false, false, 0);
+        root_box.pack_start(&toolbar_box, false, false, 0);
 
         // --- Playlist Table ---
         let tree_view = TreeView::new();
         tree_view.set_headers_visible(true);
 
-        // Columns: Index, Export Filename [XXYY-name.mp3], Source Path
+        // Columns: 0=Index, 1=ExportFilename, 2=Title, 3=Artist, 4=FilePath
+        let list_store = ListStore::new(&[
+            gtk::glib::Type::STRING,
+            gtk::glib::Type::STRING,
+            gtk::glib::Type::STRING,
+            gtk::glib::Type::STRING,
+            gtk::glib::Type::STRING,
+        ]);
+        tree_view.set_model(Some(&list_store));
+
         let col_idx = TreeViewColumn::with_attributes("#", &CellRendererText::new(), &[("text", 0)]);
         tree_view.append_column(&col_idx);
 
@@ -79,20 +113,45 @@ pub mod linux {
         );
         tree_view.append_column(&col_name);
 
-        let col_path = TreeViewColumn::with_attributes("Source File", &CellRendererText::new(), &[("text", 2)]);
-        tree_view.append_column(&col_path);
+        let cell_title = CellRendererText::new();
+        cell_title.set_editable(true);
+        let col_title = TreeViewColumn::with_attributes("Title (Inline Edit)", &cell_title, &[("text", 2)]);
+        tree_view.append_column(&col_title);
 
-        let list_store = ListStore::new(&[
-            gtk::glib::Type::STRING,
-            gtk::glib::Type::STRING,
-            gtk::glib::Type::STRING,
-        ]);
-        tree_view.set_model(Some(&list_store));
+        let cell_artist = CellRendererText::new();
+        cell_artist.set_editable(true);
+        let col_artist = TreeViewColumn::with_attributes("Artist (Inline Edit)", &cell_artist, &[("text", 3)]);
+        tree_view.append_column(&col_artist);
+
+        let col_path = TreeViewColumn::with_attributes("Source File", &CellRendererText::new(), &[("text", 4)]);
+        tree_view.append_column(&col_path);
 
         let scrolled = ScrolledWindow::new(None::<&gtk::Adjustment>, None::<&gtk::Adjustment>);
         scrolled.set_min_content_height(200);
         scrolled.add(&tree_view);
         root_box.pack_start(&scrolled, true, true, 0);
+
+        // --- Audio Preview Bar ---
+        let preview_frame = Frame::new(Some("Audio Preview Player"));
+        let preview_box = GtkBox::new(Orientation::Horizontal, 10);
+        preview_box.set_margin_start(12);
+        preview_box.set_margin_end(12);
+        preview_box.set_margin_top(8);
+        preview_box.set_margin_bottom(8);
+
+        let play_btn = Button::with_label("▶ Play");
+        let pause_btn = Button::with_label("⏸ Pause");
+        let stop_btn = Button::with_label("⏹ Stop");
+        let audio_status_label = Label::new(Some("Select track to preview audio"));
+        audio_status_label.set_xalign(0.0);
+
+        preview_box.pack_start(&play_btn, false, false, 0);
+        preview_box.pack_start(&pause_btn, false, false, 0);
+        preview_box.pack_start(&stop_btn, false, false, 0);
+        preview_box.pack_start(&audio_status_label, true, true, 10);
+
+        preview_frame.add(&preview_box);
+        root_box.pack_start(&preview_frame, false, false, 0);
 
         // --- Removable Media Export Frame ---
         let export_frame = Frame::new(Some("Export to Removable Media (USB / SD)"));
@@ -174,7 +233,9 @@ pub mod linux {
                         &[
                             (0, &t.index.to_string()),
                             (1, &xxyy),
-                            (2, &t.file_path),
+                            (2, &t.title),
+                            (3, &t.artist),
+                            (4, &t.file_path),
                         ],
                     );
                 }
@@ -233,6 +294,312 @@ pub mod linux {
 
         update_devices_ui();
 
+        // --- Inline Title Editing Handler ---
+        {
+            let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
+            let refresh_table = refresh_playlist_table.clone();
+            cell_title.connect_edited(move |_, path, new_text| {
+                if let Ok(idx) = path.to_string().parse::<usize>() {
+                    let mut p = project.borrow_mut();
+                    if idx < p.tracks.len() {
+                        session_state.borrow_mut().push_undo_checkpoint();
+                        p.tracks[idx].title = new_text.to_string();
+                        drop(p);
+                        refresh_table();
+                    }
+                }
+            });
+        }
+
+        // --- Inline Artist Editing Handler ---
+        {
+            let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
+            let refresh_table = refresh_playlist_table.clone();
+            cell_artist.connect_edited(move |_, path, new_text| {
+                if let Ok(idx) = path.to_string().parse::<usize>() {
+                    let mut p = project.borrow_mut();
+                    if idx < p.tracks.len() {
+                        session_state.borrow_mut().push_undo_checkpoint();
+                        p.tracks[idx].artist = new_text.to_string();
+                        drop(p);
+                        refresh_table();
+                    }
+                }
+            });
+        }
+
+        // Theme Toggle (FR-017, FR-018)
+        theme_btn.connect_clicked(|_| {
+            if let Some(settings) = gtk::Settings::default() {
+                let is_dark = settings.is_gtk_application_prefer_dark_theme();
+                settings.set_gtk_application_prefer_dark_theme(!is_dark);
+            }
+        });
+
+        // Undo Button (FR-012, US5)
+        {
+            let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
+            let refresh_table = refresh_playlist_table.clone();
+            let status_label = status_label.clone();
+            undo_btn.connect_clicked(move |_| {
+                let mut state = session_state.borrow_mut();
+                if state.undo() {
+                    let mut p = project.borrow_mut();
+                    p.tracks = state
+                        .tracks
+                        .iter()
+                        .map(|t| ProjectTrack {
+                            index: t.index,
+                            title: t.metadata.title.clone(),
+                            artist: t.metadata.artist.clone(),
+                            file_path: t.file_path.to_string_lossy().to_string(),
+                        })
+                        .collect();
+                    drop(p);
+                    refresh_table();
+                    status_label.set_text("Reverted last edit (Undo).");
+                } else {
+                    status_label.set_text("Nothing to undo.");
+                }
+            });
+        }
+
+        // Redo Button (FR-013, US5)
+        {
+            let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
+            let refresh_table = refresh_playlist_table.clone();
+            let status_label = status_label.clone();
+            redo_btn.connect_clicked(move |_| {
+                let mut state = session_state.borrow_mut();
+                if state.redo() {
+                    let mut p = project.borrow_mut();
+                    p.tracks = state
+                        .tracks
+                        .iter()
+                        .map(|t| ProjectTrack {
+                            index: t.index,
+                            title: t.metadata.title.clone(),
+                            artist: t.metadata.artist.clone(),
+                            file_path: t.file_path.to_string_lossy().to_string(),
+                        })
+                        .collect();
+                    drop(p);
+                    refresh_table();
+                    status_label.set_text("Reapplied edit (Redo).");
+                } else {
+                    status_label.set_text("Nothing to redo.");
+                }
+            });
+        }
+
+        // Move Up Button (FR-005, US3)
+        {
+            let tree_view = tree_view.clone();
+            let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
+            let refresh_table = refresh_playlist_table.clone();
+            move_up_btn.connect_clicked(move |_| {
+                let selection = tree_view.selection();
+                if let Some((_, iter)) = selection.selected() {
+                    let path = tree_view.model().unwrap().path(&iter).unwrap();
+                    if let Some(indices) = path.indices().first() {
+                        let idx = *indices as usize;
+                        if idx > 0 {
+                            let mut p = project.borrow_mut();
+                            session_state.borrow_mut().push_undo_checkpoint();
+                            p.tracks.swap(idx, idx - 1);
+                            for (i, t) in p.tracks.iter_mut().enumerate() {
+                                t.index = i as u32;
+                            }
+                            drop(p);
+                            refresh_table();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Move Down Button (FR-005, US3)
+        {
+            let tree_view = tree_view.clone();
+            let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
+            let refresh_table = refresh_playlist_table.clone();
+            move_down_btn.connect_clicked(move |_| {
+                let selection = tree_view.selection();
+                if let Some((_, iter)) = selection.selected() {
+                    let path = tree_view.model().unwrap().path(&iter).unwrap();
+                    if let Some(indices) = path.indices().first() {
+                        let idx = *indices as usize;
+                        let mut p = project.borrow_mut();
+                        if idx + 1 < p.tracks.len() {
+                            session_state.borrow_mut().push_undo_checkpoint();
+                            p.tracks.swap(idx, idx + 1);
+                            for (i, t) in p.tracks.iter_mut().enumerate() {
+                                t.index = i as u32;
+                            }
+                            drop(p);
+                            refresh_table();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Scan Folder Button (FR-001, US1)
+        {
+            let window_clone = window.clone();
+            let project = Rc::clone(&project);
+            let refresh_table = refresh_playlist_table.clone();
+            let update_devs = update_devices_ui.clone();
+            let status_label = status_label.clone();
+            scan_dir_btn.connect_clicked(move |_| {
+                let chooser = FileChooserDialog::new(
+                    Some("Scan Folder for MP3s"),
+                    Some(&window_clone),
+                    FileChooserAction::SelectFolder,
+                );
+                chooser.add_button("Cancel", ResponseType::Cancel);
+                chooser.add_button("Scan Folder", ResponseType::Accept);
+
+                if chooser.run() == ResponseType::Accept {
+                    if let Some(folder) = chooser.filename() {
+                        let scanner = DirectoryScanner::new();
+                        match scanner.scan_directory(&folder) {
+                            Ok(scanned) => {
+                                let count = scanned.len();
+                                let mut p = project.borrow_mut();
+                                let id3_svc = Id3Service::new();
+                                for mut t in scanned {
+                                    if let Ok(meta) = id3_svc.read_tags(&t.file_path) {
+                                        t.metadata = meta;
+                                    }
+                                    let next_idx = p.tracks.len() as u32;
+                                    p.tracks.push(ProjectTrack {
+                                        index: next_idx,
+                                        title: t.metadata.title,
+                                        artist: t.metadata.artist,
+                                        file_path: t.file_path.to_string_lossy().to_string(),
+                                    });
+                                }
+                                drop(p);
+                                refresh_table();
+                                update_devs();
+                                status_label.set_text(&format!(
+                                    "Scanned {} MP3 files from {}",
+                                    count,
+                                    folder.display()
+                                ));
+                            }
+                            Err(e) => status_label.set_text(&format!("Scan failed: {}", e)),
+                        }
+                    }
+                }
+                chooser.close();
+            });
+        }
+
+        // Audio Preview Play Button (FR-009, FR-010, US4)
+        {
+            let tree_view = tree_view.clone();
+            let project = Rc::clone(&project);
+            let audio_player = Rc::clone(&audio_player);
+            let audio_status_label = audio_status_label.clone();
+            play_btn.connect_clicked(move |_| {
+                let selection = tree_view.selection();
+                if let Some((_, iter)) = selection.selected() {
+                    let path = tree_view.model().unwrap().path(&iter).unwrap();
+                    if let Some(indices) = path.indices().first() {
+                        let idx = *indices as usize;
+                        let p = project.borrow();
+                        if let Some(track) = p.tracks.get(idx) {
+                            let file_path = PathBuf::from(&track.file_path);
+                            let title = track.title.clone();
+                            drop(p);
+                            let mut player = audio_player.borrow_mut();
+                            match player.play_file(&file_path) {
+                                Ok(_) => audio_status_label
+                                    .set_markup(&format!("▶ <b>Playing:</b> {}", title)),
+                                Err(e) => {
+                                    audio_status_label.set_text(&format!("Playback error: {}", e))
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    audio_status_label.set_text("Select a track in the table to play.");
+                }
+            });
+        }
+
+        // Pause Button
+        {
+            let audio_player = Rc::clone(&audio_player);
+            let audio_status_label = audio_status_label.clone();
+            pause_btn.connect_clicked(move |_| {
+                audio_player.borrow().pause();
+                audio_status_label.set_text("⏸ Paused");
+            });
+        }
+
+        // Stop Button
+        {
+            let audio_player = Rc::clone(&audio_player);
+            let audio_status_label = audio_status_label.clone();
+            stop_btn.connect_clicked(move |_| {
+                audio_player.borrow_mut().stop();
+                audio_status_label.set_text("⏹ Stopped");
+            });
+        }
+
+        // Export RTF Button (FR-015, US6)
+        {
+            let window_clone = window.clone();
+            let project = Rc::clone(&project);
+            let status_label = status_label.clone();
+            export_rtf_btn.connect_clicked(move |_| {
+                let chooser = FileChooserDialog::new(
+                    Some("Export Playlist to RTF"),
+                    Some(&window_clone),
+                    FileChooserAction::Save,
+                );
+                chooser.add_button("Cancel", ResponseType::Cancel);
+                chooser.add_button("Export RTF", ResponseType::Accept);
+                chooser.set_current_name("playlist.rtf");
+
+                if chooser.run() == ResponseType::Accept {
+                    if let Some(file) = chooser.filename() {
+                        let p = project.borrow();
+                        let tracks: Vec<crate::models::OrganizerTrack> = p
+                            .tracks
+                            .iter()
+                            .map(|t| {
+                                let mut meta = crate::models::TrackMetadata::default();
+                                meta.title = t.title.clone();
+                                meta.artist = t.artist.clone();
+                                crate::models::OrganizerTrack::new(
+                                    t.index,
+                                    PathBuf::from(&t.file_path),
+                                    meta,
+                                    "AAAA".into(),
+                                )
+                            })
+                            .collect();
+                        match RtfExporter::export_to_file(&file, &p.metadata.name, &tracks) {
+                            Ok(_) => status_label
+                                .set_text(&format!("Exported RTF to {}", file.display())),
+                            Err(e) => status_label.set_text(&format!("RTF export failed: {}", e)),
+                        }
+                    }
+                }
+                chooser.close();
+            });
+        }
+
         // Refresh devices button click
         {
             let update_devices = update_devices_ui.clone();
@@ -260,14 +627,15 @@ pub mod linux {
                 if chooser.run() == ResponseType::Accept {
                     let filenames = chooser.filenames();
                     let mut p = project.borrow_mut();
+                    let id3_svc = Id3Service::new();
                     for path in filenames {
                         let path_str = path.to_string_lossy().to_string();
-                        let title = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+                        let meta = id3_svc.read_tags(&path).unwrap_or_default();
                         let next_idx = p.tracks.len() as u32;
                         p.tracks.push(ProjectTrack {
                             index: next_idx,
-                            title,
-                            artist: String::new(),
+                            title: meta.title,
+                            artist: meta.artist,
                             file_path: path_str,
                         });
                     }
@@ -283,6 +651,7 @@ pub mod linux {
         {
             let window_clone = window.clone();
             let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
             let status_label = status_label.clone();
             save_project_btn.connect_clicked(move |_| {
                 let chooser = FileChooserDialog::new(
@@ -297,9 +666,29 @@ pub mod linux {
                 if chooser.run() == ResponseType::Accept {
                     if let Some(file) = chooser.filename() {
                         let p = project.borrow();
+                        let id3_svc = Id3Service::new();
+                        // Commit updated ID3 tags to local files per FR-007
+                        for track in &p.tracks {
+                            let track_path = Path::new(&track.file_path);
+                            if track_path.exists() {
+                                let mut meta = id3_svc.read_tags(track_path).unwrap_or_default();
+                                meta.title = track.title.clone();
+                                meta.artist = track.artist.clone();
+                                meta.track_number = Some(track.index + 1);
+                                id3_svc.write_tags(track_path, &meta).ok();
+                            }
+                        }
                         match p.save(&file) {
-                            Ok(_) => status_label.set_text(&format!("Saved project locally to {}", file.display())),
-                            Err(e) => status_label.set_text(&format!("Failed to save project: {}", e)),
+                            Ok(_) => {
+                                session_state.borrow_mut().mark_saved();
+                                status_label.set_text(&format!(
+                                    "Saved project and committed ID3 tags to {}",
+                                    file.display()
+                                ));
+                            }
+                            Err(e) => {
+                                status_label.set_text(&format!("Failed to save project: {}", e))
+                            }
                         }
                     }
                 }

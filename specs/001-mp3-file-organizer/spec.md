@@ -106,7 +106,7 @@ User needs to export the organized playlist to external formats (txt, rtf, docx)
 **Acceptance Scenarios**:
 
 1. **Given** files are organized, **When** user clicks Export button and selects txt, **Then** txt file is created with file names and metadata in plain text format
-2. **Given** files are organized, **When** user clicks Export and selects rtf or docx, **Then** file is created with compact layout (minimal spacing, small fonts) suitable for small-area printing
+2. **Given** files are organized, **When** user clicks Export and selects rtf, **Then** file is created with compact layout (minimal spacing, small fonts) suitable for small-area printing (DOCX export deferred to v2+ per Constitution Principle I)
 3. **Given** export completes, **When** export finishes, **Then** user sees confirmation and file location
 
 ---
@@ -153,11 +153,11 @@ User prefers dark or light theme based on environment and personal preference. T
 - **FR-013**: System MUST implement Redo functionality to reapply undone operations
 - **FR-014**: System MUST support export to txt format with file list and metadata
 - **FR-015**: System MUST support export to rtf format with compact layout
-- **FR-016**: System MUST support export to docx format with compact layout
+- **FR-016**: System MUST support playlist export to compact printable format (RTF and TXT in v1; DOCX deferred to v2+ per Principle I)
 - **FR-017**: System MUST provide theme toggle (dark/light mode) in top-right corner of UI
 - **FR-018**: System MUST persist theme preference across sessions
-- **FR-019**: System MUST create a session cache file in the current directory during app session
-- **FR-020**: System MUST delete session cache upon successful save
+- **FR-019**: System MUST maintain in-memory session cache during app session tracking edits and dirty state without leaving temporary files on disk (per Principle IV)
+- **FR-020**: System MUST reset session cache dirty state upon successful save with zero orphaned files
 - **FR-021**: System MUST support window resizing from compact to maximized view, with audio preview bar scaling accordingly
 
 ### Key Entities
@@ -177,10 +177,10 @@ User prefers dark or light theme based on environment and personal preference. T
 - **SC-004**: Users can complete a full organization workflow (load → edit → drag → save) in under 5 minutes for a typical 50-file playlist
 - **SC-005**: Audio preview starts playing within 500ms of file selection
 - **SC-006**: Waveform visualization renders smoothly without frame stuttering
-- **SC-007**: Exported playlist files (txt/rtf/docx) open correctly in standard viewers and contain all expected metadata
+- **SC-007**: Exported playlist files (txt/rtf) open correctly in standard viewers and contain all expected metadata
 - **SC-008**: App starts up in under 1 second on initial load
 - **SC-009**: All Undo operations revert changes with 100% accuracy
-- **SC-010**: Session cache is created upon app start and deleted upon successful save with zero orphaned cache files
+- **SC-010**: In-memory session cache resets upon successful save with zero orphaned temporary files left on disk
 
 ## Assumptions
 

@@ -10,6 +10,8 @@ license = "TODO"
 [dependencies]
 # Core audio handling
 metaflac = "0.2"
+id3 = "1.14"
+rodio = "0.19"
 
 # UI frameworks (platform-specific, selected at build time)
 [target.'cfg(windows)'.dependencies]

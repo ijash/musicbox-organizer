@@ -9,11 +9,13 @@ const DEFAULT_PROJECT_NAME: &str = "playlist.txt";
 fn print_help() {
     println!("MusicBox Organizer - Removable Media & Playlist Manager");
     println!("Usage:");
-    println!("  musicbox              - Launch desktop GUI window");
-    println!("  musicbox gui          - Launch desktop GUI window");
-    println!("  musicbox status       - Show active project and connected removable devices");
-    println!("  musicbox save [path]  - Save current project locally (does NOT write to USB/SD)");
-    println!("  musicbox export       - Export playlist to connected USB/SD device");
+    println!("  musicbox                     - Launch desktop GUI window");
+    println!("  musicbox gui                 - Launch desktop GUI window");
+    println!("  musicbox scan [dir]          - Scan directory for MP3 files and display ID3 tags");
+    println!("  musicbox tag <file> [t] [a]  - View or update ID3 tag (title, artist)");
+    println!("  musicbox status              - Show active project and connected removable devices");
+    println!("  musicbox save [path]         - Save current project locally (does NOT write to USB/SD)");
+    println!("  musicbox export              - Export playlist to connected USB/SD device");
     println!("\nWorkflows (Save vs Export):");
     println!("  - 'Save Project' persists project metadata (.txt) locally in current directory for editing.");
     println!("  - 'Export Playlist' writes audio files with [XXYY-filename.mp3] naming to removable media.");
@@ -60,6 +62,54 @@ fn main() {
             musicbox_organizer::ui::gtk_ui::linux::run_gtk_app();
             #[cfg(not(target_os = "linux"))]
             println!("GUI not yet implemented for this platform. Use CLI commands.");
+        }
+        "scan" => {
+            let scan_dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
+            let scanner = musicbox_organizer::services::DirectoryScanner::new();
+            match scanner.scan_directory(Path::new(scan_dir)) {
+                Ok(tracks) => {
+                    if tracks.is_empty() {
+                        println!("No MP3 files found in '{}'", scan_dir);
+                    } else {
+                        println!("Found {} MP3 files in '{}':", tracks.len(), scan_dir);
+                        let id3_svc = musicbox_organizer::services::Id3Service::new();
+                        for t in tracks {
+                            let meta = id3_svc.read_tags(&t.file_path).unwrap_or(t.metadata);
+                            println!("  [{}] {} | Title: '{}' | Artist: '{}'", t.xxyy_prefix, t.original_filename, meta.title, meta.artist);
+                        }
+                    }
+                }
+                Err(e) => eprintln!("Scan error: {}", e),
+            }
+        }
+        "tag" => {
+            if let Some(file_str) = args.get(2) {
+                let path = Path::new(file_str);
+                let id3_svc = musicbox_organizer::services::Id3Service::new();
+                match id3_svc.read_tags(path) {
+                    Ok(mut meta) => {
+                        if let Some(new_title) = args.get(3) {
+                            meta.title = new_title.clone();
+                            if let Some(new_artist) = args.get(4) {
+                                meta.artist = new_artist.clone();
+                            }
+                            match id3_svc.write_tags(path, &meta) {
+                                Ok(_) => println!("Updated tags for {}: Title='{}', Artist='{}'", file_str, meta.title, meta.artist),
+                                Err(e) => eprintln!("Failed to write tags: {}", e),
+                            }
+                        } else {
+                            println!("Tags for {}:", file_str);
+                            println!("  Title:  {}", meta.title);
+                            println!("  Artist: {}", meta.artist);
+                            println!("  Album:  {}", meta.album);
+                            println!("  Track:  {:?}", meta.track_number);
+                        }
+                    }
+                    Err(e) => eprintln!("Failed to read tags: {}", e),
+                }
+            } else {
+                eprintln!("Usage: musicbox tag <file.mp3> [new_title] [new_artist]");
+            }
         }
         "help" | "--help" | "-h" => {
             print_help();

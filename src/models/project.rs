@@ -41,6 +41,18 @@ impl ProjectFile {
         std::fs::write(path, content).map_err(|e| e.to_string())
     }
 
+    pub fn add_scanned_tracks(&mut self, tracks: Vec<crate::models::OrganizerTrack>) {
+        for track in tracks {
+            let next_idx = self.tracks.len() as u32;
+            self.tracks.push(ProjectTrack {
+                index: next_idx,
+                title: track.metadata.title,
+                artist: track.metadata.artist,
+                file_path: track.file_path.to_string_lossy().to_string(),
+            });
+        }
+    }
+
     pub fn parse(content: &str) -> Result<Self, String> {
         let mut metadata = PlaylistMetadata {
             name: String::new(),
