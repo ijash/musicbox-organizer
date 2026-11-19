@@ -1,4 +1,6 @@
 installed:
+- assess
+- bug
 - deja-vu
 settings:
   auto_execute_hooks: true
