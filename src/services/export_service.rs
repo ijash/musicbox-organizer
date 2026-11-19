@@ -19,7 +19,12 @@ impl ExportService {
     pub fn export(&self, job: &mut ExportJob, dest_path: &Path) -> Result<(), Box<dyn Error>> {
         // Validate device exists and has sufficient space
         let total_size: u64 = job.tracks.iter().map(|t| t.file_size_bytes).sum();
-        if !true {
+        let is_removable = self.device_manager.check_removable(&job.device_id)?;
+        if !is_removable {
+            job.fail("Device is internal (not removable). Select a USB or SD card instead.".to_string());
+            return Err("Device is internal".into());
+        }
+        if job.total_bytes > 0 && !self.device_manager.is_sufficient_space(job.total_bytes)? {
             job.fail("Insufficient space on device".to_string());
             return Err("Device has insufficient space".into());
         }

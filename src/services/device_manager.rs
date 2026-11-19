@@ -13,6 +13,14 @@ pub trait DeviceManager: Send + Sync {
     /// Validate device is removable (not internal drive)
     fn validate_removable(&self, device_id: &str) -> Result<bool, Box<dyn Error>>;
 
+    /// Check if device is removable (alias for validate_removable for ExportService compatibility)
+    fn check_removable(&self, device_id: &str) -> Result<bool, Box<dyn Error>> {
+        self.validate_removable(device_id)
+    }
+
+    /// Check if device has sufficient available space
+    fn is_sufficient_space(&self, required_bytes: u64) -> Result<bool, Box<dyn Error>>;
+
     /// Format device to FAT32 or exFAT
     fn format_device(&self, device_id: &str, filesystem: FileSystem) -> Result<(), Box<dyn Error>>;
 

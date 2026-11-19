@@ -8,7 +8,7 @@ Ratification: 2026-11-19
 TODO: None
 -->
 
-# Pikat Hunting Constitution
+# MusicBox Organizer Constitution
 
 Desktop MP3 playlist & tag manager: lightweight, portable, multi-platform.
 
