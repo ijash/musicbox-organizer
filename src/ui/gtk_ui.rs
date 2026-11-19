@@ -3,10 +3,10 @@ pub mod linux {
     use gtk::prelude::*;
     use gtk::traits::SettingsExt;
     use gtk::{
-        Box as GtkBox, Button, CellRendererText, CheckButton, ComboBoxText, Dialog,
+        Box as GtkBox, Button, CellRendererText, CheckButton, ComboBoxText, CssProvider, Dialog,
         DialogFlags, Entry, FileChooserAction, FileChooserDialog, Frame, Label, ListStore,
-        Orientation, ProgressBar, ResponseType, ScrolledWindow, TreeView, TreeViewColumn,
-        Window, WindowPosition, WindowType,
+        Orientation, ProgressBar, ResponseType, ScrolledWindow, StyleContext, TreeView,
+        TreeViewColumn, Window, WindowPosition, WindowType, STYLE_PROVIDER_PRIORITY_APPLICATION,
     };
     use crate::models::{FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, SessionState, Track};
     use crate::services::{
@@ -18,6 +18,44 @@ pub mod linux {
     use std::cell::RefCell;
     use std::path::{Path, PathBuf};
     use std::rc::Rc;
+
+    const DARK_CSS: &str = "
+        window, dialog, popover, frame {
+            background-color: #23272e;
+            color: #dcdfe4;
+        }
+        treeview {
+            background-color: #282c34;
+            color: #abb2bf;
+        }
+        treeview:selected, treeview:selected:focus {
+            background-color: #2c5a85;
+            color: #ffffff;
+        }
+        header, treeview header button {
+            background-color: #21252b;
+            color: #abb2bf;
+        }
+        entry, combobox button {
+            background-color: #1e2227;
+            color: #ffffff;
+            border-color: #3e4451;
+        }
+        button {
+            background-color: #353b45;
+            color: #ffffff;
+            border-color: #4b5263;
+        }
+        button:hover {
+            background-color: #3e4451;
+        }
+        progressbar progress {
+            background-color: #61afef;
+        }
+        progressbar trough {
+            background-color: #1e2227;
+        }
+    ";
 
     pub fn run_gtk_app() {
         if gtk::init().is_err() {
@@ -39,16 +77,19 @@ pub mod linux {
         let dialog_state = Rc::new(RefCell::new(ExportDialog::new()));
         let audio_player = Rc::new(RefCell::new(AudioPreviewPlayer::new()));
 
+        let css_provider = CssProvider::new();
+        let is_dark_mode = Rc::new(RefCell::new(false));
+
         let window = Window::new(WindowType::Toplevel);
         window.set_title("MusicBox Organizer");
-        window.set_default_size(840, 680);
+        window.set_default_size(740, 520);
         window.set_position(WindowPosition::Center);
 
-        let root_box = GtkBox::new(Orientation::Vertical, 10);
-        root_box.set_margin_start(16);
-        root_box.set_margin_end(16);
-        root_box.set_margin_top(16);
-        root_box.set_margin_bottom(16);
+        let root_box = GtkBox::new(Orientation::Vertical, 6);
+        root_box.set_margin_start(8);
+        root_box.set_margin_end(8);
+        root_box.set_margin_top(8);
+        root_box.set_margin_bottom(8);
 
         // --- Top Header Bar ---
         let header_box = GtkBox::new(Orientation::Horizontal, 10);
@@ -127,17 +168,17 @@ pub mod linux {
         tree_view.append_column(&col_path);
 
         let scrolled = ScrolledWindow::new(None::<&gtk::Adjustment>, None::<&gtk::Adjustment>);
-        scrolled.set_min_content_height(200);
+        scrolled.set_min_content_height(160);
         scrolled.add(&tree_view);
         root_box.pack_start(&scrolled, true, true, 0);
 
         // --- Audio Preview Bar ---
         let preview_frame = Frame::new(Some("Audio Preview Player"));
-        let preview_box = GtkBox::new(Orientation::Horizontal, 10);
-        preview_box.set_margin_start(12);
-        preview_box.set_margin_end(12);
-        preview_box.set_margin_top(8);
-        preview_box.set_margin_bottom(8);
+        let preview_box = GtkBox::new(Orientation::Horizontal, 8);
+        preview_box.set_margin_start(8);
+        preview_box.set_margin_end(8);
+        preview_box.set_margin_top(4);
+        preview_box.set_margin_bottom(4);
 
         let play_btn = Button::with_label("▶ Play");
         let pause_btn = Button::with_label("⏸ Pause");
@@ -148,24 +189,24 @@ pub mod linux {
         preview_box.pack_start(&play_btn, false, false, 0);
         preview_box.pack_start(&pause_btn, false, false, 0);
         preview_box.pack_start(&stop_btn, false, false, 0);
-        preview_box.pack_start(&audio_status_label, true, true, 10);
+        preview_box.pack_start(&audio_status_label, true, true, 8);
 
         preview_frame.add(&preview_box);
         root_box.pack_start(&preview_frame, false, false, 0);
 
         // --- Removable Media Export Frame ---
         let export_frame = Frame::new(Some("Export to Removable Media (USB / SD)"));
-        let frame_box = GtkBox::new(Orientation::Vertical, 10);
-        frame_box.set_margin_start(12);
-        frame_box.set_margin_end(12);
-        frame_box.set_margin_top(12);
-        frame_box.set_margin_bottom(12);
+        let frame_box = GtkBox::new(Orientation::Vertical, 4);
+        frame_box.set_margin_start(8);
+        frame_box.set_margin_end(8);
+        frame_box.set_margin_top(4);
+        frame_box.set_margin_bottom(4);
 
         // Device Selection Row
-        let dev_row = GtkBox::new(Orientation::Horizontal, 10);
+        let dev_row = GtkBox::new(Orientation::Horizontal, 8);
         let dev_label = Label::new(Some("Target Device:"));
         let dev_combo = ComboBoxText::new();
-        let refresh_btn = Button::with_label("↻ Scan Devices");
+        let refresh_btn = Button::with_label("↻ Scan");
         dev_row.pack_start(&dev_label, false, false, 0);
         dev_row.pack_start(&dev_combo, true, true, 0);
         dev_row.pack_start(&refresh_btn, false, false, 0);
@@ -177,8 +218,8 @@ pub mod linux {
         frame_box.pack_start(&dev_info_label, false, false, 0);
 
         // Options Row: Reformat Checkbox & Subpath
-        let opt_row = GtkBox::new(Orientation::Horizontal, 15);
-        let reformat_check = CheckButton::with_label("Reformat device before export");
+        let opt_row = GtkBox::new(Orientation::Horizontal, 12);
+        let reformat_check = CheckButton::with_label("Reformat before export");
         let subpath_label = Label::new(Some("Subpath:"));
         let subpath_entry = Entry::new();
         subpath_entry.set_text("/");
@@ -188,7 +229,7 @@ pub mod linux {
         frame_box.pack_start(&opt_row, false, false, 0);
 
         // Action Buttons Row
-        let action_row = GtkBox::new(Orientation::Horizontal, 10);
+        let action_row = GtkBox::new(Orientation::Horizontal, 8);
         let export_btn = Button::with_label("▶ Export Playlist to Media");
         let eject_btn = Button::with_label("⏏ Eject Device");
         action_row.pack_start(&export_btn, true, true, 0);
@@ -331,12 +372,31 @@ pub mod linux {
         }
 
         // Theme Toggle (FR-017, FR-018)
-        theme_btn.connect_clicked(|_| {
-            if let Some(settings) = gtk::Settings::default() {
-                let is_dark = settings.is_gtk_application_prefer_dark_theme();
-                settings.set_gtk_application_prefer_dark_theme(!is_dark);
-            }
-        });
+        {
+            let is_dark_mode = Rc::clone(&is_dark_mode);
+            let css_provider = css_provider.clone();
+            theme_btn.connect_clicked(move |btn| {
+                let mut dark = is_dark_mode.borrow_mut();
+                *dark = !*dark;
+                if let Some(screen) = gtk::gdk::Screen::default() {
+                    if *dark {
+                        css_provider.load_from_data(DARK_CSS.as_bytes()).ok();
+                        StyleContext::add_provider_for_screen(
+                            &screen,
+                            &css_provider,
+                            STYLE_PROVIDER_PRIORITY_APPLICATION,
+                        );
+                        btn.set_label("☀ Light");
+                    } else {
+                        StyleContext::remove_provider_for_screen(&screen, &css_provider);
+                        btn.set_label("◐ Theme");
+                    }
+                }
+                if let Some(settings) = gtk::Settings::default() {
+                    settings.set_gtk_application_prefer_dark_theme(*dark);
+                }
+            });
+        }
 
         // Undo Button (FR-012, US5)
         {
@@ -409,14 +469,18 @@ pub mod linux {
                     if let Some(indices) = path.indices().first() {
                         let idx = *indices as usize;
                         if idx > 0 {
+                            let new_idx = idx - 1;
                             let mut p = project.borrow_mut();
                             session_state.borrow_mut().push_undo_checkpoint();
-                            p.tracks.swap(idx, idx - 1);
+                            p.tracks.swap(idx, new_idx);
                             for (i, t) in p.tracks.iter_mut().enumerate() {
                                 t.index = i as u32;
                             }
                             drop(p);
                             refresh_table();
+                            let new_path = gtk::TreePath::from_indicesv(&[new_idx as i32]);
+                            tree_view.selection().select_path(&new_path);
+                            tree_view.scroll_to_cell(Some(&new_path), None::<&gtk::TreeViewColumn>, false, 0.0, 0.0);
                         }
                     }
                 }
@@ -437,13 +501,17 @@ pub mod linux {
                         let idx = *indices as usize;
                         let mut p = project.borrow_mut();
                         if idx + 1 < p.tracks.len() {
+                            let new_idx = idx + 1;
                             session_state.borrow_mut().push_undo_checkpoint();
-                            p.tracks.swap(idx, idx + 1);
+                            p.tracks.swap(idx, new_idx);
                             for (i, t) in p.tracks.iter_mut().enumerate() {
                                 t.index = i as u32;
                             }
                             drop(p);
                             refresh_table();
+                            let new_path = gtk::TreePath::from_indicesv(&[new_idx as i32]);
+                            tree_view.selection().select_path(&new_path);
+                            tree_view.scroll_to_cell(Some(&new_path), None::<&gtk::TreeViewColumn>, false, 0.0, 0.0);
                         }
                     }
                 }
