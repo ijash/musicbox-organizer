@@ -131,7 +131,7 @@ pub mod linux {
         let audio_player = Rc::new(RefCell::new(AudioPreviewPlayer::new()));
 
         let css_provider = CssProvider::new();
-        let is_dark_mode = Rc::new(RefCell::new(false));
+        let is_dark_mode = Rc::new(RefCell::new(true));
 
         let window = Window::new(WindowType::Toplevel);
         window.set_title("MusicBox Organizer");
@@ -158,7 +158,7 @@ pub mod linux {
 
         let undo_btn = Button::with_label("↺ Undo");
         let redo_btn = Button::with_label("↻ Redo");
-        let theme_btn = Button::with_label("🌙 Theme: Light");
+        let theme_btn = Button::with_label("☀ Theme: Dark");
         header_box.pack_end(&theme_btn, false, false, 0);
         header_box.pack_end(&redo_btn, false, false, 0);
         header_box.pack_end(&undo_btn, false, false, 0);
