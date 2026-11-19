@@ -14,8 +14,8 @@
 
 **Purpose**: Core report data structures
 
-- [ ] T001 Implement CompatibilityReport and DeviceProfile in `src/models/compatibility.rs`
-- [ ] T002 Export compatibility models in `src/models/mod.rs` and `src/lib.rs`
+- [X] T001 Implement CompatibilityReport and DeviceProfile in `src/models/compatibility.rs`
+- [X] T002 Export compatibility models in `src/models/mod.rs` and `src/lib.rs`
 
 ---
 
@@ -25,8 +25,8 @@
 
 **Independent Test**: Generate 1,000 sequential `[XXYY-filename.mp3]` names; verify `sort()` preserves index order.
 
-- [ ] T003 [P] [US1] Unit test for ASCII byte-order sequence sorting in `tests/unit/compatibility_tests.rs`
-- [ ] T004 [US1] Implement sequence order verifier in `src/services/compatibility.rs`
+- [X] T003 [P] [US1] Unit test for ASCII byte-order sequence sorting in `tests/unit/compatibility_tests.rs`
+- [X] T004 [US1] Implement sequence order verifier in `src/services/compatibility.rs`
 
 ---
 
@@ -36,10 +36,10 @@
 
 **Independent Test**: Provide unicode filenames (Cyrillic, emoji, smart quotes); verify detection and sanitization to ASCII.
 
-- [ ] T005 [P] [US3] Unit test for ASCII character guard and sanitization in `tests/unit/compatibility_tests.rs`
-- [ ] T006 [US3] Implement ASCII validation and sanitize_filename in `src/services/compatibility.rs`
-- [ ] T007 [US3] Implement FAT32 255-character path length validator in `src/services/compatibility.rs`
-- [ ] T008 Export CompatibilityService in `src/services/mod.rs`
+- [X] T005 [P] [US3] Unit test for ASCII character guard and sanitization in `tests/unit/compatibility_tests.rs`
+- [X] T006 [US3] Implement ASCII validation and sanitize_filename in `src/services/compatibility.rs`
+- [X] T007 [US3] Implement FAT32 255-character path length validator in `src/services/compatibility.rs`
+- [X] T008 Export CompatibilityService in `src/services/mod.rs`
 
 ---
 
@@ -47,5 +47,5 @@
 
 **Purpose**: Provide standalone compatibility audit command and rebuild binary.
 
-- [ ] T009 Add `musicbox check-compat <dir>` CLI subcommand in `src/main.rs`
-- [ ] T010 Run full test suite and rebuild release binary per Constitution Principle VII
+- [X] T009 Add `musicbox check-compat <dir>` CLI subcommand in `src/main.rs`
+- [X] T010 Run full test suite and rebuild release binary per Constitution Principle VII

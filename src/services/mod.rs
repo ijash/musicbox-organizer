@@ -1,5 +1,6 @@
 pub mod audio_editing;
 pub mod audio_player;
+pub mod compatibility;
 pub mod device_manager;
 pub mod export_config;
 pub mod export_service;
@@ -11,6 +12,7 @@ pub mod scanner;
 
 pub use audio_editing::{AudioProcessor, PlaceholderAudioProcessor};
 pub use audio_player::AudioPreviewPlayer;
+pub use compatibility::CompatibilityService;
 pub use device_manager::{create_device_manager, DeviceManager};
 pub use export_config::ExportConfigService;
 pub use export_service::ExportService;

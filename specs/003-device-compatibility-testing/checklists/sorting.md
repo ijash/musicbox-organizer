@@ -10,33 +10,33 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 - Are the allowed character sets for group and sequence codes explicitly defined across all specs? [Completeness, Spec §FR-001]
-- [ ] CHK002 - Are requirements defined for handling existing filenames that already contain brackets or hyphens? [Completeness, Gap]
-- [ ] CHK003 - Are sequence boundary requirements defined when playlist exceeds the base-26 4-letter ceiling? [Completeness, Edge Case]
-- [ ] CHK004 - Are maximum filename and path length limits specified for target FAT filesystems? [Completeness, Spec §FR-005]
+- [x] CHK001 - Are the allowed character sets for group and sequence codes explicitly defined across all specs? [Completeness, Spec §FR-001]
+- [x] CHK002 - Are requirements defined for handling existing filenames that already contain brackets or hyphens? [Completeness, Gap]
+- [x] CHK003 - Are sequence boundary requirements defined when playlist exceeds the base-26 4-letter ceiling? [Completeness, Edge Case]
+- [x] CHK004 - Are maximum filename and path length limits specified for target FAT filesystems? [Completeness, Spec §FR-005]
 
 ## Requirement Clarity
 
-- [ ] CHK005 - Is the casing rule (uppercase vs lowercase) for `[XXYY]` codes unambiguously specified? [Clarity, Conflict, Spec §FR-001]
-- [ ] CHK006 - Is "ASCII byte-order sorting" quantified with specific collation or raw byte comparison rules? [Clarity, Spec §FR-003]
-- [ ] CHK007 - Is the behavior for non-ASCII metadata (e.g. accented characters, emojis) clearly defined as reject vs sanitize? [Clarity, Spec §FR-002, Spec §FR-007]
+- [x] CHK005 - Is the casing rule (uppercase vs lowercase) for `[XXYY]` codes unambiguously specified? [Clarity, Conflict, Spec §FR-001]
+- [x] CHK006 - Is "ASCII byte-order sorting" quantified with specific collation or raw byte comparison rules? [Clarity, Spec §FR-003]
+- [x] CHK007 - Is the behavior for non-ASCII metadata (e.g. accented characters, emojis) clearly defined as reject vs sanitize? [Clarity, Spec §FR-002, Spec §FR-007]
 
 ## Requirement Consistency
 
-- [ ] CHK008 - Do group and sequence character constraints in Spec 003 align with the `AAAA`..`ZZZZ` base-26 scheme implemented in Feature 001 and 004? [Consistency, Spec §FR-001]
-- [ ] CHK009 - Are filename formatting requirements consistent between local export and removable media export workflows? [Consistency, Spec §FR-006]
+- [x] CHK008 - Do group and sequence character constraints in Spec 003 align with the `AAAA`..`ZZZZ` base-26 scheme implemented in Feature 001 and 004? [Consistency, Spec §FR-001]
+- [x] CHK009 - Are filename formatting requirements consistent between local export and removable media export workflows? [Consistency, Spec §FR-006]
 
 ## Scenario & Edge Case Coverage
 
-- [ ] CHK010 - Are sorting requirements defined for filenames containing spaces, underscores, or symbols after the `[XXYY-]` prefix? [Coverage, Spec §FR-008]
-- [ ] CHK011 - Are requirements specified for collision handling if two source files share identical sanitized filenames? [Coverage, Edge Case, Gap]
-- [ ] CHK012 - Are requirements defined for FAT32 short name (8.3 alias) collision behavior on primitive firmware? [Coverage, Edge Case, Gap]
+- [x] CHK010 - Are sorting requirements defined for filenames containing spaces, underscores, or symbols after the `[XXYY-]` prefix? [Coverage, Spec §FR-008]
+- [x] CHK011 - Are requirements specified for collision handling if two source files share identical sanitized filenames? [Coverage, Edge Case, Gap]
+- [x] CHK012 - Are requirements defined for FAT32 short name (8.3 alias) collision behavior on primitive firmware? [Coverage, Edge Case, Gap]
 
 ## Measurability & Acceptance Criteria Quality
 
-- [ ] CHK013 - Can the "100% sort order reliability" criterion be objectively and deterministically measured in automated tests? [Measurability, Spec §SC-001]
-- [ ] CHK014 - Is the test playlist size and composition (track counts, character variety) explicitly quantified? [Measurability, Spec §SC-001]
-- [ ] CHK015 - Are measurable tolerance thresholds defined for path length validation across directory structures? [Acceptance Criteria, Spec §SC-007]
+- [x] CHK013 - Can the "100% sort order reliability" criterion be objectively and deterministically measured in automated tests? [Measurability, Spec §SC-001]
+- [x] CHK014 - Is the test playlist size and composition (track counts, character variety) explicitly quantified? [Measurability, Spec §SC-001]
+- [x] CHK015 - Are measurable tolerance thresholds defined for path length validation across directory structures? [Acceptance Criteria, Spec §SC-007]
 
 ## Notes
 

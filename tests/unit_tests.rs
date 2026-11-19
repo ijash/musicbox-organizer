@@ -1,3 +1,6 @@
+#[path = "unit/compatibility_tests.rs"]
+mod compatibility_tests;
+
 #[path = "unit/device_tests.rs"]
 mod device_tests;
 

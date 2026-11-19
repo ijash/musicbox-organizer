@@ -39,3 +39,7 @@ rustc-ice-*.txt
 *.profdata
 coverage/
 
+# SpecKit local runtime & caches
+.specify/.runtime/
+.specify/extensions/.cache/
+

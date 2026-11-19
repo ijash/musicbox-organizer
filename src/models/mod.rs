@@ -1,3 +1,4 @@
+mod compatibility;
 pub mod device;
 pub mod export_job;
 pub mod preferences;
@@ -5,6 +6,7 @@ pub mod project;
 pub mod session_state;
 pub mod track_metadata;
 
+pub use compatibility::{CompatibilityReport, DeviceProfile};
 pub use device::{Device, FileSystem};
 pub use export_job::{ExportJob, ExportStatus, Track};
 pub use preferences::{ExportFormatSelection, UserPreferences};

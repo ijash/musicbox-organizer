@@ -17,6 +17,7 @@ fn print_help() {
     println!("  musicbox save [path]         - Save current project locally (does NOT write to USB/SD)");
     println!("  musicbox export              - Export playlist to connected USB/SD device");
     println!("  musicbox export-text [dir]   - Export txt & rtf to playlist-text/ folder");
+    println!("  musicbox check-compat <dir>  - Audit directory for primitive device compatibility");
     println!("\nWorkflows (Save vs Export):");
     println!("  - 'Save Project' persists project metadata (.txt) locally in current directory for editing.");
     println!("  - 'Export Playlist' writes audio files with [XXYY-filename.mp3] naming to removable media.");
@@ -130,6 +131,33 @@ fn main() {
                     }
                 }
                 Err(e) => eprintln!("Export failed: {}", e),
+            }
+        }
+        "check-compat" => {
+            let target_dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
+            let path = Path::new(target_dir);
+            let service = musicbox_organizer::services::CompatibilityService::new();
+            match service.validate_directory(path) {
+                Ok(report) => {
+                    println!("============================================================");
+                    println!("Device Compatibility Audit Report for '{}'", target_dir);
+                    println!("============================================================");
+                    println!("Total audio files:     {}", report.total_files);
+                    println!("ASCII byte-order sort: {}", if report.is_sorted { "PASS" } else { "FAIL (out of order)" });
+                    println!("ASCII character check: {}", if report.ascii_violations.is_empty() { "PASS" } else { "FAIL" });
+                    println!("FAT32 path length:     {}", if report.length_violations.is_empty() { "PASS" } else { "FAIL (>255 bytes)" });
+                    println!("Naming format [XXYY-]: {}", if report.format_violations.is_empty() { "PASS" } else { "WARN (non-standard)" });
+                    println!("------------------------------------------------------------");
+                    println!("Overall status:        {}", if report.overall_compatible { "100% COMPATIBLE" } else { "INCOMPATIBLE" });
+                    if !report.ascii_violations.is_empty() {
+                        println!("Non-ASCII filenames detected: {:?}", report.ascii_violations);
+                    }
+                    if !report.length_violations.is_empty() {
+                        println!("Path length violations detected: {:?}", report.length_violations);
+                    }
+                    println!("============================================================");
+                }
+                Err(e) => eprintln!("Audit error: {}", e),
             }
         }
         "save" => {
