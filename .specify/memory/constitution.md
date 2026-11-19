@@ -1,7 +1,7 @@
 <!-- SYNC IMPACT REPORT
-Version: 1.2.0 → 1.3.0 (MINOR - add principle IX for device compatibility & lexicographic sorting)
-Modified Principles: None renamed
-Added Principles: IX (Device Compatibility & Lexicographic Sorting)
+Version: 1.3.0 → 1.4.0 (MINOR - enhance principle VI with Conventional Commits format + auto-commit behavior)
+Modified Principles: VI (Git-First Workflow → Git-First Workflow & Conventional Commits)
+Added Principles: None
 Modified Sections: None
 Removed Sections: None
 Ratification: 2026-11-19
@@ -29,8 +29,8 @@ No network calls required. No installer. App runs from any folder. No temp files
 ### V. Testable Core Logic
 Business logic (playlist parsing, ID3 editing, file scanning) decoupled from UI. Unit tests required for all non-trivial logic. UI can be thin; correctness lives in core.
 
-### VI. Git-First Workflow
-Agent handles all commits following git best practices. Commits atomic and logically coherent. Branches per feature/fix. PR required before merge to main. Commit messages: concise subject line, detailed body when needed. Force-push forbidden on shared branches. Agent rebases on main before merge to keep history clean.
+### VI. Git-First Workflow & Conventional Commits
+Agent handles all commits following git best practices and Conventional Commits v1.0.0 format. Commits atomic and logically coherent. Branches per feature/fix. PR required before merge to main. **Commit message format**: `type(scope): subject` with optional body and footer (Co-authored-by trailer required). Types: `feat:` (new feature), `fix:` (bug fix), `docs:` (documentation), `refactor:` (code restructuring), `test:` (test additions), `chore:` (build/tooling). Subject: lowercase, <50 chars, imperative mood. Body: wrap <72 chars, explain why not what. Force-push forbidden on shared branches. Agent rebases on main before merge to keep history clean. **Auto-commit on feature completion**: When a feature passes all tests and acceptance criteria, agent commits automatically without explicit instruction, organizing commits by feature (one logical unit per commit).
 
 ### VII. Rapid Development
 Speed matters. Short iteration cycles, fast feedback. No premature optimization or over-engineering. Ship working features quickly, then refine. Toolchain must support fast rebuild/reload. Dev builds unoptimized, release builds optimized. Use platform-native tools to maximize build speed.
@@ -59,6 +59,6 @@ Exported playlists MUST be compatible with primitive audio devices (portable spe
 
 Constitution is law. Violations caught in code review and PR testing gates. Amendments require ratification; version bumps follow semver (MAJOR: principle removal/redefinition, MINOR: new principle or constraint, PATCH: clarification/wording).
 
-**Git Governance**: All commits agent-created using git best practices. No manual commits allowed. Agent creates branches, manages PRs, handles rebasing/merging. Commit messages include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer. PRs reviewed before merge. No merging without passing CI tests.
+**Git Governance**: All commits agent-created using Conventional Commits v1.0.0 format per principle VI. No manual commits allowed. Agent creates branches, manages PRs, handles rebasing/merging. Commits include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer. Agent auto-commits when features complete (pass tests + acceptance criteria) without requiring explicit instruction. PRs reviewed before merge. No merging without passing CI tests.
 
-**Version**: 1.3.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
+**Version**: 1.4.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
