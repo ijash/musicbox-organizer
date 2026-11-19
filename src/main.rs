@@ -9,6 +9,8 @@ const DEFAULT_PROJECT_NAME: &str = "playlist.txt";
 fn print_help() {
     println!("MusicBox Organizer - Removable Media & Playlist Manager");
     println!("Usage:");
+    println!("  musicbox              - Launch desktop GUI window");
+    println!("  musicbox gui          - Launch desktop GUI window");
     println!("  musicbox status       - Show active project and connected removable devices");
     println!("  musicbox save [path]  - Save current project locally (does NOT write to USB/SD)");
     println!("  musicbox export       - Export playlist to connected USB/SD device");
@@ -37,7 +39,12 @@ fn auto_load_project() -> Option<ProjectFile> {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let command = args.get(1).map(|s| s.as_str()).unwrap_or("status");
+    let default_cmd = if env::var("DISPLAY").is_ok() || env::var("WAYLAND_DISPLAY").is_ok() {
+        "gui"
+    } else {
+        "status"
+    };
+    let command = args.get(1).map(|s| s.as_str()).unwrap_or(default_cmd);
 
     let project = auto_load_project().unwrap_or_else(|| {
         ProjectFile::new(PlaylistMetadata {
@@ -48,6 +55,12 @@ fn main() {
     });
 
     match command {
+        "gui" => {
+            #[cfg(target_os = "linux")]
+            musicbox_organizer::ui::gtk_ui::linux::run_gtk_app();
+            #[cfg(not(target_os = "linux"))]
+            println!("GUI not yet implemented for this platform. Use CLI commands.");
+        }
         "help" | "--help" | "-h" => {
             print_help();
         }
