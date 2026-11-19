@@ -1,0 +1,15 @@
+installed:
+- deja-vu
+settings:
+  auto_execute_hooks: true
+hooks:
+  before_implement:
+  - extension: deja-vu
+    command: speckit.deja-vu.recall
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Check past sessions for this feature before implementing?
+    description: Searches past agent sessions with deja for earlier attempts at this
+      feature. Read-only.
+    condition: null

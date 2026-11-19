@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "deja-vu": {
+      "version": "0.24.2",
+      "source": "local",
+      "manifest_hash": "sha256:401382ac7946c01eef76032742bfd6d549d77c7f20bff45d50a9adea4510fb91",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {},
+      "registered_skills": [
+        "speckit-deja-vu-recall"
+      ],
+      "installed_at": "2026-11-19T12:08:19.651285+00:00"
+    }
+  }
+}
