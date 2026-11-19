@@ -16,6 +16,8 @@
 - Q: If export fails mid-operation (device becomes full or is unplugged), should the app delete any partial files already written to the device, or leave them for the user to manually clean up? → A: Leave partial files on device; user can manually delete them or reformat before retrying export.
 - Q: What latency or update frequency should the progress display use to satisfy "app remains responsive" during export? → A: Update progress display at least every 500 ms (2 updates/second); detect and report device disconnection within 5 seconds.
 - Q: What do XXYY in the naming convention [XXYY-filename.mp3] represent, and how is this sequence derived from the playlist? → A: XXYY = base-26 alphabetic sequence (AAAA, AAAB, AAAC, ABAA, ABAB, …) corresponding to track index; lexicographically sortable on primitive devices.
+- Q: Should the project file format be a plain text file (.txt) or an app-specific binary/structured format? → A: Plain text (.txt) format; human-readable, editable, lightweight; aligns with Offline-First & Portable principle.
+- Q: Should the app support reformatting to NTFS in v1, or defer NTFS support to v2+ and focus only on FAT32 and exFAT? → A: v1 supports FAT32 and exFAT only; defer NTFS to v2+. Aligns with Lightweight First and Rapid Development principles.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -63,7 +65,7 @@ App supports two distinct operations: Save (persist project file locally for fut
 
 **Acceptance Scenarios**:
 
-1. **Given** user has organized playlist in app, **When** user clicks Save, **Then** project file (.txt or app-specific format) is saved to current working directory for future edits
+1. **Given** user has organized playlist in app, **When** user clicks Save, **Then** project file (.txt plain text) is saved to current working directory for future edits
 2. **Given** user clicks Export, **When** export completes, **Then** only playlist media files are written to device; no project metadata is copied
 3. **Given** user saves project and later exports playlist, **When** user returns to app, **Then** project state is restored from local file (independent of any prior export)
 
@@ -84,7 +86,7 @@ App supports two distinct operations: Save (persist project file locally for fut
 ### Functional Requirements
 
 - **FR-001**: App MUST detect and list all connected USB drives and SD card readers as removable devices (exclude internal/system drives); if no devices connected, display empty list with message "No removable devices detected. Connect a USB drive or SD card to proceed." and disable Export button
-- **FR-002**: App MUST display device info for each device: device name, capacity (GB), filesystem type (FAT32, exFAT, NTFS), available space
+- **FR-002**: App MUST display device info for each device: device name, capacity (GB), filesystem type (FAT32, exFAT), available space
 - **FR-003**: App MUST provide two export modes: "Export" (write files to existing filesystem) and "Reformat & Export" (erase device, write files)
 - **FR-004**: App MUST display a prominent, dismissible warning dialog when user selects "Reformat & Export", showing device name and data-loss message; user must explicitly confirm before proceeding
 - **FR-005**: App MUST estimate required storage (based on playlist file count and average size) and warn user if device has insufficient free space; user can retry with subset or cancel
@@ -101,7 +103,7 @@ App supports two distinct operations: Save (persist project file locally for fut
 
 - **Removable Device**: USB drive, SD card reader, or similar. Attributes: device name, mount path, filesystem type, total capacity, available space, write-protected status
 - **Export Configuration**: target device, export mode (normal/reformat), target directory on device, file subset (all or selected files)
-- **Project File**: Local file storing playlist organization state. Attributes: file path (current working directory), format (.txt or app-native), last modified timestamp, playlist metadata
+- **Project File**: Local file storing playlist organization state. Attributes: file path (current working directory), format (.txt plain text), last modified timestamp, playlist metadata
 
 ## Success Criteria *(mandatory)*
 
