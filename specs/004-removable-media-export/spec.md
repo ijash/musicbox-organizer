@@ -18,6 +18,16 @@
 - Q: What do XXYY in the naming convention [XXYY-filename.mp3] represent, and how is this sequence derived from the playlist? → A: XXYY = base-26 alphabetic sequence (AAAA, AAAB, AAAC, ABAA, ABAB, …) corresponding to track index; lexicographically sortable on primitive devices.
 - Q: Should the project file format be a plain text file (.txt) or an app-specific binary/structured format? → A: Plain text (.txt) format; human-readable, editable, lightweight; aligns with Offline-First & Portable principle.
 - Q: Should the app support reformatting to NTFS in v1, or defer NTFS support to v2+ and focus only on FAT32 and exFAT? → A: v1 supports FAT32 and exFAT only; defer NTFS to v2+. Aligns with Lightweight First and Rapid Development principles.
+- Q: What are the valid state transitions for an ExportJob, and what triggers each transition? → A: States: PENDING, FORMATTING, IN_PROGRESS, COMPLETED, FAILED, CANCELLED. Triggers: PENDING→FORMATTING (user confirms reformat), PENDING→IN_PROGRESS (user confirms export without reformat), FORMATTING→IN_PROGRESS (reformat completes), IN_PROGRESS→COMPLETED (export succeeds), any state→FAILED (device error), any state→CANCELLED (user cancels).
+- Q: When the reformat warning dialog appears, should it be modal (blocks app) or non-blocking? → A: Modal dialog that blocks all app interaction until user confirms or cancels. Prevents accidental data loss (SC-002).
+- Q: When user cancels reformat after confirming the warning, what state should ExportJob return to? → A: Return to PENDING state for seamless retry; user can reconnect device or select different device.
+- Q: When export fails mid-operation with partial files remaining, should ExportJob return to PENDING or resume from IN_PROGRESS? → A: Return to PENDING. Simpler to implement; user reconnects device and retries export fresh without partial state tracking.
+- Q: What is the maximum allowed UI freeze duration during export to satisfy "app remains responsive"? → A: ≤100 ms max UI freeze. Allows progress updates every 500 ms while keeping UI feel snappy (human perception threshold ~100–200 ms).
+- Q: When the app detects device validation failure (non-removable, write-protected, too small, insufficient space), what should the error message be? → A: Specific error message per failure type. Examples: "Device is internal (not removable). Select USB or SD card." / "Device is write-protected. Check physical write-protect switch." / "Device too small (need X GB, have Y GB)." / "Insufficient space. Export subset or use larger device."
+- Q: Should reformat confirmation be a single step (warning dialog only) or two steps (checkbox + warning)? → A: Two-step confirmation. User must first opt into reformat via checkbox, then explicitly confirm in warning dialog. Prevents accidental data loss.
+- Q: Which buttons in reformat warning dialog: Cancel + Confirm only, or include X close button? → A: Cancel and Confirm buttons only (no X close button). Forces explicit user choice; prevents accidental dismissal.
+- Q: For write-protected device detection, pre-check or attempt write? → A: Pre-check before write attempt. Detect write-protect when device enumerated; display error immediately. Prevents wasted export attempts.
+- Q: Should all edge cases map to FR/SC requirements? → A: Yes. All Edge Cases must map to at least one FR or SC for testability. Unmapped edge cases risk inconsistent behavior.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -73,13 +83,13 @@ App supports two distinct operations: Save (persist project file locally for fut
 
 ### Edge Cases
 
-- What happens if no removable devices are connected when user opens Export dialog? (App displays empty device list with message "No removable devices detected. Connect a USB drive or SD card to proceed." and disables Export button until device connected)
-- What happens if user connects multiple USB/SD cards? (App should list all; user selects specific device; export targets only that device)
-- What if device is write-protected or read-only? (App should detect and display error before attempting write; suggest checking physical write-protect switch)
-- What if device becomes disconnected during export? (App should detect mid-operation, abort gracefully, and warn user to reconnect and retry)
-- What if export fails mid-operation and partial files written? (App leaves partial files on device; user can manually delete or reformat before retrying)
-- What if device is too small for full playlist? (App should estimate required space, warn user if insufficient, and allow user to select subset of files or cancel)
-- What if user selects a system drive or OS partition by mistake? (App should whitelist removable media only, reject internal drives, and warn if user tries to export to non-removable path)
+- What happens if no removable devices are connected when user opens Export dialog? (App displays empty device list with message "No removable devices detected. Connect a USB drive or SD card to proceed." and disables Export button until device connected. Maps to FR-001, SC-001.)
+- What happens if user connects multiple USB/SD cards? (App lists all detected devices; user selects specific device; export targets only that device. Maps to FR-001, FR-002.)
+- What if device is write-protected or read-only? (App pre-checks device when enumerated; displays error "Device is write-protected. Check the physical write-protect switch on the device." before export attempt. Maps to FR-010, SC-004.)
+- What if device becomes disconnected during export? (App detects mid-operation within 5 seconds, aborts gracefully, displays error, allows user to reconnect and retry. Maps to FR-009, SC-006.)
+- What if export fails mid-operation and partial files written? (App leaves partial files on device; ExportJob returns to PENDING state; user can manually delete or reformat before retrying. Maps to FR-009, SC-006.)
+- What if device is too small for full playlist? (App estimates required storage; if insufficient, displays error "Insufficient space. Device has X GB available, need Y GB for full playlist." User can export subset or cancel. Maps to FR-005, SC-004.)
+- What if user selects a system drive or OS partition by mistake? (App pre-checks device type on enumeration; rejects with error "Device is internal (not removable). Select a USB or SD card instead."; disables export button for non-removable devices. Maps to FR-006, SC-004.)
 
 ## Requirements *(mandatory)*
 
@@ -87,14 +97,14 @@ App supports two distinct operations: Save (persist project file locally for fut
 
 - **FR-001**: App MUST detect and list all connected USB drives and SD card readers as removable devices (exclude internal/system drives); if no devices connected, display empty list with message "No removable devices detected. Connect a USB drive or SD card to proceed." and disable Export button
 - **FR-002**: App MUST display device info for each device: device name, capacity (GB), filesystem type (FAT32, exFAT), available space
-- **FR-003**: App MUST provide two export modes: "Export" (write files to existing filesystem) and "Reformat & Export" (erase device, write files)
-- **FR-004**: App MUST display a prominent, dismissible warning dialog when user selects "Reformat & Export", showing device name and data-loss message; user must explicitly confirm before proceeding
-- **FR-005**: App MUST estimate required storage (based on playlist file count and average size) and warn user if device has insufficient free space; user can retry with subset or cancel
-- **FR-006**: App MUST reject export to non-removable devices (internal drives, OS partitions); show error message if user attempts this
+- **FR-003**: App MUST provide two export modes: "Export" (write files to existing filesystem) and "Reformat & Export" (erase device, write files). Reformat mode requires two-step confirmation: (1) user selects "Reformat device" checkbox in export dialog, (2) user confirms in modal warning dialog
+- **FR-004**: App MUST display a modal warning dialog (blocks all app interaction) when user confirms reformat selection, showing device name and data-loss message; dialog has Cancel and Confirm buttons only (no X close button); user must click Confirm to proceed or Cancel to abort
+- **FR-005**: App MUST estimate required storage (based on playlist file count and average size) and warn user if device has insufficient free space with message "Insufficient space. Device has X GB available, need Y GB for full playlist." User can retry with subset or cancel
+- **FR-006**: App MUST reject export to non-removable devices (internal drives, OS partitions) with pre-check when device is enumerated (before export attempt); display error message "Device is internal (not removable). Select a USB or SD card instead."
 - **FR-007**: App MUST support exporting to device root directory or user-specified subdirectory on device
 - **FR-008**: App MUST write playlist files with [XXYY-filename.mp3] naming convention where XXYY is base-26 alphabetic sequence (AAAA, AAAB, AAAC, ABAA, ABAB, …) corresponding to track index, ensuring lexicographical sort order on primitive devices compatible with device compatibility standard (spec v003)
 - **FR-009**: App MUST handle mid-operation disconnection: if device is unplugged during export, abort gracefully, display error, allow user to reconnect and retry; partial files remain on device (user can manually clean or reformat)
-- **FR-010**: App MUST detect write-protected devices and display error message before attempting write; suggest checking physical write-protect switch
+- **FR-010**: App MUST pre-check for write-protected devices when device is enumerated (before export attempt) and display error message "Device is write-protected. Check the physical write-protect switch on the device."
 - **FR-011**: App MUST save project file locally (to current working directory or user-specified path) independently of any export operation; project save and device export are separate workflows
 - **FR-012**: App MUST display export progress (files written, percentage complete, elapsed time) during export operation; update display at least every 500 ms (2 Hz minimum)
 - **FR-013**: App MUST provide "Eject Device" button after successful export to safely unmount device (platform-appropriate eject command)
@@ -103,6 +113,7 @@ App supports two distinct operations: Save (persist project file locally for fut
 
 - **Removable Device**: USB drive, SD card reader, or similar. Attributes: device name, mount path, filesystem type, total capacity, available space, write-protected status
 - **Export Configuration**: target device, export mode (normal/reformat), target directory on device, file subset (all or selected files)
+- **ExportJob State Machine**: States: PENDING (initial), FORMATTING (device reformat in progress), IN_PROGRESS (file export in progress), COMPLETED (export succeeded), FAILED (device error), CANCELLED (user canceled). Valid transitions: PENDING→FORMATTING (user confirms reformat), PENDING→IN_PROGRESS (user confirms export without reformat), FORMATTING→IN_PROGRESS (reformat completes), IN_PROGRESS→COMPLETED (export succeeds), any state→FAILED (device error), any state→CANCELLED (user cancels). On user cancel during reformat or export failure mid-operation: return to PENDING state for seamless retry.
 - **Project File**: Local file storing playlist organization state. Attributes: file path (current working directory), format (.txt plain text), last modified timestamp, playlist metadata
 
 ## Success Criteria *(mandatory)*
@@ -110,13 +121,13 @@ App supports two distinct operations: Save (persist project file locally for fut
 ### Measurable Outcomes
 
 - **SC-001**: Users can select a device and complete export to USB/SD within 30 seconds (after device list is displayed)
-- **SC-002**: Reformat warning is displayed in a modal dialog that blocks further action until user confirms or cancels; no accidental reformats possible
+- **SC-002**: Reformat warning is displayed in a modal dialog (blocks all app interaction) until user confirms or cancels; no accidental reformats possible
 - **SC-003**: 100% of exported files appear on target device with correct naming convention and file count matches export selection
 - **SC-004**: No files are written to non-removable devices or system partitions; attempts are rejected with clear error messages
 - **SC-005**: Export completes successfully on at least 3 different device types (USB 2.0, USB 3.0, SD card reader) without user intervention
 - **SC-006**: Device disconnection mid-export is detected within 5 seconds and reported to user with error message; export can be retried
 - **SC-007**: Project save and export operations are independent; saving project does not affect device selection or export, and vice versa
-- **SC-008**: App remains responsive during export: progress display updates at least every 500 ms (2 Hz); no UI freeze; user can monitor status in real time
+- **SC-008**: App remains responsive during export: progress display updates at least every 500 ms (2 Hz); max UI freeze ≤100 ms; user can monitor status in real time
 
 ## Assumptions
 
