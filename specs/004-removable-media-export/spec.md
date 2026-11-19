@@ -8,6 +8,15 @@
 
 **Input**: User description: "it can choose active sd card or usb that plugged in, and choose action to export it. it should display warning before reformat. what i mean by saving the sorting project is in the current dir, not exporting to sd card. so mind the export and save difference."
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: If no removable devices are currently connected when user opens the Export dialog, what should the app display or do? → A: Display empty device list with informational message "No removable devices detected. Connect a USB drive or SD card to proceed." and disable the Export button until a device is connected.
+- Q: If export fails mid-operation (device becomes full or is unplugged), should the app delete any partial files already written to the device, or leave them for the user to manually clean up? → A: Leave partial files on device; user can manually delete them or reformat before retrying export.
+- Q: What latency or update frequency should the progress display use to satisfy "app remains responsive" during export? → A: Update progress display at least every 500 ms (2 updates/second); detect and report device disconnection within 5 seconds.
+- Q: What do XXYY in the naming convention [XXYY-filename.mp3] represent, and how is this sequence derived from the playlist? → A: XXYY = base-26 alphabetic sequence (AAAA, AAAB, AAAC, ABAA, ABAB, …) corresponding to track index; lexicographically sortable on primitive devices.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Select and Export Playlist to USB/SD Card (Priority: P1)
@@ -62,9 +71,11 @@ App supports two distinct operations: Save (persist project file locally for fut
 
 ### Edge Cases
 
+- What happens if no removable devices are connected when user opens Export dialog? (App displays empty device list with message "No removable devices detected. Connect a USB drive or SD card to proceed." and disables Export button until device connected)
 - What happens if user connects multiple USB/SD cards? (App should list all; user selects specific device; export targets only that device)
 - What if device is write-protected or read-only? (App should detect and display error before attempting write; suggest checking physical write-protect switch)
 - What if device becomes disconnected during export? (App should detect mid-operation, abort gracefully, and warn user to reconnect and retry)
+- What if export fails mid-operation and partial files written? (App leaves partial files on device; user can manually delete or reformat before retrying)
 - What if device is too small for full playlist? (App should estimate required space, warn user if insufficient, and allow user to select subset of files or cancel)
 - What if user selects a system drive or OS partition by mistake? (App should whitelist removable media only, reject internal drives, and warn if user tries to export to non-removable path)
 
@@ -72,18 +83,18 @@ App supports two distinct operations: Save (persist project file locally for fut
 
 ### Functional Requirements
 
-- **FR-001**: App MUST detect and list all connected USB drives and SD card readers as removable devices (exclude internal/system drives)
+- **FR-001**: App MUST detect and list all connected USB drives and SD card readers as removable devices (exclude internal/system drives); if no devices connected, display empty list with message "No removable devices detected. Connect a USB drive or SD card to proceed." and disable Export button
 - **FR-002**: App MUST display device info for each device: device name, capacity (GB), filesystem type (FAT32, exFAT, NTFS), available space
 - **FR-003**: App MUST provide two export modes: "Export" (write files to existing filesystem) and "Reformat & Export" (erase device, write files)
 - **FR-004**: App MUST display a prominent, dismissible warning dialog when user selects "Reformat & Export", showing device name and data-loss message; user must explicitly confirm before proceeding
 - **FR-005**: App MUST estimate required storage (based on playlist file count and average size) and warn user if device has insufficient free space; user can retry with subset or cancel
 - **FR-006**: App MUST reject export to non-removable devices (internal drives, OS partitions); show error message if user attempts this
 - **FR-007**: App MUST support exporting to device root directory or user-specified subdirectory on device
-- **FR-008**: App MUST write playlist files with [XXYY-filename.mp3] naming convention to target device, following device compatibility naming standard (spec v003)
-- **FR-009**: App MUST handle mid-operation disconnection: if device is unplugged during export, abort gracefully, display error, allow user to reconnect and retry
+- **FR-008**: App MUST write playlist files with [XXYY-filename.mp3] naming convention where XXYY is base-26 alphabetic sequence (AAAA, AAAB, AAAC, ABAA, ABAB, …) corresponding to track index, ensuring lexicographical sort order on primitive devices compatible with device compatibility standard (spec v003)
+- **FR-009**: App MUST handle mid-operation disconnection: if device is unplugged during export, abort gracefully, display error, allow user to reconnect and retry; partial files remain on device (user can manually clean or reformat)
 - **FR-010**: App MUST detect write-protected devices and display error message before attempting write; suggest checking physical write-protect switch
 - **FR-011**: App MUST save project file locally (to current working directory or user-specified path) independently of any export operation; project save and device export are separate workflows
-- **FR-012**: App MUST display export progress (files written, percentage complete, elapsed time) during export operation
+- **FR-012**: App MUST display export progress (files written, percentage complete, elapsed time) during export operation; update display at least every 500 ms (2 Hz minimum)
 - **FR-013**: App MUST provide "Eject Device" button after successful export to safely unmount device (platform-appropriate eject command)
 
 ### Key Entities
@@ -103,7 +114,7 @@ App supports two distinct operations: Save (persist project file locally for fut
 - **SC-005**: Export completes successfully on at least 3 different device types (USB 2.0, USB 3.0, SD card reader) without user intervention
 - **SC-006**: Device disconnection mid-export is detected within 5 seconds and reported to user with error message; export can be retried
 - **SC-007**: Project save and export operations are independent; saving project does not affect device selection or export, and vice versa
-- **SC-008**: App remains responsive during export (progress display updates, user can monitor status); no UI freeze
+- **SC-008**: App remains responsive during export: progress display updates at least every 500 ms (2 Hz); no UI freeze; user can monitor status in real time
 
 ## Assumptions
 
