@@ -78,7 +78,7 @@ App reserves architectural space for future audio editing features (looping, vol
 - **FR-004**: System MUST provide Export button accessible from main UI
 - **FR-005**: System MUST display export dialog showing format selection checkboxes for txt, rtf, and docx
 - **FR-006**: System MUST allow user to check/uncheck any combination of formats in the export dialog
-- **FR-007**: System MUST validate that at least one format is selected before allowing export to proceed [NEEDS CLARIFICATION: should unchecking all formats show error, auto-enable one format, or disable Confirm button?]
+- **FR-007**: System MUST validate that at least one format is selected before allowing export to proceed by disabling the Confirm/Export button when no format is checked
 - **FR-008**: System MUST implement clear-all behavior: delete all existing files in playlist-text directory before writing new exports
 - **FR-009**: System MUST create playlist-text directory if it does not exist in current directory
 - **FR-010**: System MUST write exported files with standard names: playlist.txt, playlist.rtf, playlist.docx (only for selected formats)

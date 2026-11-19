@@ -16,6 +16,7 @@ fn print_help() {
     println!("  musicbox status              - Show active project and connected removable devices");
     println!("  musicbox save [path]         - Save current project locally (does NOT write to USB/SD)");
     println!("  musicbox export              - Export playlist to connected USB/SD device");
+    println!("  musicbox export-text [dir]   - Export txt & rtf to playlist-text/ folder");
     println!("\nWorkflows (Save vs Export):");
     println!("  - 'Save Project' persists project metadata (.txt) locally in current directory for editing.");
     println!("  - 'Export Playlist' writes audio files with [XXYY-filename.mp3] naming to removable media.");
@@ -113,6 +114,23 @@ fn main() {
         }
         "help" | "--help" | "-h" => {
             print_help();
+        }
+        "export-text" => {
+            let base_dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
+            let service = musicbox_organizer::services::ExportConfigService::new();
+            let selection = musicbox_organizer::models::ExportFormatSelection {
+                txt: true,
+                rtf: true,
+            };
+            match service.export_playlist(Path::new(base_dir), &selection, &project) {
+                Ok(files) => {
+                    println!("Exported {} playlist files to '{}/playlist-text/':", files.len(), base_dir);
+                    for f in files {
+                        println!("  - {}", f.display());
+                    }
+                }
+                Err(e) => eprintln!("Export failed: {}", e),
+            }
         }
         "save" => {
             let target_path = args.get(2).map(|s| s.as_str()).unwrap_or(DEFAULT_PROJECT_NAME);

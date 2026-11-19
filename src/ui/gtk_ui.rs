@@ -10,7 +10,7 @@ pub mod linux {
     use crate::models::{FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, SessionState, Track};
     use crate::services::{
         create_device_manager, AudioPreviewPlayer, DirectoryScanner, ExportService, Id3Service,
-        RtfExporter, naming,
+        naming,
     };
     use crate::ui::ExportDialog;
     use crate::ui::warnings::ReformatWarningDialog;
@@ -130,8 +130,9 @@ pub mod linux {
         let dialog_state = Rc::new(RefCell::new(ExportDialog::new()));
         let audio_player = Rc::new(RefCell::new(AudioPreviewPlayer::new()));
 
+        let user_prefs = Rc::new(RefCell::new(crate::models::UserPreferences::load_from_dir(".")));
+        let is_dark_mode = Rc::new(RefCell::new(user_prefs.borrow().dark_mode));
         let css_provider = CssProvider::new();
-        let is_dark_mode = Rc::new(RefCell::new(true));
 
         let window = Window::new(WindowType::Toplevel);
         window.set_title("MusicBox Organizer");
@@ -189,22 +190,25 @@ pub mod linux {
         apply_theme(*is_dark_mode.borrow());
 
         // --- Action Buttons Toolbar ---
-        let toolbar_box = GtkBox::new(Orientation::Horizontal, 8);
+        let toolbar_box = GtkBox::new(Orientation::Horizontal, 6);
         let scan_dir_btn = Button::with_label("📁 Scan Folder...");
-        let add_track_btn = Button::with_label("+ Add MP3 File");
-        let move_up_btn = Button::with_label("▲ Move Up");
-        let move_down_btn = Button::with_label("▼ Move Down");
-        let export_rtf_btn = Button::with_label("📄 Export RTF");
-        let save_project_btn = Button::with_label("💾 Save Project (.txt)");
-        let open_project_btn = Button::with_label("📂 Open Project (.txt)");
+        let add_track_btn = Button::with_label("+ Add MP3");
+        let move_up_btn = Button::with_label("▲ Up");
+        let move_down_btn = Button::with_label("▼ Down");
+        let audio_tools_btn = Button::with_label("🎛 Audio Tools (Soon)");
+        audio_tools_btn.set_sensitive(false);
+        let export_formats_btn = Button::with_label("📄 Export Text/RTF...");
+        let save_project_btn = Button::with_label("💾 Save");
+        let open_project_btn = Button::with_label("📂 Open");
 
         toolbar_box.pack_start(&scan_dir_btn, false, false, 0);
         toolbar_box.pack_start(&add_track_btn, false, false, 0);
         toolbar_box.pack_start(&move_up_btn, false, false, 0);
         toolbar_box.pack_start(&move_down_btn, false, false, 0);
+        toolbar_box.pack_start(&audio_tools_btn, false, false, 0);
         toolbar_box.pack_end(&save_project_btn, false, false, 0);
         toolbar_box.pack_end(&open_project_btn, false, false, 0);
-        toolbar_box.pack_end(&export_rtf_btn, false, false, 0);
+        toolbar_box.pack_end(&export_formats_btn, false, false, 0);
         root_box.pack_start(&toolbar_box, false, false, 0);
 
         // --- Playlist Table ---
@@ -451,11 +455,15 @@ pub mod linux {
         // Theme Toggle (FR-017, FR-018)
         {
             let is_dark_mode = Rc::clone(&is_dark_mode);
+            let user_prefs = Rc::clone(&user_prefs);
             let apply_theme = apply_theme.clone();
             theme_btn.connect_clicked(move |_| {
                 let mut dark = is_dark_mode.borrow_mut();
                 *dark = !*dark;
                 apply_theme(*dark);
+                let mut prefs = user_prefs.borrow_mut();
+                prefs.dark_mode = *dark;
+                prefs.save_to_dir(".").ok();
             });
         }
 
@@ -685,47 +693,111 @@ pub mod linux {
             });
         }
 
-        // Export RTF Button (FR-015, US6)
+        // Multi-Format Export Button (FR-004 to FR-010)
         {
             let window_clone = window.clone();
             let project = Rc::clone(&project);
+            let user_prefs = Rc::clone(&user_prefs);
             let status_label = status_label.clone();
-            export_rtf_btn.connect_clicked(move |_| {
-                let chooser = FileChooserDialog::new(
-                    Some("Export Playlist to RTF"),
-                    Some(&window_clone),
-                    FileChooserAction::Save,
-                );
-                chooser.add_button("Cancel", ResponseType::Cancel);
-                chooser.add_button("Export RTF", ResponseType::Accept);
-                chooser.set_current_name("playlist.rtf");
+            export_formats_btn.connect_clicked(move |_| {
+                let p = project.borrow();
+                if p.tracks.is_empty() {
+                    status_label.set_text("Playlist is empty; nothing to export.");
+                    return;
+                }
 
-                if chooser.run() == ResponseType::Accept {
-                    if let Some(file) = chooser.filename() {
-                        let p = project.borrow();
-                        let tracks: Vec<crate::models::OrganizerTrack> = p
-                            .tracks
-                            .iter()
-                            .map(|t| {
-                                let mut meta = crate::models::TrackMetadata::default();
-                                meta.title = t.title.clone();
-                                meta.artist = t.artist.clone();
-                                crate::models::OrganizerTrack::new(
-                                    t.index,
-                                    PathBuf::from(&t.file_path),
-                                    meta,
-                                    "AAAA".into(),
-                                )
-                            })
-                            .collect();
-                        match RtfExporter::export_to_file(&file, &p.metadata.name, &tracks) {
-                            Ok(_) => status_label
-                                .set_text(&format!("Exported RTF to {}", file.display())),
-                            Err(e) => status_label.set_text(&format!("RTF export failed: {}", e)),
+                let dlg = Dialog::with_buttons(
+                    Some("Export Playlist to 'playlist-text/'"),
+                    Some(&window_clone),
+                    DialogFlags::MODAL | DialogFlags::DESTROY_WITH_PARENT,
+                    &[
+                        ("Cancel", ResponseType::Cancel),
+                        ("Export", ResponseType::Accept),
+                    ],
+                );
+
+                let content_area = dlg.content_area();
+                content_area.set_spacing(8);
+                content_area.set_margin_start(16);
+                content_area.set_margin_end(16);
+                content_area.set_margin_top(12);
+                content_area.set_margin_bottom(12);
+
+                let info = Label::new(Some("Select formats to generate in playlist-text/ folder:"));
+                info.set_xalign(0.0);
+                content_area.pack_start(&info, false, false, 0);
+
+                let check_txt = CheckButton::with_label("Plain Text (.txt)");
+                let check_rtf = CheckButton::with_label("Rich Text Format (.rtf)");
+
+                let current_prefs = user_prefs.borrow();
+                check_txt.set_active(current_prefs.formats.txt);
+                check_rtf.set_active(current_prefs.formats.rtf);
+                drop(current_prefs);
+
+                content_area.pack_start(&check_txt, false, false, 0);
+                content_area.pack_start(&check_rtf, false, false, 0);
+
+                // FR-007: Validate at least one format is selected
+                let confirm_btn = dlg.widget_for_response(ResponseType::Accept).unwrap();
+                let validate = {
+                    let check_txt = check_txt.clone();
+                    let check_rtf = check_rtf.clone();
+                    let confirm_btn = confirm_btn.clone();
+                    move || {
+                        let has_any = check_txt.is_active() || check_rtf.is_active();
+                        confirm_btn.set_sensitive(has_any);
+                    }
+                };
+
+                validate();
+                check_txt.connect_toggled({
+                    let val = validate.clone();
+                    move |_| val()
+                });
+                check_rtf.connect_toggled({
+                    let val = validate.clone();
+                    move |_| val()
+                });
+
+                dlg.show_all();
+                let resp = dlg.run();
+
+                let is_txt = check_txt.is_active();
+                let is_rtf = check_rtf.is_active();
+                dlg.close();
+
+                if resp == ResponseType::Accept {
+                    let mut prefs = user_prefs.borrow_mut();
+                    prefs.formats.txt = is_txt;
+                    prefs.formats.rtf = is_rtf;
+                    prefs.save_to_dir(".").ok();
+                    drop(prefs);
+
+                    let service = crate::services::ExportConfigService::new();
+                    let selection = crate::models::ExportFormatSelection {
+                        txt: is_txt,
+                        rtf: is_rtf,
+                    };
+                    match service.export_playlist(Path::new("."), &selection, &p) {
+                        Ok(written) => {
+                            let names: Vec<String> = written
+                                .iter()
+                                .map(|f| {
+                                    f.file_name()
+                                        .unwrap_or_default()
+                                        .to_string_lossy()
+                                        .to_string()
+                                })
+                                .collect();
+                            status_label.set_text(&format!(
+                                "Exported to playlist-text/: {}",
+                                names.join(", ")
+                            ));
                         }
+                        Err(e) => status_label.set_text(&format!("Export failed: {}", e)),
                     }
                 }
-                chooser.close();
             });
         }
 
