@@ -8,6 +8,12 @@
 
 **Input**: User description: "- buat spek script/harness untuk testing gui. pake `Relm4`, `xvfb` - buat icon2 terstandarisasi pakai https://github.com/Relm4/icons . dan wajib dimasukan ke binary untuk icon yang terpakai."
 
+## Clarifications
+
+### Session 2026-11-20
+
+- Q: How should the Relm4 icons be integrated into the application binary? → A: Option A - Use `relm4-icons` with fine-grained feature flags for only in-use icons to compile only referenced SVG vector assets into the binary.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Headless & Automated GUI Interaction Testing (Priority: P1)
@@ -60,7 +66,7 @@ Application toolbars and buttons display standard, crisp vector/symbolic icons s
   - Audio preview playback triggers (Play, Pause, Stop).
   - Theme toggling (Dark Mode to Light Mode and back).
   - Export dialog open and format selection.
-- **FR-003**: System MUST adopt standardized vector icons sourced from `relm4-icons`.
+- **FR-003**: System MUST adopt standardized vector icons sourced from `relm4-icons` with custom feature flags enabled only for in-use icons.
 - **FR-004**: Only in-use icons MUST be compiled into the binary to prevent binary bloat (preserving Constitution Principle I: <50 MB target, <2 MB actual).
 - **FR-005**: All toolbar buttons (Folder Scan, Add MP3, Remove, Up, Down, Audio Controls, Save, Open, Export) MUST use standardized symbolic icons with appropriate accessibility labels.
 
