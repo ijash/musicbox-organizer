@@ -3,8 +3,8 @@ pub mod linux {
     use gtk::prelude::*;
     use gtk::{
         Box as GtkBox, Button, CellRendererText, CheckButton, ComboBoxText, CssProvider, Dialog,
-        DialogFlags, Entry, FileChooserAction, FileChooserDialog, Frame, Image, Label, ListStore,
-        Orientation, ProgressBar, ResponseType, ScrolledWindow, StyleContext, TreeView,
+        DialogFlags, Entry, FileChooserAction, FileChooserDialog, Frame, Image, Label, LinkButton,
+        ListStore, Orientation, ProgressBar, ResponseType, ScrolledWindow, StyleContext, TreeView,
         TreeViewColumn, Window, WindowPosition, WindowType, STYLE_PROVIDER_PRIORITY_USER,
     };
     use crate::models::{FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, SessionState, Track};
@@ -15,8 +15,11 @@ pub mod linux {
     use crate::ui::ExportDialog;
     use crate::ui::warnings::ReformatWarningDialog;
     use std::cell::RefCell;
+    use std::io::Cursor;
     use std::path::{Path, PathBuf};
     use std::rc::Rc;
+
+    const APP_LOGO_PNG: &[u8] = include_bytes!("../../img/logo/png/logo_mbo_128.png");
 
     const LIGHT_CSS: &str = "
         window, dialog, popover {
@@ -139,18 +142,9 @@ pub mod linux {
         window.set_default_size(740, 520);
         window.set_position(WindowPosition::Center);
 
-        // Window icon / favicon (FR-001)
-        let icon_paths = [
-            "img/logo/png/logo_mbo_128.png",
-            "img/logo/ico/favicon.ico",
-            "img/logo/png/logo_mbo_256.png",
-        ];
-        for icon_path in &icon_paths {
-            if Path::new(icon_path).exists() {
-                if window.set_icon_from_file(icon_path).is_ok() {
-                    break;
-                }
-            }
+        // Window icon / favicon using embedded logo bytes (100% reliable across working dirs)
+        if let Ok(pixbuf) = gtk::gdk_pixbuf::Pixbuf::from_read(Cursor::new(APP_LOGO_PNG)) {
+            window.set_icon(Some(&pixbuf));
         }
 
         let root_box = GtkBox::new(Orientation::Vertical, 6);
@@ -162,11 +156,10 @@ pub mod linux {
         // --- Top Header Bar ---
         let header_box = GtkBox::new(Orientation::Horizontal, 8);
 
-        // Header logo image (FR-002, FR-005)
-        let logo_image_path = "img/logo/png/logo_mbo_128.png";
-        if Path::new(logo_image_path).exists() {
-            if let Ok(pixbuf) = gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(logo_image_path, 24, 24, true) {
-                let logo_img = Image::from_pixbuf(Some(&pixbuf));
+        // Header logo image embedded from bytes
+        if let Ok(pixbuf) = gtk::gdk_pixbuf::Pixbuf::from_read(Cursor::new(APP_LOGO_PNG)) {
+            if let Some(scaled) = pixbuf.scale_simple(24, 24, gtk::gdk_pixbuf::InterpType::Bilinear) {
+                let logo_img = Image::from_pixbuf(Some(&scaled));
                 header_box.pack_start(&logo_img, false, false, 0);
             }
         }
@@ -181,31 +174,14 @@ pub mod linux {
         drop(p);
         header_box.pack_start(&project_label, true, true, 0);
 
-        let github_btn = Button::with_label("GitHub ↗");
         let undo_btn = Button::with_label("↺ Undo");
         let redo_btn = Button::with_label("↻ Redo");
         let theme_btn = Button::with_label("☀ Theme: Dark");
 
-        header_box.pack_end(&github_btn, false, false, 0);
         header_box.pack_end(&theme_btn, false, false, 0);
         header_box.pack_end(&redo_btn, false, false, 0);
         header_box.pack_end(&undo_btn, false, false, 0);
         root_box.pack_start(&header_box, false, false, 0);
-
-        // GitHub ↗ button click handler (FR-003, FR-004)
-        {
-            let window_clone = window.clone();
-            github_btn.connect_clicked(move |_| {
-                const REPO_URL: &str = "https://github.com/ijash/musicbox-organizer";
-                if gtk::show_uri_on_window(Some(&window_clone), REPO_URL, 0).is_err() {
-                    // Fallback to platform browser opener if gtk::show_uri fails
-                    std::process::Command::new("xdg-open")
-                        .arg(REPO_URL)
-                        .spawn()
-                        .ok();
-                }
-            });
-        }
 
         let apply_theme = {
             let css_provider = css_provider.clone();
@@ -369,6 +345,15 @@ pub mod linux {
 
         export_frame.add(&frame_box);
         root_box.pack_start(&export_frame, false, false, 0);
+
+        // --- Bottom Footer Bar with GitHub Link ---
+        let footer_box = GtkBox::new(Orientation::Horizontal, 4);
+        let github_link = LinkButton::with_label(
+            "https://github.com/ijash/musicbox-organizer",
+            "MusicBox Organizer on GitHub",
+        );
+        footer_box.pack_end(&github_link, false, false, 4);
+        root_box.pack_start(&footer_box, false, false, 0);
 
         window.add(&root_box);
 
