@@ -32,6 +32,7 @@ pub fn build_playlist_table(
     let toolbar_box = GtkBox::new(Orientation::Horizontal, 6);
     let scan_dir_btn = Button::with_label("📁 Scan Folder...");
     let add_track_btn = Button::with_label("+ Add MP3");
+    let remove_track_btn = Button::with_label("✖ Remove");
     let move_up_btn = Button::with_label("▲ Up");
     let move_down_btn = Button::with_label("▼ Down");
     let audio_tools_btn = Button::with_label("🎛 Audio Tools (Soon)");
@@ -42,6 +43,7 @@ pub fn build_playlist_table(
 
     toolbar_box.pack_start(&scan_dir_btn, false, false, 0);
     toolbar_box.pack_start(&add_track_btn, false, false, 0);
+    toolbar_box.pack_start(&remove_track_btn, false, false, 0);
     toolbar_box.pack_start(&move_up_btn, false, false, 0);
     toolbar_box.pack_start(&move_down_btn, false, false, 0);
     toolbar_box.pack_start(&audio_tools_btn, false, false, 0);
@@ -126,12 +128,12 @@ pub fn build_playlist_table(
 
     refresh_table();
 
-    // Inline title edit
+    // Inline title edit: update row in place to avoid clearing model during cell editing
     {
         let project = Rc::clone(project);
         let session_state = Rc::clone(session_state);
         let sync_session = Rc::clone(&sync_session);
-        let refresh_table = refresh_table.clone();
+        let list_store = list_store.clone();
         cell_title.connect_edited(move |_, path, new_text| {
             if let Ok(idx) = path.to_string().parse::<usize>() {
                 let mut p = project.borrow_mut();
@@ -139,19 +141,21 @@ pub fn build_playlist_table(
                     sync_session();
                     session_state.borrow_mut().push_undo_checkpoint();
                     p.tracks[idx].title = new_text.to_string();
-                    drop(p);
-                    refresh_table();
+                    let tree_path = gtk::TreePath::from_indicesv(&[idx as i32]);
+                    if let Some(iter) = list_store.iter(&tree_path) {
+                        list_store.set_value(&iter, 2, &new_text.to_value());
+                    }
                 }
             }
         });
     }
 
-    // Inline artist edit
+    // Inline artist edit: update row in place to avoid clearing model during cell editing
     {
         let project = Rc::clone(project);
         let session_state = Rc::clone(session_state);
         let sync_session = Rc::clone(&sync_session);
-        let refresh_table = refresh_table.clone();
+        let list_store = list_store.clone();
         cell_artist.connect_edited(move |_, path, new_text| {
             if let Ok(idx) = path.to_string().parse::<usize>() {
                 let mut p = project.borrow_mut();
@@ -159,8 +163,50 @@ pub fn build_playlist_table(
                     sync_session();
                     session_state.borrow_mut().push_undo_checkpoint();
                     p.tracks[idx].artist = new_text.to_string();
-                    drop(p);
-                    refresh_table();
+                    let tree_path = gtk::TreePath::from_indicesv(&[idx as i32]);
+                    if let Some(iter) = list_store.iter(&tree_path) {
+                        list_store.set_value(&iter, 3, &new_text.to_value());
+                    }
+                }
+            }
+        });
+    }
+
+    // Remove Track button
+    {
+        let tree_view = tree_view.clone();
+        let project = Rc::clone(project);
+        let session_state = Rc::clone(session_state);
+        let sync_session = Rc::clone(&sync_session);
+        let refresh_table = refresh_table.clone();
+        let update_devs = Rc::clone(&update_devices_ui);
+        let status_label = status_label.clone();
+        remove_track_btn.connect_clicked(move |_| {
+            let selection = tree_view.selection();
+            if let Some((_, iter)) = selection.selected() {
+                let path = tree_view.model().unwrap().path(&iter).unwrap();
+                if let Some(indices) = path.indices().first() {
+                    let idx = *indices as usize;
+                    let mut p = project.borrow_mut();
+                    if idx < p.tracks.len() {
+                        sync_session();
+                        session_state.borrow_mut().push_undo_checkpoint();
+                        let removed = p.tracks.remove(idx);
+                        for (i, t) in p.tracks.iter_mut().enumerate() {
+                            t.index = i as u32;
+                        }
+                        drop(p);
+                        refresh_table();
+                        update_devs();
+                        status_label.set_text(&format!("Removed track '{}'", removed.title));
+                        if idx < tree_view.model().unwrap().iter_n_children(None) as usize {
+                            let new_path = gtk::TreePath::from_indicesv(&[idx as i32]);
+                            tree_view.selection().select_path(&new_path);
+                        } else if idx > 0 {
+                            let new_path = gtk::TreePath::from_indicesv(&[(idx - 1) as i32]);
+                            tree_view.selection().select_path(&new_path);
+                        }
+                    }
                 }
             }
         });
@@ -192,7 +238,6 @@ pub fn build_playlist_table(
                         refresh_table();
                         let new_path = gtk::TreePath::from_indicesv(&[new_idx as i32]);
                         tree_view.selection().select_path(&new_path);
-                        tree_view.scroll_to_cell(Some(&new_path), None::<&gtk::TreeViewColumn>, false, 0.0, 0.0);
                     }
                 }
             }
@@ -225,7 +270,6 @@ pub fn build_playlist_table(
                         refresh_table();
                         let new_path = gtk::TreePath::from_indicesv(&[new_idx as i32]);
                         tree_view.selection().select_path(&new_path);
-                        tree_view.scroll_to_cell(Some(&new_path), None::<&gtk::TreeViewColumn>, false, 0.0, 0.0);
                     }
                 }
             }

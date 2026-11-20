@@ -23,11 +23,14 @@ pub fn build_header(
 ) -> HeaderComponent {
     let header_box = GtkBox::new(Orientation::Horizontal, 8);
 
+    // Title group: pack logo and project label together without expanding
+    let title_group = GtkBox::new(Orientation::Horizontal, 6);
+
     // 1. Embedded Logo Image (FR-002)
     if let Ok(pixbuf) = gtk::gdk_pixbuf::Pixbuf::from_read(Cursor::new(APP_LOGO_PNG)) {
         if let Some(scaled) = pixbuf.scale_simple(24, 24, gtk::gdk_pixbuf::InterpType::Bilinear) {
             let logo_img = Image::from_pixbuf(Some(&scaled));
-            header_box.pack_start(&logo_img, false, false, 0);
+            title_group.pack_start(&logo_img, false, false, 0);
         }
     }
 
@@ -37,7 +40,8 @@ pub fn build_header(
         "<big><b>MusicBox Organizer</b></big> — <i>{}</i> ({} tracks)",
         project_name, track_count
     ));
-    header_box.pack_start(&project_label, true, true, 0);
+    title_group.pack_start(&project_label, false, false, 0);
+    header_box.pack_start(&title_group, false, false, 0);
 
     // 3. Toolbar Buttons
     let undo_btn = Button::with_label("↺ Undo");
