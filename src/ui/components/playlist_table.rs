@@ -136,10 +136,10 @@ pub fn build_playlist_table(
         let list_store = list_store.clone();
         cell_title.connect_edited(move |_, path, new_text| {
             if let Ok(idx) = path.to_string().parse::<usize>() {
+                sync_session();
+                session_state.borrow_mut().push_undo_checkpoint();
                 let mut p = project.borrow_mut();
                 if idx < p.tracks.len() {
-                    sync_session();
-                    session_state.borrow_mut().push_undo_checkpoint();
                     p.tracks[idx].title = new_text.to_string();
                     let tree_path = gtk::TreePath::from_indicesv(&[idx as i32]);
                     if let Some(iter) = list_store.iter(&tree_path) {
@@ -158,10 +158,10 @@ pub fn build_playlist_table(
         let list_store = list_store.clone();
         cell_artist.connect_edited(move |_, path, new_text| {
             if let Ok(idx) = path.to_string().parse::<usize>() {
+                sync_session();
+                session_state.borrow_mut().push_undo_checkpoint();
                 let mut p = project.borrow_mut();
                 if idx < p.tracks.len() {
-                    sync_session();
-                    session_state.borrow_mut().push_undo_checkpoint();
                     p.tracks[idx].artist = new_text.to_string();
                     let tree_path = gtk::TreePath::from_indicesv(&[idx as i32]);
                     if let Some(iter) = list_store.iter(&tree_path) {
@@ -187,10 +187,10 @@ pub fn build_playlist_table(
                 let path = tree_view.model().unwrap().path(&iter).unwrap();
                 if let Some(indices) = path.indices().first() {
                     let idx = *indices as usize;
+                    sync_session();
+                    session_state.borrow_mut().push_undo_checkpoint();
                     let mut p = project.borrow_mut();
                     if idx < p.tracks.len() {
-                        sync_session();
-                        session_state.borrow_mut().push_undo_checkpoint();
                         let removed = p.tracks.remove(idx);
                         for (i, t) in p.tracks.iter_mut().enumerate() {
                             t.index = i as u32;
@@ -228,8 +228,8 @@ pub fn build_playlist_table(
                     if idx > 0 {
                         let new_idx = idx - 1;
                         sync_session();
-                        let mut p = project.borrow_mut();
                         session_state.borrow_mut().push_undo_checkpoint();
+                        let mut p = project.borrow_mut();
                         p.tracks.swap(idx, new_idx);
                         for (i, t) in p.tracks.iter_mut().enumerate() {
                             t.index = i as u32;
@@ -257,11 +257,12 @@ pub fn build_playlist_table(
                 let path = tree_view.model().unwrap().path(&iter).unwrap();
                 if let Some(indices) = path.indices().first() {
                     let idx = *indices as usize;
-                    let mut p = project.borrow_mut();
-                    if idx + 1 < p.tracks.len() {
+                    let len = project.borrow().tracks.len();
+                    if idx + 1 < len {
                         let new_idx = idx + 1;
                         sync_session();
                         session_state.borrow_mut().push_undo_checkpoint();
+                        let mut p = project.borrow_mut();
                         p.tracks.swap(idx, new_idx);
                         for (i, t) in p.tracks.iter_mut().enumerate() {
                             t.index = i as u32;
