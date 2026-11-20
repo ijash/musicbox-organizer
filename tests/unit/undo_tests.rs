@@ -60,3 +60,26 @@ fn test_save_clears_undo_redo_history() {
     assert!(state.redo_stack.is_empty());
     assert!(!state.is_dirty);
 }
+
+#[test]
+fn test_undo_preserves_tracks_when_reverting_edits() {
+    let mut state = SessionState::new(PathBuf::from("/test"));
+    state.tracks = vec![
+        create_dummy_track(0, "Track 1"),
+        create_dummy_track(1, "Track 2"),
+        create_dummy_track(2, "Track 3"),
+    ];
+
+    // Snapshot before title edit
+    state.push_undo_checkpoint();
+    state.tracks[1].metadata.title = "Renamed Track 2".to_string();
+    assert_eq!(state.tracks.len(), 3);
+    assert_eq!(state.tracks[1].metadata.title, "Renamed Track 2");
+
+    // Undo edit
+    assert!(state.undo());
+    assert_eq!(state.tracks.len(), 3); // Must NOT be empty!
+    assert_eq!(state.tracks[0].metadata.title, "Track 1");
+    assert_eq!(state.tracks[1].metadata.title, "Track 2");
+    assert_eq!(state.tracks[2].metadata.title, "Track 3");
+}

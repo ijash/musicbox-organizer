@@ -330,6 +330,35 @@ pub mod linux {
 
         window.add(&root_box);
 
+        // --- Helper: Synchronize SessionState from ProjectFile ---
+        let sync_session_from_project = {
+            let project = Rc::clone(&project);
+            let session_state = Rc::clone(&session_state);
+            move || {
+                let p = project.borrow();
+                let mut state = session_state.borrow_mut();
+                state.tracks = p
+                    .tracks
+                    .iter()
+                    .map(|t| {
+                        let mut meta = crate::models::TrackMetadata::default();
+                        meta.title = t.title.clone();
+                        meta.artist = t.artist.clone();
+                        meta.track_number = Some(t.index + 1);
+                        let xxyy = naming::track_index_to_xxyy(t.index).unwrap_or_else(|_| "AAAA".into());
+                        crate::models::OrganizerTrack::new(
+                            t.index,
+                            PathBuf::from(&t.file_path),
+                            meta,
+                            xxyy,
+                        )
+                    })
+                    .collect();
+            }
+        };
+
+        sync_session_from_project();
+
         // --- Helper: Refresh Playlist Display ---
         let refresh_playlist_table = {
             let project = Rc::clone(&project);
@@ -420,11 +449,13 @@ pub mod linux {
         {
             let project = Rc::clone(&project);
             let session_state = Rc::clone(&session_state);
+            let sync_session = sync_session_from_project.clone();
             let refresh_table = refresh_playlist_table.clone();
             cell_title.connect_edited(move |_, path, new_text| {
                 if let Ok(idx) = path.to_string().parse::<usize>() {
                     let mut p = project.borrow_mut();
                     if idx < p.tracks.len() {
+                        sync_session();
                         session_state.borrow_mut().push_undo_checkpoint();
                         p.tracks[idx].title = new_text.to_string();
                         drop(p);
@@ -438,11 +469,13 @@ pub mod linux {
         {
             let project = Rc::clone(&project);
             let session_state = Rc::clone(&session_state);
+            let sync_session = sync_session_from_project.clone();
             let refresh_table = refresh_playlist_table.clone();
             cell_artist.connect_edited(move |_, path, new_text| {
                 if let Ok(idx) = path.to_string().parse::<usize>() {
                     let mut p = project.borrow_mut();
                     if idx < p.tracks.len() {
+                        sync_session();
                         session_state.borrow_mut().push_undo_checkpoint();
                         p.tracks[idx].artist = new_text.to_string();
                         drop(p);
@@ -530,6 +563,7 @@ pub mod linux {
             let tree_view = tree_view.clone();
             let project = Rc::clone(&project);
             let session_state = Rc::clone(&session_state);
+            let sync_session = sync_session_from_project.clone();
             let refresh_table = refresh_playlist_table.clone();
             move_up_btn.connect_clicked(move |_| {
                 let selection = tree_view.selection();
@@ -539,6 +573,7 @@ pub mod linux {
                         let idx = *indices as usize;
                         if idx > 0 {
                             let new_idx = idx - 1;
+                            sync_session();
                             let mut p = project.borrow_mut();
                             session_state.borrow_mut().push_undo_checkpoint();
                             p.tracks.swap(idx, new_idx);
@@ -561,6 +596,7 @@ pub mod linux {
             let tree_view = tree_view.clone();
             let project = Rc::clone(&project);
             let session_state = Rc::clone(&session_state);
+            let sync_session = sync_session_from_project.clone();
             let refresh_table = refresh_playlist_table.clone();
             move_down_btn.connect_clicked(move |_| {
                 let selection = tree_view.selection();
@@ -571,6 +607,7 @@ pub mod linux {
                         let mut p = project.borrow_mut();
                         if idx + 1 < p.tracks.len() {
                             let new_idx = idx + 1;
+                            sync_session();
                             session_state.borrow_mut().push_undo_checkpoint();
                             p.tracks.swap(idx, new_idx);
                             for (i, t) in p.tracks.iter_mut().enumerate() {
@@ -591,6 +628,7 @@ pub mod linux {
         {
             let window_clone = window.clone();
             let project = Rc::clone(&project);
+            let sync_session = sync_session_from_project.clone();
             let refresh_table = refresh_playlist_table.clone();
             let update_devs = update_devices_ui.clone();
             let status_label = status_label.clone();
@@ -624,6 +662,7 @@ pub mod linux {
                                     });
                                 }
                                 drop(p);
+                                sync_session();
                                 refresh_table();
                                 update_devs();
                                 status_label.set_text(&format!(
@@ -813,6 +852,7 @@ pub mod linux {
         {
             let window_clone = window.clone();
             let project = Rc::clone(&project);
+            let sync_session = sync_session_from_project.clone();
             let refresh_table = refresh_playlist_table.clone();
             let update_devs = update_devices_ui.clone();
             add_track_btn.connect_clicked(move |_| {
@@ -841,6 +881,7 @@ pub mod linux {
                         });
                     }
                     drop(p);
+                    sync_session();
                     refresh_table();
                     update_devs();
                 }
@@ -901,6 +942,7 @@ pub mod linux {
         {
             let window_clone = window.clone();
             let project = Rc::clone(&project);
+            let sync_session = sync_session_from_project.clone();
             let refresh_table = refresh_playlist_table.clone();
             let update_devs = update_devices_ui.clone();
             let status_label = status_label.clone();
@@ -918,6 +960,7 @@ pub mod linux {
                         match ProjectFile::load(&file) {
                             Ok(loaded) => {
                                 *project.borrow_mut() = loaded;
+                                sync_session();
                                 refresh_table();
                                 update_devs();
                                 status_label.set_text(&format!("Loaded project from {}", file.display()));
