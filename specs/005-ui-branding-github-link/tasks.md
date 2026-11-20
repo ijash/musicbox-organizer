@@ -16,8 +16,8 @@
 
 **Independent Test**: Run `cargo run -- gui`, verify taskbar icon displays MusicBox logo, and check 26px logo rendered beside title.
 
-- [ ] T001 [US1] Set GTK application window icon from `img/logo/png/logo_mbo_128.png` with fallback in `src/ui/gtk_ui.rs` (FR-001)
-- [ ] T002 [US1] Add compact 26px logo image widget to top `header_box` beside `project_label` with fallback in `src/ui/gtk_ui.rs` (FR-002, FR-005)
+- [X] T001 [US1] Set GTK application window icon from `img/logo/png/logo_mbo_128.png` with fallback in `src/ui/gtk_ui.rs` (FR-001)
+- [X] T002 [US1] Add compact 26px logo image widget to top `header_box` beside `project_label` with fallback in `src/ui/gtk_ui.rs` (FR-002, FR-005)
 
 ---
 
@@ -27,8 +27,8 @@
 
 **Independent Test**: Click `GitHub ↗` button in header; verify default web browser launches `https://github.com/ijash/musicbox-organizer`.
 
-- [ ] T003 [US2] Add `GitHub ↗` button to `header_box` in `src/ui/gtk_ui.rs` (FR-003)
-- [ ] T004 [US2] Implement click handler calling `gtk::show_uri_on_window` for repository URL in `src/ui/gtk_ui.rs` (FR-004)
+- [X] T003 [US2] Add `GitHub ↗` button to `header_box` in `src/ui/gtk_ui.rs` (FR-003)
+- [X] T004 [US2] Implement click handler calling `gtk::show_uri_on_window` for repository URL in `src/ui/gtk_ui.rs` (FR-004)
 
 ---
 
@@ -36,5 +36,5 @@
 
 **Purpose**: Validate visual layout in both dark and light modes and rebuild binary per Constitution Principle VII.
 
-- [ ] T005 Verify layout in Dark Mode and Light Mode, ensuring logo and GitHub button render cleanly
-- [ ] T006 Run `cargo test` and rebuild release binary (`cargo build --release`) per Constitution Principle VII
+- [X] T005 Verify layout in Dark Mode and Light Mode, ensuring logo and GitHub button render cleanly
+- [X] T006 Run `cargo test` and rebuild release binary (`cargo build --release`) per Constitution Principle VII
