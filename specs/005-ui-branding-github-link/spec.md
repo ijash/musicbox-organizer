@@ -8,6 +8,12 @@
 
 **Input**: User description: "- put the logo in the app. also favicon. you decide where the best placement for it. - add github link for it. make it at the top right"
 
+## Clarifications
+
+### Session 2026-11-20
+
+- Q: How should the top-right GitHub link be presented visually in the header bar? → A: Option A - Compact button labeled `GitHub ↗` matching existing header toolbar buttons.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Application Window Favicon & Header Branding (Priority: P1)
@@ -27,16 +33,16 @@ Users open the desktop application and immediately see official branding. The wi
 
 ### User Story 2 - Clickable GitHub Link in Header (Priority: P1)
 
-Users can easily access the source repository and documentation from the app. A discrete GitHub button/link is located at the top-right corner of the application window. Clicking it opens the repository URL in the user's default web browser.
+Users can easily access the source repository and documentation from the app. A discrete `GitHub ↗` button is located at the top-right corner of the application window. Clicking it opens the repository URL in the user's default web browser.
 
 **Why this priority**: Connects user to documentation, issue tracker, and project updates directly from the running app.
 
-**Independent Test**: Can be tested by clicking the top-right GitHub button/link and confirming the system browser opens `https://github.com/ijash/musicbox-organizer`.
+**Independent Test**: Can be tested by clicking the top-right `GitHub ↗` button and confirming the system browser opens `https://github.com/ijash/musicbox-organizer`.
 
 **Acceptance Scenarios**:
 
-1. **Given** main window header, **When** viewing top-right controls, **Then** a GitHub link/button is positioned adjacent to theme and undo/redo controls.
-2. **Given** GitHub link button, **When** user clicks it, **Then** system opens `https://github.com/ijash/musicbox-organizer` via the default web browser without blocking or freezing the application UI.
+1. **Given** main window header, **When** viewing top-right controls, **Then** a `GitHub ↗` button is positioned adjacent to theme and undo/redo controls.
+2. **Given** `GitHub ↗` button, **When** user clicks it, **Then** system opens `https://github.com/ijash/musicbox-organizer` via the default web browser without blocking or freezing the application UI.
 
 ---
 
@@ -51,8 +57,8 @@ Users can easily access the source repository and documentation from the app. A 
 
 - **FR-001**: Application window MUST set its window/favicon icon from available icon assets (`img/logo/ico/favicon.ico` or `img/logo/png/logo_mbo_128.png`).
 - **FR-002**: Application top header MUST display a compact branding logo alongside the application title.
-- **FR-003**: Application header MUST provide a GitHub repository button/link in the top-right toolbar area.
-- **FR-004**: Clicking GitHub button MUST invoke system default browser for `https://github.com/ijash/musicbox-organizer`.
+- **FR-003**: Application header MUST provide a `GitHub ↗` button in the top-right toolbar area styled consistently with existing header buttons.
+- **FR-004**: Clicking `GitHub ↗` button MUST invoke system default browser for `https://github.com/ijash/musicbox-organizer`.
 - **FR-005**: If branding assets cannot be read from disk, system MUST fallback gracefully and render UI normally without error popup.
 
 ## Success Criteria *(mandatory)*
