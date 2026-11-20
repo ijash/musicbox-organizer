@@ -1,8 +1,8 @@
 <!-- SYNC IMPACT REPORT
-Version: 1.4.0 → 1.5.0 (MINOR - add mandatory rule to always rebuild binary after each implementation)
-Modified Principles: VII (Rapid Development - add mandatory binary rebuild requirement)
+Version: 1.5.0 → 1.6.0 (MINOR - add mandatory changelog and feature roadmap documentation in README.md on version bump)
+Modified Principles: None
 Added Principles: None
-Modified Sections: Development Workflow (add Rebuild Binary After Implementation requirement)
+Modified Sections: Development Workflow (add Changelog & Roadmap Documentation on Version Bump)
 Removed Sections: None
 Ratification: 2026-11-19
 TODO: None
@@ -53,6 +53,8 @@ Exported playlists MUST be compatible with primitive audio devices (portable spe
 
 **Rebuild Binary After Implementation**: The agent/developer MUST always rebuild the application binary (`cargo build --release` and `cargo build`) immediately upon completing each implementation task, bug fix, or feature before declaring work done. The runnable binary must always be current and testable by the user without manual rebuild steps.
 
+**Changelog & Roadmap in README**: Upon each version bump or release boundary, the developer/agent MUST document the release changelog and the upcoming feature plan / roadmap directly inside `README.md`. This maintains single-source transparency for users regarding what was shipped and what is planned next.
+
 **Code Review**: Every PR verifies cross-platform compatibility. At least one test run per target OS before merge.
 
 **Release**: Single automated build per platform produces standalone executable. No version check; no auto-update (users download new version manually).
@@ -63,4 +65,4 @@ Constitution is law. Violations caught in code review and PR testing gates. Amen
 
 **Git Governance**: All commits agent-created using Conventional Commits v1.0.0 format per principle VI. No manual commits allowed. Agent creates branches, manages PRs, handles rebasing/merging. Commits include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer. Agent auto-commits when features complete (pass tests + acceptance criteria) without requiring explicit instruction. PRs reviewed before merge. No merging without passing CI tests.
 
-**Version**: 1.5.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20
+**Version**: 1.6.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20

@@ -90,6 +90,30 @@ cargo test
 3. **Offline-First & Portable**: No network calls, runs from any directory, leaves no temporary files.
 4. **Device Compatibility**: Lexicographical `[XXYY-filename.mp3]` sequence guarantees sequential playback on primitive audio hardware.
 
+## Roadmap & Feature Plan
+
+Planned enhancements for upcoming versions:
+
+- **v0.2.0**: Audio DSP editing suite (volume normalization, silence trimming) implementing the `AudioProcessor` trait.
+- **v0.2.0**: Native desktop GUI frontends for Windows (Win32) and macOS (Cocoa).
+- **v0.3.0**: DOCX printable catalog exporter.
+- **v0.3.0**: Custom export path templates (e.g., `/Artist/Album/`).
+
+## Changelog
+
+### v0.1.0 (2026-11-20)
+
+- Initial core release with base-26 `[XXYY-filename.mp3]` lexicographical sort prefix.
+- Removable media export to connected USB/SD devices with automatic space checks.
+- Two-step FAT32/exFAT device reformat with confirmation warning.
+- Non-recursive folder scanner and inline ID3v2 tag editor.
+- Audio preview player via `rodio` with play, pause, and stop controls.
+- 10-step bounded in-memory undo/redo stack.
+- Multi-format playlist exporter (`.txt`, `.rtf`) to `playlist-text/` folder with clear-all behavior.
+- Primitive device compatibility audit CLI (`check-compat`).
+- GTK3 native desktop GUI with independent dark/light themes.
+- Application icon branding assets added under `img/logo/`.
+
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
