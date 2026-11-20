@@ -1,8 +1,8 @@
 <!-- SYNC IMPACT REPORT
-Version: 1.5.0 → 1.6.0 (MINOR - add mandatory changelog and feature roadmap documentation in README.md on version bump)
-Modified Principles: None
+Version: 1.6.0 → 1.7.0 (MINOR - add mandatory GUI interaction testing and reusable automation harness rule)
+Modified Principles: V (Testable Core Logic → Testable Core Logic & GUI Interaction Verification)
 Added Principles: None
-Modified Sections: Development Workflow (add Changelog & Roadmap Documentation on Version Bump)
+Modified Sections: Development Workflow (add GUI Interactive Verification & Automation Harness requirement), Testing Constraints (add reusable GUI automation test requirement)
 Removed Sections: None
 Ratification: 2026-11-19
 TODO: None
@@ -26,8 +26,8 @@ Playlist and ID3 tag editing must be intuitive for non-technical users. Drag-and
 ### IV. Offline-First & Portable
 No network calls required. No installer. App runs from any folder. No temp files left behind. Users move the executable and continue working. Local file system is single source of truth.
 
-### V. Testable Core Logic
-Business logic (playlist parsing, ID3 editing, file scanning) decoupled from UI. Unit tests required for all non-trivial logic. UI can be thin; correctness lives in core.
+### V. Testable Core Logic & GUI Interaction Verification
+Business logic (playlist parsing, ID3 editing, file scanning) decoupled from UI. Unit tests required for all non-trivial logic. **Mandatory GUI testing**: Because this is a desktop GUI application, test validation MUST include executing the GUI runtime and exercising interactive UI flows (clicks, row edits, reordering, theme toggling, dialogs). Reusable automated scripts/harnesses MUST be provided and maintained to simulate and verify real desktop UI interactions so regressions in signal handling and UI state binding are caught automatically before declaring tasks done.
 
 ### VI. Git-First Workflow & Conventional Commits
 Agent handles all commits following git best practices and Conventional Commits v1.0.0 format. Commits atomic and logically coherent. Branches per feature/fix. PR required before merge to main. **Commit message format**: `type(scope): subject` with optional body and footer (Co-authored-by trailer required). Types: `feat:` (new feature), `fix:` (bug fix), `docs:` (documentation), `refactor:` (code restructuring), `test:` (test additions), `chore:` (build/tooling). Subject: lowercase, <50 chars, imperative mood. Body: wrap <72 chars, explain why not what. Force-push forbidden on shared branches. Agent rebases on main before merge to keep history clean. **Auto-commit on feature completion**: When a feature passes all tests and acceptance criteria, agent commits automatically without explicit instruction, organizing commits by feature (one logical unit per commit).
@@ -47,11 +47,13 @@ Exported playlists MUST be compatible with primitive audio devices (portable spe
 
 **Dependencies**: Minimalist. ID3 parsing: native or minimal pure implementation (no ffmpeg). Build system: platform native (MSVC, Xcode, GCC/Clang).
 
-**Testing**: Core logic requires unit tests before merge. Integration tests per platform use real MP3 files. Local machine (this development machine) is primary test target. Cross-machine testing deferred: validate feature works locally first, then expand to other platforms/machines in later phases. No external test infrastructure required initially.
+**Testing**: Core logic requires unit tests before merge. Integration tests per platform use real MP3 files. **GUI Testing Harness**: A reusable script or automated test harness MUST be maintained in the repository to launch the graphical executable and execute real click/action sequences to verify UI stability without manual intervention. Local machine (this development machine) is primary test target. Cross-machine testing deferred: validate feature works locally first, then expand to other platforms/machines in later phases. No external test infrastructure required initially.
 
 ## Development Workflow
 
 **Rebuild Binary After Implementation**: The agent/developer MUST always rebuild the application binary (`cargo build --release` and `cargo build`) immediately upon completing each implementation task, bug fix, or feature before declaring work done. The runnable binary must always be current and testable by the user without manual rebuild steps.
+
+**GUI Interaction Verification**: When delivering or modifying UI features, the agent/developer MUST execute the GUI and exercise interactive button clicks and table workflows using automated test scripts or headless test harnesses to verify that GTK signal loops do not panic or abort under user interaction.
 
 **Changelog & Roadmap in README**: Upon each version bump or release boundary, the developer/agent MUST document the release changelog and the upcoming feature plan / roadmap directly inside `README.md`. This maintains single-source transparency for users regarding what was shipped and what is planned next.
 
@@ -65,4 +67,4 @@ Constitution is law. Violations caught in code review and PR testing gates. Amen
 
 **Git Governance**: All commits agent-created using Conventional Commits v1.0.0 format per principle VI. No manual commits allowed. Agent creates branches, manages PRs, handles rebasing/merging. Commits include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer. Agent auto-commits when features complete (pass tests + acceptance criteria) without requiring explicit instruction. PRs reviewed before merge. No merging without passing CI tests.
 
-**Version**: 1.6.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20
+**Version**: 1.7.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20
