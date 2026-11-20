@@ -3,8 +3,8 @@ pub mod linux {
     use gtk::prelude::*;
     use gtk::{
         Box as GtkBox, Button, CellRendererText, CheckButton, ComboBoxText, CssProvider, Dialog,
-        DialogFlags, Entry, FileChooserAction, FileChooserDialog, Frame, Image, Label, LinkButton,
-        ListStore, Orientation, ProgressBar, ResponseType, ScrolledWindow, StyleContext, TreeView,
+        DialogFlags, Entry, FileChooserAction, FileChooserDialog, Frame, Image, Label, ListStore,
+        Orientation, ProgressBar, ResponseType, ScrolledWindow, StyleContext, TreeView,
         TreeViewColumn, Window, WindowPosition, WindowType, STYLE_PROVIDER_PRIORITY_USER,
     };
     use crate::models::{FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, SessionState, Track};
@@ -346,13 +346,14 @@ pub mod linux {
         export_frame.add(&frame_box);
         root_box.pack_start(&export_frame, false, false, 0);
 
-        // --- Bottom Footer Bar with GitHub Link ---
+        // --- Bottom Footer Bar with Italic Text Link ---
         let footer_box = GtkBox::new(Orientation::Horizontal, 4);
-        let github_link = LinkButton::with_label(
-            "https://github.com/ijash/musicbox-organizer",
-            "MusicBox Organizer on GitHub",
+        let footer_label = Label::new(None);
+        footer_label.set_markup(
+            "<small><i>made by ijash. more at <a href=\"https://github.com/ijash/musicbox-organizer\">github</a></i></small>",
         );
-        footer_box.pack_end(&github_link, false, false, 4);
+        footer_label.set_track_visited_links(false);
+        footer_box.pack_end(&footer_label, false, false, 4);
         root_box.pack_start(&footer_box, false, false, 0);
 
         window.add(&root_box);
