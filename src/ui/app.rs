@@ -1,0 +1,207 @@
+use crate::models::{PlaylistMetadata, ProjectFile, SessionState};
+use crate::services::AudioPreviewPlayer;
+use crate::ui::dsp_dialog::DspDialogState;
+use crate::ui::export_panel::ExportPanelState;
+use crate::ui::{DspProgressMessage, ExportProgressMessage};
+use std::collections::BTreeSet;
+use std::path::PathBuf;
+use std::sync::mpsc::Receiver;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TableColumn {
+    TrackNumber,
+    ExportFilename,
+    Title,
+    Artist,
+    SourceFile,
+}
+
+pub struct MusicBoxApp {
+    // Core Domain Data
+    pub project: ProjectFile,
+    pub session: SessionState,
+    pub project_path: Option<PathBuf>,
+
+    // Playlist Table Interaction
+    pub selected_track_indices: BTreeSet<usize>,
+    pub editing_cell: Option<(usize, TableColumn)>,
+
+    // Audio Preview Player
+    pub preview_player: Option<AudioPreviewPlayer>,
+    pub playing_track_idx: Option<usize>,
+
+    // Sub-dialog & Panel States
+    pub dsp_dialog: DspDialogState,
+    pub export_panel: ExportPanelState,
+
+    // Global Visuals & Status
+    pub dark_mode: bool,
+    pub status_message: String,
+
+    // Concurrency Channels (Workers -> UI)
+    pub dsp_rx: Option<Receiver<DspProgressMessage>>,
+    pub export_rx: Option<Receiver<ExportProgressMessage>>,
+}
+
+impl Default for MusicBoxApp {
+    fn default() -> Self {
+        let project = ProjectFile::new(PlaylistMetadata {
+            name: "Default Playlist".to_string(),
+            author: None,
+            created_at: Some(chrono::Utc::now().to_rfc3339()),
+        });
+        Self {
+            project,
+            session: SessionState::default(),
+            project_path: None,
+            selected_track_indices: BTreeSet::new(),
+            editing_cell: None,
+            preview_player: None,
+            playing_track_idx: None,
+            dsp_dialog: DspDialogState::default(),
+            export_panel: ExportPanelState::default(),
+            dark_mode: true,
+            status_message: "Ready".to_string(),
+            dsp_rx: None,
+            export_rx: None,
+        }
+    }
+}
+
+impl MusicBoxApp {
+    pub fn new(project: ProjectFile, project_path: Option<PathBuf>) -> Self {
+        Self {
+            project,
+            project_path,
+            ..Default::default()
+        }
+    }
+
+    pub fn render_central_content(&mut self, ui: &mut egui::Ui) {
+        crate::ui::header::render_header(self, ui);
+        ui.separator();
+        crate::ui::toolbar::render_toolbar(self, ui);
+        ui.separator();
+        crate::ui::playlist_table::render_playlist_table(self, ui);
+        ui.separator();
+        crate::ui::audio_bar::render_audio_bar(self, ui);
+        ui.separator();
+        crate::ui::export_panel::render_export_panel(self, ui);
+        ui.separator();
+        crate::ui::footer::render_footer(self, ui);
+    }
+}
+
+impl eframe::App for MusicBoxApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.dark_mode {
+            ctx.set_visuals(egui::Visuals::dark());
+        } else {
+            ctx.set_visuals(egui::Visuals::light());
+        }
+
+        // Poll DSP channel
+        if let Some(rx) = &self.dsp_rx {
+            while let Ok(msg) = rx.try_recv() {
+                match msg {
+                    DspProgressMessage::Started { total_tracks } => {
+                        self.dsp_dialog.is_processing = true;
+                        self.dsp_dialog.progress_percent = 0.0;
+                        self.dsp_dialog.progress_text = format!("Processing 0/{}...", total_tracks);
+                    }
+                    DspProgressMessage::Step { current, total, filename } => {
+                        self.dsp_dialog.progress_percent = current as f32 / total.max(1) as f32;
+                        self.dsp_dialog.progress_text = format!("({}/{}) {}", current, total, filename);
+                    }
+                    DspProgressMessage::Finished { succeeded, failed, errors } => {
+                        self.dsp_dialog.is_processing = false;
+                        self.dsp_dialog.is_open = false;
+                        self.status_message = format!("DSP complete: {} updated, {} failed", succeeded, failed);
+                        if !errors.is_empty() {
+                            self.dsp_dialog.error_summary = Some(errors.join("\n"));
+                        }
+                    }
+                    DspProgressMessage::Failed(err) => {
+                        self.dsp_dialog.is_processing = false;
+                        self.dsp_dialog.error_summary = Some(err);
+                    }
+                }
+            }
+            if self.dsp_dialog.is_processing {
+                ctx.request_repaint();
+            }
+        }
+
+        // Poll Export channel
+        if let Some(rx) = &self.export_rx {
+            while let Ok(msg) = rx.try_recv() {
+                match msg {
+                    ExportProgressMessage::Started { total_tracks } => {
+                        self.export_panel.is_exporting = true;
+                        self.export_panel.export_progress = 0.0;
+                        self.export_panel.export_status = format!("Exporting 0/{}...", total_tracks);
+                    }
+                    ExportProgressMessage::Step { current, total, filename } => {
+                        self.export_panel.export_progress = current as f32 / total.max(1) as f32;
+                        self.export_panel.export_status = format!("({}/{}) {}", current, total, filename);
+                    }
+                    ExportProgressMessage::Finished { total_bytes } => {
+                        self.export_panel.is_exporting = false;
+                        let mb = total_bytes as f64 / (1024.0 * 1024.0);
+                        self.export_panel.export_status = format!("Export completed ({:.1} MB)", mb);
+                        self.status_message = format!("Export successful: {:.1} MB written", mb);
+                    }
+                    ExportProgressMessage::Failed(err) => {
+                        self.export_panel.is_exporting = false;
+                        self.export_panel.export_status = format!("Export failed: {}", err);
+                    }
+                }
+            }
+            if self.export_panel.is_exporting {
+                ctx.request_repaint();
+            }
+        }
+
+        // Top Panels: Header & Toolbar
+        egui::TopBottomPanel::top("top_header_panel").show(ctx, |ui| {
+            crate::ui::header::render_header(self, ui);
+            ui.separator();
+            crate::ui::toolbar::render_toolbar(self, ui);
+        });
+
+        // Bottom Panels: Footer & Audio Bar & Export Panel
+        egui::TopBottomPanel::bottom("bottom_status_panel").show(ctx, |ui| {
+            crate::ui::footer::render_footer(self, ui);
+        });
+
+        egui::TopBottomPanel::bottom("bottom_audio_panel").show(ctx, |ui| {
+            crate::ui::audio_bar::render_audio_bar(self, ui);
+            ui.separator();
+            crate::ui::export_panel::render_export_panel(self, ui);
+        });
+
+        // Central Panel: Playlist Table
+        egui::CentralPanel::default().show(ctx, |ui| {
+            crate::ui::playlist_table::render_playlist_table(self, ui);
+        });
+
+        // Modals / Floating Windows
+        crate::ui::dsp_dialog::render_dsp_dialog(self, ctx);
+    }
+}
+
+pub fn run_gui() {
+    let native_options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([960.0, 680.0])
+            .with_min_inner_size([720.0, 480.0])
+            .with_title("MusicBox Organizer"),
+        ..Default::default()
+    };
+
+    let _ = eframe::run_native(
+        "MusicBox Organizer",
+        native_options,
+        Box::new(|_cc| Ok(Box::new(MusicBoxApp::default()))),
+    );
+}
