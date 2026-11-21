@@ -10,11 +10,35 @@ use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct PlaylistTableComponent {
     pub container: GtkBox,
     pub tree_view: TreeView,
     pub list_store: ListStore,
     pub audio_tools_btn: Button,
+    pub remove_track_btn: Button,
+    pub move_up_btn: Button,
+    pub move_down_btn: Button,
+    pub scan_dir_btn: Button,
+    pub add_track_btn: Button,
+    pub save_project_btn: Button,
+    pub open_project_btn: Button,
+    pub export_formats_btn: Button,
+}
+
+impl PlaylistTableComponent {
+    pub fn update_icons(&self, is_dark: bool) {
+        use crate::ui::icons::AppIcon;
+        AppIcon::update_button_icon(&self.scan_dir_btn, AppIcon::FolderOpen, is_dark);
+        AppIcon::update_button_icon(&self.add_track_btn, AppIcon::ListAdd, is_dark);
+        AppIcon::update_button_icon(&self.remove_track_btn, AppIcon::ListRemove, is_dark);
+        AppIcon::update_button_icon(&self.move_up_btn, AppIcon::GoUp, is_dark);
+        AppIcon::update_button_icon(&self.move_down_btn, AppIcon::GoDown, is_dark);
+        AppIcon::update_button_icon(&self.audio_tools_btn, AppIcon::AudioTools, is_dark);
+        AppIcon::update_button_icon(&self.export_formats_btn, AppIcon::ExportText, is_dark);
+        AppIcon::update_button_icon(&self.save_project_btn, AppIcon::Save, is_dark);
+        AppIcon::update_button_icon(&self.open_project_btn, AppIcon::Open, is_dark);
+    }
 }
 
 enum DspWorkerMessage {
@@ -401,6 +425,7 @@ pub fn build_playlist_table(
                             t.index = i as u32;
                         }
                         drop(p);
+                        sync_session();
                         refresh_table();
                         update_devs();
                         status_label.set_text(&format!("Removed track '{}'", removed.title));
@@ -439,6 +464,7 @@ pub fn build_playlist_table(
                             t.index = i as u32;
                         }
                         drop(p);
+                        sync_session();
                         refresh_table();
                         let new_path = gtk::TreePath::from_indicesv(&[new_idx as i32]);
                         tree_view.selection().select_path(&new_path);
@@ -471,6 +497,7 @@ pub fn build_playlist_table(
                             t.index = i as u32;
                         }
                         drop(p);
+                        sync_session();
                         refresh_table();
                         let new_path = gtk::TreePath::from_indicesv(&[new_idx as i32]);
                         tree_view.selection().select_path(&new_path);
@@ -817,5 +844,13 @@ pub fn build_playlist_table(
         tree_view,
         list_store,
         audio_tools_btn,
+        remove_track_btn,
+        move_up_btn,
+        move_down_btn,
+        scan_dir_btn,
+        add_track_btn,
+        save_project_btn,
+        open_project_btn,
+        export_formats_btn,
     }
 }

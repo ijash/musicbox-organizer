@@ -10,6 +10,8 @@ pub struct HeaderComponent {
     pub container: GtkBox,
     pub project_label: Label,
     pub theme_btn: Button,
+    pub undo_btn: Button,
+    pub redo_btn: Button,
 }
 
 pub fn build_header(
@@ -82,5 +84,7 @@ pub fn build_header(
         container: header_box,
         project_label,
         theme_btn,
+        undo_btn,
+        redo_btn,
     }
 }

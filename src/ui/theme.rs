@@ -34,6 +34,8 @@ pub const LIGHT_CSS: &str = "
         background-color: #f3f4f6;
         color: #24292f;
         border-color: #d0d7de;
+        padding: 2px 6px;
+        min-height: 24px;
     }
     button:hover {
         background-color: #e5e7eb;
@@ -80,6 +82,8 @@ pub const DARK_CSS: &str = "
         background-color: #2c313a;
         color: #dcdfe4;
         border-color: #3e4451;
+        padding: 2px 6px;
+        min-height: 24px;
     }
     button:hover {
         background-color: #3e4451;

@@ -18,4 +18,4 @@ pub use footer::{build_footer, FooterComponent};
 #[cfg(target_os = "linux")]
 pub use header::{build_header, HeaderComponent};
 #[cfg(target_os = "linux")]
-pub use playlist_table::{build_playlist_table, PlaylistTableComponent};
+pub use playlist_table::{build_playlist_table, show_dsp_dialog, PlaylistTableComponent};

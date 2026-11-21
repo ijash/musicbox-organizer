@@ -5,9 +5,22 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct AudioBarComponent {
     pub container: Frame,
     pub status_label: Label,
+    pub play_btn: gtk::Button,
+    pub pause_btn: gtk::Button,
+    pub stop_btn: gtk::Button,
+}
+
+impl AudioBarComponent {
+    pub fn update_icons(&self, is_dark: bool) {
+        use crate::ui::icons::AppIcon;
+        AppIcon::update_button_icon(&self.play_btn, AppIcon::Play, is_dark);
+        AppIcon::update_button_icon(&self.pause_btn, AppIcon::Pause, is_dark);
+        AppIcon::update_button_icon(&self.stop_btn, AppIcon::Stop, is_dark);
+    }
 }
 
 pub fn build_audio_bar(
@@ -92,5 +105,8 @@ pub fn build_audio_bar(
     AudioBarComponent {
         container: preview_frame,
         status_label: audio_status_label,
+        play_btn,
+        pause_btn,
+        stop_btn,
     }
 }

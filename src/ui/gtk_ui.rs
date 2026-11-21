@@ -188,6 +188,23 @@ pub mod linux {
         // 4. Build Audio Bar Component
         let audio_comp = build_audio_bar(&table_comp.tree_view, &project, &audio_player);
 
+        // Initial icon theme sync
+        let initial_dark = *is_dark_mode.borrow();
+        table_comp.update_icons(initial_dark);
+        audio_comp.update_icons(initial_dark);
+
+        // Connect theme toggle to refresh icons
+        {
+            let is_dark_mode = Rc::clone(&is_dark_mode);
+            let table_comp = table_comp.clone();
+            let audio_comp = audio_comp.clone();
+            header_comp.theme_btn.connect_clicked(move |_| {
+                let dark = *is_dark_mode.borrow();
+                table_comp.update_icons(dark);
+                audio_comp.update_icons(dark);
+            });
+        }
+
         // 5. Build Footer Component
         let footer_comp = build_footer();
 

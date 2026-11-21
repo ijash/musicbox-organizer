@@ -50,17 +50,35 @@ impl AppIcon {
         }
     }
 
-    pub fn image(&self, size: i32) -> Option<Image> {
-        let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_read(Cursor::new(self.svg_data().as_bytes())).ok()?;
-        let scaled = pixbuf.scale_simple(size, size, gtk::gdk_pixbuf::InterpType::Bilinear)?;
+    pub fn pixbuf_with_color(&self, size: i32, hex_color: &str) -> Option<gtk::gdk_pixbuf::Pixbuf> {
+        let svg = self.svg_data().replace("currentColor", hex_color);
+        let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_read(Cursor::new(svg.into_bytes())).ok()?;
+        pixbuf.scale_simple(size, size, gtk::gdk_pixbuf::InterpType::Bilinear)
+    }
+
+    pub fn pixbuf_themed(&self, size: i32, is_dark: bool) -> Option<gtk::gdk_pixbuf::Pixbuf> {
+        let color = if is_dark { "#f0f0f0" } else { "#2e3436" };
+        self.pixbuf_with_color(size, color)
+    }
+
+    pub fn image_themed(&self, size: i32, is_dark: bool) -> Option<Image> {
+        let scaled = self.pixbuf_themed(size, is_dark)?;
         Some(Image::from_pixbuf(Some(&scaled)))
     }
 
+    pub fn image(&self, size: i32) -> Option<Image> {
+        self.image_themed(size, false)
+    }
+
     pub fn button(&self, label: &str) -> Button {
+        self.button_themed(label, false)
+    }
+
+    pub fn button_themed(&self, label: &str, is_dark: bool) -> Button {
         let btn = Button::new();
         let box_container = gtk::Box::new(gtk::Orientation::Horizontal, 4);
 
-        if let Some(img) = self.image(14) {
+        if let Some(img) = self.image_themed(14, is_dark) {
             box_container.pack_start(&img, false, false, 0);
         }
 
@@ -68,5 +86,20 @@ impl AppIcon {
         box_container.pack_start(&lbl, false, false, 0);
         btn.add(&box_container);
         btn
+    }
+
+    pub fn update_button_icon(btn: &Button, icon: AppIcon, is_dark: bool) {
+        if let Some(child) = btn.child() {
+            if let Ok(box_container) = child.downcast::<gtk::Box>() {
+                let children = box_container.children();
+                if let Some(first) = children.first() {
+                    if let Ok(img) = first.clone().downcast::<Image>() {
+                        if let Some(pixbuf) = icon.pixbuf_themed(14, is_dark) {
+                            img.set_from_pixbuf(Some(&pixbuf));
+                        }
+                    }
+                }
+            }
+        }
     }
 }
