@@ -22,10 +22,11 @@ impl DeviceManager for WindowsDeviceManager {
         #[cfg(windows)]
         {
             use windows::Win32::Storage::FileSystem::{
-                DRIVE_REMOVABLE, GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives,
-                GetVolumeInformationW,
+                GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives, GetVolumeInformationW,
             };
             use windows::core::PCWSTR;
+
+            const DRIVE_REMOVABLE: u32 = 2;
 
             let drives_mask = unsafe { GetLogicalDrives() };
             let mut devices = Vec::new();
