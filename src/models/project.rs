@@ -22,6 +22,16 @@ pub struct ProjectTrack {
     pub file_path: String,
 }
 
+impl Default for ProjectFile {
+    fn default() -> Self {
+        Self::new(PlaylistMetadata {
+            name: "Default Playlist".to_string(),
+            author: None,
+            created_at: Some(chrono::Utc::now().to_rfc3339()),
+        })
+    }
+}
+
 impl ProjectFile {
     pub fn new(metadata: PlaylistMetadata) -> Self {
         ProjectFile {
@@ -91,15 +101,15 @@ impl ProjectFile {
             } else if in_tracks {
                 // Format: index|title|artist|file_path
                 let parts: Vec<&str> = trimmed.split('|').collect();
-                if parts.len() == 4 {
-                    if let Ok(index) = parts[0].parse::<u32>() {
-                        tracks.push(ProjectTrack {
-                            index,
-                            title: parts[1].to_string(),
-                            artist: parts[2].to_string(),
-                            file_path: parts[3].to_string(),
-                        });
-                    }
+                if parts.len() == 4
+                    && let Ok(index) = parts[0].parse::<u32>()
+                {
+                    tracks.push(ProjectTrack {
+                        index,
+                        title: parts[1].to_string(),
+                        artist: parts[2].to_string(),
+                        file_path: parts[3].to_string(),
+                    });
                 }
             }
         }
@@ -109,7 +119,10 @@ impl ProjectFile {
         indices.sort();
         for (i, &idx) in indices.iter().enumerate() {
             if idx != i as u32 {
-                return Err(format!("Track indices must be sequential 0-based; found {}", idx));
+                return Err(format!(
+                    "Track indices must be sequential 0-based; found {}",
+                    idx
+                ));
             }
         }
 

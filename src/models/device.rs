@@ -1,8 +1,9 @@
-use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 pub enum FileSystem {
     FAT32,
     exFAT,
@@ -23,6 +24,7 @@ pub struct Device {
 }
 
 impl Device {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
         name: String,

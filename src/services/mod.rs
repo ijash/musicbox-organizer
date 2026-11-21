@@ -16,7 +16,7 @@ pub use audio_editing::{
 };
 pub use audio_player::AudioPreviewPlayer;
 pub use compatibility::CompatibilityService;
-pub use device_manager::{create_device_manager, DeviceManager};
+pub use device_manager::{DeviceManager, create_device_manager};
 pub use export_config::ExportConfigService;
 pub use export_service::ExportService;
 pub use format_service::FormatService;

@@ -32,7 +32,10 @@ fn test_device_rejects_internal_drive() {
         false,
     );
     assert!(result.is_err());
-    assert_eq!(result.unwrap_err(), "Device must be removable (USB/SD card)");
+    assert_eq!(
+        result.unwrap_err(),
+        "Device must be removable (USB/SD card)"
+    );
 }
 
 #[test]

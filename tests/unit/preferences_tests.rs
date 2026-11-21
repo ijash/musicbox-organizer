@@ -16,7 +16,9 @@ fn test_user_preferences_load_save() {
     let mut modified = default_prefs;
     modified.dark_mode = false;
     modified.formats.rtf = false;
-    modified.save_to_dir(root).expect("Failed to save preferences");
+    modified
+        .save_to_dir(root)
+        .expect("Failed to save preferences");
 
     // Reload and check
     let reloaded = UserPreferences::load_from_dir(root);

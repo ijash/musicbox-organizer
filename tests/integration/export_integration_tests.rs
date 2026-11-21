@@ -2,7 +2,6 @@ use musicbox_organizer::models::{
     Device, ExportJob, ExportStatus, FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, Track,
 };
 use musicbox_organizer::services::{DeviceManager, ExportService};
-use musicbox_organizer::ui::ExportDialog;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::Write;
@@ -39,7 +38,11 @@ impl DeviceManager for TestDeviceManager {
         Ok(true)
     }
 
-    fn format_device(&self, _device_id: &str, _filesystem: FileSystem) -> Result<(), Box<dyn Error>> {
+    fn format_device(
+        &self,
+        _device_id: &str,
+        _filesystem: FileSystem,
+    ) -> Result<(), Box<dyn Error>> {
         // Mock reformat by wiping mock_mount directory
         if self.mock_mount.exists() {
             for entry in fs::read_dir(&self.mock_mount)? {
@@ -66,8 +69,14 @@ fn test_end_to_end_export_workflow() {
 
     let song1 = src_dir.path().join("first.mp3");
     let song2 = src_dir.path().join("second.mp3");
-    File::create(&song1).unwrap().write_all(b"mp3_data_1").unwrap();
-    File::create(&song2).unwrap().write_all(b"mp3_data_2").unwrap();
+    File::create(&song1)
+        .unwrap()
+        .write_all(b"mp3_data_1")
+        .unwrap();
+    File::create(&song2)
+        .unwrap()
+        .write_all(b"mp3_data_2")
+        .unwrap();
 
     let tracks = vec![
         Track {

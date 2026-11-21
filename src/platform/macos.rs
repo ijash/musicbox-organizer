@@ -34,7 +34,11 @@ impl DeviceManager for MacOSDeviceManager {
         Ok(true)
     }
 
-    fn format_device(&self, _device_id: &str, _filesystem: FileSystem) -> Result<(), Box<dyn Error>> {
+    fn format_device(
+        &self,
+        _device_id: &str,
+        _filesystem: FileSystem,
+    ) -> Result<(), Box<dyn Error>> {
         // TODO: Format via diskutil or platform native API
         Ok(())
     }

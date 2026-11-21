@@ -11,6 +11,12 @@ pub struct AudioPreviewPlayer {
     pub current_file: Option<PathBuf>,
 }
 
+impl Default for AudioPreviewPlayer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AudioPreviewPlayer {
     pub fn new() -> Self {
         let (stream, handle) = OutputStream::try_default()
@@ -67,6 +73,10 @@ impl AudioPreviewPlayer {
             .as_ref()
             .map(|s| !s.is_paused() && !s.empty())
             .unwrap_or(false)
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.sink.as_ref().map(|s| s.is_paused()).unwrap_or(false)
     }
 }
 

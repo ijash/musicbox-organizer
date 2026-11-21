@@ -47,8 +47,18 @@ fn test_reorder_and_sequence_update() {
 
     let mut state = SessionState::new(PathBuf::from("/tmp"));
     state.tracks = vec![
-        OrganizerTrack::new(0, PathBuf::from("first.mp3"), TrackMetadata::default(), "AAAA".into()),
-        OrganizerTrack::new(1, PathBuf::from("second.mp3"), TrackMetadata::default(), "AAAB".into()),
+        OrganizerTrack::new(
+            0,
+            PathBuf::from("first.mp3"),
+            TrackMetadata::default(),
+            "AAAA".into(),
+        ),
+        OrganizerTrack::new(
+            1,
+            PathBuf::from("second.mp3"),
+            TrackMetadata::default(),
+            "AAAB".into(),
+        ),
     ];
 
     state.move_track(1, 0).unwrap();

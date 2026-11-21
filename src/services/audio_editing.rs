@@ -101,7 +101,9 @@ impl NativeAudioProcessor {
         let reader = BufReader::new(file);
         let decoder = match rodio::Decoder::new(reader) {
             Ok(d) => d,
-            Err(e) => return Err(format!("Failed to decode audio {}: {}", path.display(), e).into()),
+            Err(e) => {
+                return Err(format!("Failed to decode audio {}: {}", path.display(), e).into());
+            }
         };
 
         let sample_rate = decoder.sample_rate();
@@ -358,8 +360,8 @@ pub fn encode_mp3(
         .map_err(|e| format!("Failed to build LAME encoder: {:?}", e))?;
 
     let frames_count = samples.len() / (channels as usize);
-    let mut mp3_buffer = Vec::new();
-    mp3_buffer.reserve(mp3lame_encoder::max_required_buffer_size(frames_count));
+    let mut mp3_buffer =
+        Vec::with_capacity(mp3lame_encoder::max_required_buffer_size(frames_count));
 
     let encoded_size = if channels == 1 {
         let input = MonoPcm(samples);
@@ -395,9 +397,7 @@ pub fn write_atomic_mp3(
     mp3_data: &[u8],
     original_tag: Option<&id3::Tag>,
 ) -> Result<(), Box<dyn Error>> {
-    let parent_dir = target_path
-        .parent()
-        .unwrap_or_else(|| Path::new("."));
+    let parent_dir = target_path.parent().unwrap_or_else(|| Path::new("."));
 
     // Write to a named temp file in the SAME directory to guarantee same-filesystem atomic rename
     let mut temp_file = tempfile::NamedTempFile::new_in(parent_dir)?;
@@ -420,7 +420,12 @@ mod tests {
     use super::*;
     use std::f32::consts::PI;
 
-    fn generate_sine_wave(sample_rate: u32, duration_secs: f32, freq: f32, amplitude: f32) -> Vec<f32> {
+    fn generate_sine_wave(
+        sample_rate: u32,
+        duration_secs: f32,
+        freq: f32,
+        amplitude: f32,
+    ) -> Vec<f32> {
         let num_samples = (sample_rate as f32 * duration_secs) as usize;
         let mut samples = Vec::with_capacity(num_samples * 2);
         for i in 0..num_samples {
@@ -446,7 +451,11 @@ mod tests {
         let trimmed = trim_silence_buffer(&buffer, sample_rate, channels as u16, -45.0);
 
         assert!(trimmed.len() < original_len, "Silence should be trimmed");
-        assert_eq!(trimmed.len() % channels, 0, "Channel alignment must be preserved");
+        assert_eq!(
+            trimmed.len() % channels,
+            0,
+            "Channel alignment must be preserved"
+        );
     }
 
     #[test]
@@ -455,7 +464,11 @@ mod tests {
         let channels = 2;
         let buffer = vec![0.0f32; 44100 * channels];
         let trimmed = trim_silence_buffer(&buffer, sample_rate, channels as u16, -45.0);
-        assert_eq!(trimmed.len(), buffer.len(), "All-silence track should no-op");
+        assert_eq!(
+            trimmed.len(),
+            buffer.len(),
+            "All-silence track should no-op"
+        );
     }
 
     #[test]
@@ -471,7 +484,10 @@ mod tests {
         let loud_samples = generate_sine_wave(sample_rate, 1.0, 440.0, 0.95);
         let loud_gain = calculate_lufs_gain(&loud_samples, sample_rate, channels as u16, -14.0);
         let max_peak_after = 0.95 * loud_gain;
-        assert!(max_peak_after <= 0.90, "Loud audio should not exceed -1.0 dBTP ceiling");
+        assert!(
+            max_peak_after <= 0.90,
+            "Loud audio should not exceed -1.0 dBTP ceiling"
+        );
     }
 
     #[test]
@@ -480,6 +496,9 @@ mod tests {
         let channels = 2;
         let samples = vec![0.0f32; 44100 * channels];
         let gain = calculate_lufs_gain(&samples, sample_rate, channels as u16, -14.0);
-        assert_eq!(gain, 1.0, "Silent audio should produce 1.0 gain without panicking");
+        assert_eq!(
+            gain, 1.0,
+            "Silent audio should produce 1.0 gain without panicking"
+        );
     }
 }

@@ -1,5 +1,5 @@
-/// Modal warning dialog for device reformatting
-/// cite: spec.md FR-004, SC-002, contracts/export-dialog-ui.md
+//! Modal warning dialog for device reformatting
+//! cite: spec.md FR-004, SC-002, contracts/export-dialog-ui.md
 
 pub struct ReformatWarningDialog {
     pub device_name: String,
@@ -48,7 +48,8 @@ mod tests {
 
     #[test]
     fn test_warning_dialog_flow() {
-        let mut dialog = ReformatWarningDialog::new("USB Drive".to_string(), 8 * 1024 * 1024 * 1024);
+        let mut dialog =
+            ReformatWarningDialog::new("USB Drive".to_string(), 8 * 1024 * 1024 * 1024);
         assert!(dialog.is_open);
         assert!(!dialog.confirmed);
         assert!(dialog.message().contains("USB Drive"));

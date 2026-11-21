@@ -6,6 +6,12 @@ use std::path::Path;
 
 pub struct DirectoryScanner;
 
+impl Default for DirectoryScanner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DirectoryScanner {
     pub fn new() -> Self {
         Self
@@ -23,12 +29,11 @@ impl DirectoryScanner {
             let entry = entry?;
             let path = entry.path();
 
-            if path.is_file() {
-                if let Some(ext) = path.extension() {
-                    if ext.to_string_lossy().eq_ignore_ascii_case("mp3") {
-                        entries.push(path);
-                    }
-                }
+            if path.is_file()
+                && let Some(ext) = path.extension()
+                && ext.to_string_lossy().eq_ignore_ascii_case("mp3")
+            {
+                entries.push(path);
             }
         }
 
@@ -36,7 +41,7 @@ impl DirectoryScanner {
         entries.sort_by(|a, b| {
             a.file_name()
                 .unwrap_or_default()
-                .cmp(&b.file_name().unwrap_or_default())
+                .cmp(b.file_name().unwrap_or_default())
         });
 
         let mut tracks = Vec::with_capacity(entries.len());

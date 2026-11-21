@@ -1,8 +1,9 @@
-use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 pub enum ExportStatus {
     PENDING,
     FORMATTING,
@@ -38,7 +39,11 @@ pub struct ExportJob {
 }
 
 impl ExportJob {
-    pub fn new(device_id: String, tracks: Vec<Track>, reformat_enabled: bool) -> Result<Self, String> {
+    pub fn new(
+        device_id: String,
+        tracks: Vec<Track>,
+        reformat_enabled: bool,
+    ) -> Result<Self, String> {
         if tracks.is_empty() {
             return Err("Export job must have at least 1 track".to_string());
         }
@@ -48,7 +53,10 @@ impl ExportJob {
         sorted_indices.sort();
         for (i, &idx) in sorted_indices.iter().enumerate() {
             if idx != i as u32 {
-                return Err(format!("Track indices must be sequential 0-based; found {}", idx));
+                return Err(format!(
+                    "Track indices must be sequential 0-based; found {}",
+                    idx
+                ));
             }
         }
 
@@ -81,7 +89,10 @@ impl ExportJob {
 
     pub fn start_formatting(&mut self) -> Result<(), String> {
         if self.status != ExportStatus::PENDING {
-            return Err(format!("Cannot start formatting from {:?} state", self.status));
+            return Err(format!(
+                "Cannot start formatting from {:?} state",
+                self.status
+            ));
         }
         if !self.reformat_enabled {
             return Err("Reformat not enabled".to_string());
@@ -95,7 +106,10 @@ impl ExportJob {
 
     pub fn format_complete(&mut self) -> Result<(), String> {
         if self.status != ExportStatus::FORMATTING {
-            return Err(format!("Cannot complete format from {:?} state", self.status));
+            return Err(format!(
+                "Cannot complete format from {:?} state",
+                self.status
+            ));
         }
         self.status = ExportStatus::IN_PROGRESS;
         self.started_at = Some(Utc::now());
@@ -143,6 +157,9 @@ impl ExportJob {
     }
 
     pub fn is_terminal(&self) -> bool {
-        matches!(self.status, ExportStatus::COMPLETED | ExportStatus::FAILED | ExportStatus::ABORTED)
+        matches!(
+            self.status,
+            ExportStatus::COMPLETED | ExportStatus::FAILED | ExportStatus::ABORTED
+        )
     }
 }

@@ -1,4 +1,6 @@
-use musicbox_organizer::models::{ExportFormatSelection, PlaylistMetadata, ProjectFile, ProjectTrack};
+use musicbox_organizer::models::{
+    ExportFormatSelection, PlaylistMetadata, ProjectFile, ProjectTrack,
+};
 use musicbox_organizer::services::export_config::ExportConfigService;
 use std::fs::{self, File};
 use tempfile::tempdir;
