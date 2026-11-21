@@ -12,6 +12,9 @@ license = "TODO"
 metaflac = "0.2"
 id3 = "1.14"
 rodio = "0.19"
+ebur128 = "0.1"
+mp3lame-encoder = "0.1"
+tempfile = "3"
 
 # UI frameworks (platform-specific, selected at build time)
 [target.'cfg(windows)'.dependencies]
@@ -37,7 +40,6 @@ uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 [dev-dependencies]
-tempfile = "3"
 
 [lib]
 name = "musicbox_organizer"

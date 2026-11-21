@@ -182,6 +182,7 @@ pub mod linux {
             &header_comp.project_label,
             sync_session_from_project,
             update_devices_ui,
+            &audio_player,
         );
 
         // 4. Build Audio Bar Component

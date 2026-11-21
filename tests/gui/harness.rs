@@ -17,11 +17,14 @@ pub struct GuiHarness {
     pub audio: AudioBarComponent,
     pub export: ExportPanelComponent,
     pub footer: FooterComponent,
+    pub audio_player: Rc<RefCell<musicbox_organizer::services::AudioPreviewPlayer>>,
 }
 
 impl GuiHarness {
     pub fn new() -> Self {
-        gtk::init().expect("Failed to initialize GTK in test environment");
+        if !gtk::is_initialized() {
+            gtk::init().expect("Failed to initialize GTK in test environment");
+        }
 
         let project = Rc::new(RefCell::new(ProjectFile::new(PlaylistMetadata {
             name: "Test Playlist".to_string(),
@@ -93,6 +96,7 @@ impl GuiHarness {
             &header.project_label,
             sync_session,
             update_devices_ui,
+            &audio_player,
         );
 
         let audio = build_audio_bar(&table.tree_view, &project, &audio_player);
@@ -116,6 +120,7 @@ impl GuiHarness {
             audio,
             export,
             footer,
+            audio_player,
         };
         harness.pump_events();
         harness

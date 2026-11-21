@@ -10,7 +10,10 @@ pub mod naming;
 pub mod rtf_exporter;
 pub mod scanner;
 
-pub use audio_editing::{AudioProcessor, PlaceholderAudioProcessor};
+pub use audio_editing::{
+    AudioProcessor, DspBatchReport, DspJobConfig, DspProgress, NativeAudioProcessor,
+    PlaceholderAudioProcessor,
+};
 pub use audio_player::AudioPreviewPlayer;
 pub use compatibility::CompatibilityService;
 pub use device_manager::{create_device_manager, DeviceManager};

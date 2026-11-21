@@ -59,6 +59,7 @@ impl AudioPreviewPlayer {
             sink.stop();
         }
         self.sink = None;
+        self.current_file = None;
     }
 
     pub fn is_playing(&self) -> bool {

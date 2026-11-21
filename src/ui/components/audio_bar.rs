@@ -42,9 +42,8 @@ pub fn build_audio_bar(
         let audio_player = Rc::clone(audio_player);
         let audio_status_label = audio_status_label.clone();
         play_btn.connect_clicked(move |_| {
-            let selection = tree_view.selection();
-            if let Some((_, iter)) = selection.selected() {
-                let path = tree_view.model().unwrap().path(&iter).unwrap();
+            let (paths, _) = tree_view.selection().selected_rows();
+            if let Some(path) = paths.first() {
                 if let Some(indices) = path.indices().first() {
                     let idx = *indices as usize;
                     let p = project.borrow();

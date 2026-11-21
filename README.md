@@ -22,6 +22,7 @@ The application automatically assigns a 4-letter base-26 prefix (`[AAAA-filename
 - **Device Detection**: Detects connected removable storage, capacity, free space, and filesystem type (FAT32/exFAT).
 - **Two-Step Reformat Confirmation**: Optional FAT32/exFAT format before export with an explicit confirmation dialog to prevent accidental data loss.
 - **Multi-Format Export**: Exports playlists to `playlist-text/` folder as `.txt` and `.rtf` (Rich Text Format).
+- **Audio DSP Editing Suite**: Pure-Rust volume normalization (EBU R128 LUFS targeting, peak-safe true-peak ceiling) and silence trimming (~20 ms RMS window, 50 ms safety padding) with atomic disk writes and full ID3 tag preservation.
 - **Audio Preview**: In-app playback preview with Play, Pause, and Stop controls.
 - **Undo / Redo**: 10-step bounded history for edits and reordering.
 - **Dark Mode**: Default dark theme with a toggleable light theme, saved independently of OS settings.
@@ -94,12 +95,23 @@ cargo test
 
 Planned enhancements for upcoming versions:
 
-- **v0.2.0**: Audio DSP editing suite (volume normalization, silence trimming) implementing the `AudioProcessor` trait.
+- **v0.2.0**: Audio DSP editing suite (volume normalization, silence trimming) with native GTK3 background processing dialog (Completed).
 - **v0.2.0**: Native desktop GUI frontends for Windows (Win32) and macOS (Cocoa).
 - **v0.3.0**: DOCX printable catalog exporter.
 - **v0.3.0**: Custom export path templates (e.g., `/Artist/Album/`).
 
 ## Changelog
+
+### v0.2.0 (2026-11-21)
+
+- Pure-Rust audio DSP suite (`NativeAudioProcessor`) featuring:
+  - EBU R128 LUFS loudness normalization with -1.0 dBTP true-peak ceiling.
+  - Windowed RMS silence trimming with ~50 ms safety padding and channel boundary preservation.
+  - Atomic MP3 encoding via `mp3lame-encoder` with verbatim ID3 tag retention.
+- Native GTK3 Audio Tools dialog with non-blocking GLib background worker thread and progress streaming.
+- Relm4/GNOME symbolic `AudioTools` vector SVG icon embedded in binary.
+- Headless GTK GUI testing via `xvfb-run`.
+- Release executable size strictly maintained under 2.5 MB ceiling (currently 2.2 MB).
 
 ### v0.1.0 (2026-11-20)
 

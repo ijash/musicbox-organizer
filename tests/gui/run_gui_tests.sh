@@ -7,10 +7,10 @@ set -euo pipefail
 echo "=== Running Headless GTK GUI Tests via xvfb-run ==="
 
 if command -v xvfb-run >/dev/null 2>&1; then
-    xvfb-run -a cargo test --test gui_tests -- --nocapture
+    xvfb-run -a cargo test --test gui_tests -- --nocapture --test-threads=1
 else
     echo "Warning: xvfb-run not found. Falling back to DISPLAY=${DISPLAY:-:0}..."
-    cargo test --test gui_tests -- --nocapture
+    cargo test --test gui_tests -- --nocapture --test-threads=1
 fi
 
 echo "=== Headless GUI Tests Passed Successfully ==="
