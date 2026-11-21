@@ -2245,6 +2245,7 @@ dependencies = [
  "egui_extras",
  "egui_kittest",
  "id3",
+ "image",
  "metaflac",
  "mp3lame-encoder",
  "rfd",

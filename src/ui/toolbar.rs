@@ -3,8 +3,12 @@ use crate::services::{DirectoryScanner, Id3Service};
 use crate::ui::app::MusicBoxApp;
 use std::path::PathBuf;
 
+fn get_starting_dir() -> PathBuf {
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
 pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         if ui.button("📁 Scan Folder...").clicked() {
             scan_folder_dialog(app);
         }
@@ -13,7 +17,6 @@ pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             add_mp3_dialog(app);
         }
 
-        ui.add_space(8.0);
         let has_selection = !app.selected_track_indices.is_empty();
 
         if ui
@@ -37,7 +40,6 @@ pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             move_selected_down(app);
         }
 
-        ui.add_space(8.0);
         if ui.button("⚙ Audio Tools...").clicked() {
             app.dsp_dialog.is_open = true;
         }
@@ -46,20 +48,21 @@ pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             export_text_dialog(app);
         }
 
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.button("💾 Save").clicked() {
-                save_project(app);
-            }
+        if ui.button("📂 Open").clicked() {
+            open_project_dialog(app);
+        }
 
-            if ui.button("📂 Open").clicked() {
-                open_project_dialog(app);
-            }
-        });
+        if ui.button("💾 Save").clicked() {
+            save_project(app);
+        }
     });
 }
 
 fn scan_folder_dialog(app: &mut MusicBoxApp) {
-    if let Some(folder) = rfd::FileDialog::new().pick_folder() {
+    if let Some(folder) = rfd::FileDialog::new()
+        .set_directory(get_starting_dir())
+        .pick_folder()
+    {
         let scanner = DirectoryScanner::new();
         match scanner.scan_directory(&folder) {
             Ok(found) => {
@@ -80,6 +83,7 @@ fn scan_folder_dialog(app: &mut MusicBoxApp) {
 
 fn add_mp3_dialog(app: &mut MusicBoxApp) {
     if let Some(files) = rfd::FileDialog::new()
+        .set_directory(get_starting_dir())
         .add_filter("MP3 Audio", &["mp3"])
         .pick_files()
         && !files.is_empty()
@@ -178,6 +182,7 @@ fn reindex_tracks(tracks: &mut [ProjectTrack]) {
 
 fn open_project_dialog(app: &mut MusicBoxApp) {
     if let Some(file) = rfd::FileDialog::new()
+        .set_directory(get_starting_dir())
         .add_filter("Playlist Project", &["txt", "json"])
         .pick_file()
     {
@@ -214,7 +219,10 @@ fn save_project(app: &mut MusicBoxApp) {
 }
 
 fn export_text_dialog(app: &mut MusicBoxApp) {
-    if let Some(folder) = rfd::FileDialog::new().pick_folder() {
+    if let Some(folder) = rfd::FileDialog::new()
+        .set_directory(get_starting_dir())
+        .pick_folder()
+    {
         let service = crate::services::ExportConfigService::new();
         let selection = crate::models::ExportFormatSelection {
             txt: true,

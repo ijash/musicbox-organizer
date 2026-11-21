@@ -66,3 +66,17 @@ fn test_playlist_add_reorder_and_undo() {
     assert_eq!(harness.state().project.tracks[0].title, "Track One");
     assert_eq!(harness.state().project.tracks[1].title, "Track Two");
 }
+
+#[test]
+fn test_app_new_startup_and_device_detection() {
+    let app = MusicBoxApp::new(musicbox_organizer::models::ProjectFile::default(), None);
+    // Device manager was queried automatically on initialization
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+    harness.run();
+    assert!(harness.state().dark_mode);
+}

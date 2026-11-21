@@ -34,7 +34,7 @@ impl Default for ExportPanelState {
 }
 
 pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         ui.strong("Export to Removable Media:");
         ui.add_space(8.0);
 
@@ -134,7 +134,7 @@ pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
     }
 }
 
-fn scan_devices(app: &mut MusicBoxApp) {
+pub fn scan_devices(app: &mut MusicBoxApp) {
     let mgr = create_device_manager();
     match mgr.enumerate_devices() {
         Ok(devices) => {

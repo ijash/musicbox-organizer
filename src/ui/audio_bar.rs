@@ -3,7 +3,7 @@ use crate::ui::app::MusicBoxApp;
 
 /// cite: data-model.md: MusicBoxApp.preview_player, data-model.md: MusicBoxApp.playing_track_idx
 pub fn render_audio_bar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         ui.strong("Audio Preview:");
         ui.add_space(8.0);
 
