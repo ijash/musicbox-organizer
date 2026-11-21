@@ -1,6 +1,4 @@
-use musicbox_organizer::models::{
-    Device, ExportJob, ExportStatus, FileSystem, Track,
-};
+use musicbox_organizer::models::{Device, ExportJob, ExportStatus, FileSystem, Track};
 use musicbox_organizer::services::{DeviceManager, ExportService, FormatService};
 use std::error::Error;
 use std::fs::File;
@@ -40,7 +38,11 @@ impl DeviceManager for MockDeviceManager {
         Ok(self.has_space)
     }
 
-    fn format_device(&self, _device_id: &str, _filesystem: FileSystem) -> Result<(), Box<dyn Error>> {
+    fn format_device(
+        &self,
+        _device_id: &str,
+        _filesystem: FileSystem,
+    ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
 

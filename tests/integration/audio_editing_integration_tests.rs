@@ -10,7 +10,10 @@ use tempfile::tempdir;
 fn test_real_mp3_normalization_and_trim_integration() {
     let sample_source = Path::new("mp3-sample/sample-3s.mp3");
     if !sample_source.exists() {
-        eprintln!("Skipping integration test: sample file missing at {}", sample_source.display());
+        eprintln!(
+            "Skipping integration test: sample file missing at {}",
+            sample_source.display()
+        );
         return;
     }
 
@@ -38,7 +41,8 @@ fn test_real_mp3_normalization_and_trim_integration() {
 
     // 3. Verify playable output with rodio::Decoder
     let file = fs::File::open(&test_mp3).expect("open output mp3");
-    let decoder = rodio::Decoder::new(BufReader::new(file)).expect("output must be valid decodable MP3");
+    let decoder =
+        rodio::Decoder::new(BufReader::new(file)).expect("output must be valid decodable MP3");
     assert!(decoder.sample_rate() > 0);
     assert!(decoder.channels() > 0);
 

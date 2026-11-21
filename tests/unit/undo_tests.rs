@@ -2,9 +2,16 @@ use musicbox_organizer::models::{OrganizerTrack, SessionState, TrackMetadata};
 use std::path::PathBuf;
 
 fn create_dummy_track(idx: u32, title: &str) -> OrganizerTrack {
-    let mut meta = TrackMetadata::default();
-    meta.title = title.to_string();
-    OrganizerTrack::new(idx, PathBuf::from(format!("song_{}.mp3", idx)), meta, "AAAA".into())
+    let meta = TrackMetadata {
+        title: title.to_string(),
+        ..Default::default()
+    };
+    OrganizerTrack::new(
+        idx,
+        PathBuf::from(format!("song_{}.mp3", idx)),
+        meta,
+        "AAAA".into(),
+    )
 }
 
 #[test]
