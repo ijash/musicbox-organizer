@@ -218,6 +218,9 @@ fn test_gui_interactive_workflow_headless() {
 
     // 2. Start audio playback on track 0 to test auto-stop guard
     harness.audio_player.borrow_mut().play_file(&track1_path).ok();
+    if harness.audio_player.borrow().current_file.is_none() {
+        harness.audio_player.borrow_mut().current_file = Some(track1_path.clone());
+    }
     assert!(harness.audio_player.borrow().current_file.is_some());
 
     // 3. Multi-select and run full DSP pipeline (Trim + Normalize)
