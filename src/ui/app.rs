@@ -41,6 +41,21 @@ pub struct MusicBoxApp {
     // Concurrency Channels (Workers -> UI)
     pub dsp_rx: Option<Receiver<DspProgressMessage>>,
     pub export_rx: Option<Receiver<ExportProgressMessage>>,
+
+    // Visual Logo Texture
+    pub logo_texture: Option<egui::TextureHandle>,
+}
+
+pub const LOGO_PNG_BYTES: &[u8] = include_bytes!("../../img/logo/png/logo_mbo_128.png");
+
+pub fn load_app_icon() -> Option<egui::IconData> {
+    let img = image::load_from_memory(LOGO_PNG_BYTES).ok()?.to_rgba8();
+    let (width, height) = img.dimensions();
+    Some(egui::IconData {
+        rgba: img.into_raw(),
+        width,
+        height,
+    })
 }
 
 impl Default for MusicBoxApp {
@@ -64,17 +79,68 @@ impl Default for MusicBoxApp {
             status_message: "Ready".to_string(),
             dsp_rx: None,
             export_rx: None,
+            logo_texture: None,
         }
     }
 }
 
 impl MusicBoxApp {
     pub fn new(project: ProjectFile, project_path: Option<PathBuf>) -> Self {
-        Self {
+        let mut app = Self {
             project,
             project_path,
             ..Default::default()
+        };
+        if app.project.tracks.is_empty() && app.project_path.is_none() {
+            app.auto_load_current_dir();
         }
+        app.refresh_devices();
+        app
+    }
+
+    pub fn auto_load_current_dir(&mut self) {
+        if let Ok(cwd) = std::env::current_dir() {
+            let default_playlist = cwd.join("playlist.txt");
+            if default_playlist.exists()
+                && let Ok(proj) = ProjectFile::load(&default_playlist)
+            {
+                self.project = proj;
+                self.project_path = Some(default_playlist);
+                self.status_message = "Auto-loaded playlist.txt".to_string();
+                return;
+            }
+            let scanner = crate::services::DirectoryScanner::new();
+            if let Ok(found) = scanner.scan_directory(&cwd)
+                && !found.is_empty()
+            {
+                self.project.add_scanned_tracks(found);
+                self.status_message = format!(
+                    "Auto-scanned {} tracks from {}",
+                    self.project.tracks.len(),
+                    cwd.display()
+                );
+            }
+        }
+    }
+
+    pub fn refresh_devices(&mut self) {
+        crate::ui::export_panel::scan_devices(self);
+    }
+
+    pub fn get_logo_texture(&mut self, ctx: &egui::Context) -> Option<&egui::TextureHandle> {
+        if self.logo_texture.is_none()
+            && let Ok(img) = image::load_from_memory(LOGO_PNG_BYTES)
+        {
+            let rgba = img.to_rgba8();
+            let (width, height) = rgba.dimensions();
+            let color_image = egui::ColorImage::from_rgba_unmultiplied(
+                [width as usize, height as usize],
+                &rgba.into_raw(),
+            );
+            self.logo_texture =
+                Some(ctx.load_texture("app_logo", color_image, egui::TextureOptions::LINEAR));
+        }
+        self.logo_texture.as_ref()
     }
 
     pub fn render_central_content(&mut self, ui: &mut egui::Ui) {
@@ -201,6 +267,19 @@ impl eframe::App for MusicBoxApp {
             ctx.set_visuals(egui::Visuals::light());
         }
 
+        ctx.style_mut(|style| {
+            style.spacing.button_padding = egui::vec2(5.0, 2.0);
+            style.spacing.item_spacing = egui::vec2(4.0, 4.0);
+            style.text_styles.insert(
+                egui::TextStyle::Body,
+                egui::FontId::new(12.5, egui::FontFamily::Proportional),
+            );
+            style.text_styles.insert(
+                egui::TextStyle::Button,
+                egui::FontId::new(12.5, egui::FontFamily::Proportional),
+            );
+        });
+
         self.poll_dsp_channel();
         if self.dsp_dialog.is_processing {
             ctx.request_repaint();
@@ -240,17 +319,23 @@ impl eframe::App for MusicBoxApp {
 }
 
 pub fn run_gui() {
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size([960.0, 680.0])
+        .with_min_inner_size([300.0, 400.0])
+        .with_title("MusicBox Organizer");
+
+    if let Some(icon) = load_app_icon() {
+        viewport = viewport.with_icon(icon);
+    }
+
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([960.0, 680.0])
-            .with_min_inner_size([720.0, 480.0])
-            .with_title("MusicBox Organizer"),
+        viewport,
         ..Default::default()
     };
 
     let _ = eframe::run_native(
         "MusicBox Organizer",
         native_options,
-        Box::new(|_cc| Ok(Box::new(MusicBoxApp::default()))),
+        Box::new(|_cc| Ok(Box::new(MusicBoxApp::new(ProjectFile::default(), None)))),
     );
 }

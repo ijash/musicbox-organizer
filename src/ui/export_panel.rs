@@ -34,50 +34,53 @@ impl Default for ExportPanelState {
 }
 
 pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
+    // Row 1: Header & Scan
+    ui.horizontal_wrapped(|ui| {
         ui.strong("Export to Removable Media:");
-        ui.add_space(8.0);
-
         if ui.button("🔄 Scan Devices").clicked() {
             scan_devices(app);
         }
+    });
 
-        ui.add_space(8.0);
-        egui::ComboBox::from_id_salt("device_select_combo")
-            .selected_text(
-                app.export_panel
-                    .selected_device_id
-                    .as_ref()
-                    .and_then(|id| {
-                        app.export_panel
-                            .available_devices
-                            .iter()
-                            .find(|d| &d.id == id)
-                    })
-                    .map(|d| d.name.as_str())
-                    .unwrap_or("No device selected"),
-            )
-            .show_ui(ui, |ui| {
-                if app.export_panel.available_devices.is_empty() {
-                    ui.label("No removable devices found");
-                }
-                for dev in &app.export_panel.available_devices {
-                    ui.selectable_value(
-                        &mut app.export_panel.selected_device_id,
-                        Some(dev.id.clone()),
-                        &dev.name,
-                    );
-                }
-            });
+    // Row 2: Device Selection ComboBox (adaptive width up to 260px)
+    let combo_width = ui.available_width().min(260.0);
+    egui::ComboBox::from_id_salt("device_select_combo")
+        .width(combo_width)
+        .selected_text(
+            app.export_panel
+                .selected_device_id
+                .as_ref()
+                .and_then(|id| {
+                    app.export_panel
+                        .available_devices
+                        .iter()
+                        .find(|d| &d.id == id)
+                })
+                .map(|d| d.name.as_str())
+                .unwrap_or("No device selected"),
+        )
+        .show_ui(ui, |ui| {
+            if app.export_panel.available_devices.is_empty() {
+                ui.label("No removable devices found");
+            }
+            for dev in &app.export_panel.available_devices {
+                ui.selectable_value(
+                    &mut app.export_panel.selected_device_id,
+                    Some(dev.id.clone()),
+                    &dev.name,
+                );
+            }
+        });
 
-        ui.add_space(8.0);
+    // Row 3: Subpath & Reformat Media Checkbox
+    ui.horizontal_wrapped(|ui| {
         ui.label("Subpath:");
-        ui.add(egui::TextEdit::singleline(&mut app.export_panel.subpath).desired_width(70.0));
-
-        ui.add_space(8.0);
+        ui.add(egui::TextEdit::singleline(&mut app.export_panel.subpath).desired_width(90.0));
         ui.checkbox(&mut app.export_panel.reformat_enabled, "Reformat Media");
+    });
 
-        ui.add_space(8.0);
+    // Row 4: Export & Eject Actions
+    ui.horizontal_wrapped(|ui| {
         let export_enabled = !app.export_panel.is_exporting
             && app.export_panel.selected_device_id.is_some()
             && !app.project.tracks.is_empty();
@@ -134,7 +137,7 @@ pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
     }
 }
 
-fn scan_devices(app: &mut MusicBoxApp) {
+pub fn scan_devices(app: &mut MusicBoxApp) {
     let mgr = create_device_manager();
     match mgr.enumerate_devices() {
         Ok(devices) => {

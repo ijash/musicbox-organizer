@@ -22,6 +22,16 @@ pub struct ProjectTrack {
     pub file_path: String,
 }
 
+impl Default for ProjectFile {
+    fn default() -> Self {
+        Self::new(PlaylistMetadata {
+            name: "Default Playlist".to_string(),
+            author: None,
+            created_at: Some(chrono::Utc::now().to_rfc3339()),
+        })
+    }
+}
+
 impl ProjectFile {
     pub fn new(metadata: PlaylistMetadata) -> Self {
         ProjectFile {
