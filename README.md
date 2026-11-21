@@ -84,6 +84,22 @@ Run unit, contract, and integration tests:
 cargo test
 ```
 
+## Creating a Release
+
+Releases are fully automated via GitHub Actions (`.github/workflows/release.yml`). The cross-platform matrix compiles binaries for Linux, Windows, and macOS, validates automated GUI and size tests, computes `SHA256SUMS.txt`, and publishes a GitHub Release.
+
+To cut an official release:
+
+```bash
+# 1. Create an annotated git tag
+git tag -a v0.2.0 -m "Release v0.2.0"
+
+# 2. Push the tag to GitHub
+git push origin v0.2.0
+```
+
+> **Note on CI Quotas**: Standard branch pushes (`Development`, `main`) do not invoke the multi-OS build matrix to preserve private runner minutes. For on-demand pre-release smoke testing across all 3 operating systems without publishing a public release, trigger the workflow manually via GitHub Actions (`workflow_dispatch`).
+
 ## Core Principles
 
 1. **Lightweight First**: Single standalone executable (<50 MB target, ~1.7 MB actual). No Electron, no web runtime.

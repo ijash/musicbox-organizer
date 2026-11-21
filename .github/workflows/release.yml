@@ -1,0 +1,128 @@
+name: Release & Cross-Platform CI
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: musicbox-linux-x86_64.tar.gz
+          - os: windows-latest
+            artifact_name: musicbox-windows-x86_64.zip
+          - os: macos-latest
+            artifact_name: musicbox-macos-arm64.tar.gz
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      # Linux: Dependencies, Full & GUI tests, Release build, Constitution Size Gate (< 2.5 MB)
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libasound2-dev libdbus-1-dev xvfb
+
+      - name: Run Linux tests & headless GUI test harness
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo test --verbose
+          chmod +x ./tests/gui/run_gui_tests.sh
+          ./tests/gui/run_gui_tests.sh
+
+      - name: Build Linux release binary
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo build --release
+
+      - name: Assert Linux binary size ceiling (< 2.5 MB)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          BIN_SIZE=$(stat -c%s target/release/musicbox)
+          echo "Linux release binary size: $BIN_SIZE bytes"
+          if [ "$BIN_SIZE" -ge 2621440 ]; then
+            echo "Error: Binary size exceeds 2.5 MB ceiling ($BIN_SIZE >= 2621440 bytes)" >&2
+            exit 1
+          fi
+
+      - name: Package Linux release archive
+        if: matrix.os == 'ubuntu-latest'
+        run: tar -czvf musicbox-linux-x86_64.tar.gz -C target/release musicbox
+
+      # Windows: Library tests, Release build, ZIP packaging
+      - name: Run Windows library tests
+        if: matrix.os == 'windows-latest'
+        run: cargo test --lib --verbose
+
+      - name: Build Windows release binary
+        if: matrix.os == 'windows-latest'
+        run: cargo build --release
+
+      - name: Package Windows release archive
+        if: matrix.os == 'windows-latest'
+        run: Compress-Archive -Path target/release/musicbox.exe -DestinationPath musicbox-windows-x86_64.zip
+
+      # macOS: Library tests, Release build, TAR.GZ packaging
+      - name: Run macOS library tests
+        if: matrix.os == 'macos-latest'
+        run: cargo test --lib --verbose
+
+      - name: Build macOS release binary
+        if: matrix.os == 'macos-latest'
+        run: cargo build --release
+
+      - name: Package macOS release archive
+        if: matrix.os == 'macos-latest'
+        run: tar -czvf musicbox-macos-arm64.tar.gz -C target/release musicbox
+
+      - name: Upload platform build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Generate SHA256 checksums
+        run: |
+          sha256sum musicbox-linux-x86_64.tar.gz musicbox-windows-x86_64.zip musicbox-macos-arm64.tar.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            musicbox-linux-x86_64.tar.gz
+            musicbox-windows-x86_64.zip
+            musicbox-macos-arm64.tar.gz
+            SHA256SUMS.txt
+          generate_release_notes: true
