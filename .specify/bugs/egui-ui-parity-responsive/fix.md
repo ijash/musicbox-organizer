@@ -16,11 +16,11 @@ Applied remediations for all 9 `eframe`/`egui` visual QA regressions: replaced m
 | `Cargo.toml` | modified | Added `image = { version = "0.25", default-features = false, features = ["png"] }` (already in lockfile) for PNG favicon decoding |
 | `src/models/project.rs` | modified | Added `impl Default for ProjectFile` |
 | `src/ui/app.rs` | modified | Added embedded logo PNG asset, `load_app_icon()`, `get_logo_texture()`, startup `auto_load_current_dir()`, `refresh_devices()`, `300x400px` viewport minimum size with icon, and compact typography / button padding styles |
-| `src/ui/header.rs` | modified | Added logo rendering, replaced missing glyphs with `↩ Undo` / `↪ Redo`, switched to `horizontal_wrapped` |
+| `src/ui/header.rs` | modified | Added logo rendering, replaced glyphs with clear arrows `← Undo` / `→ Redo`, switched to `horizontal_wrapped` |
 | `src/ui/toolbar.rs` | modified | Switched to `horizontal_wrapped`, initialized `rfd::FileDialog` with current working directory |
 | `src/ui/audio_bar.rs` | modified | Switched to `horizontal_wrapped` so controls and labels wrap without clipping |
-| `src/ui/export_panel.rs` | modified | Switched to `horizontal_wrapped`, made `scan_devices()` public for startup detection |
-| `src/ui/footer.rs` | modified | Formatted italic right-aligned attribution `Made by Ijash. Github: musicbox` with hyperlink |
+| `src/ui/export_panel.rs` | modified | Structured into 4 distinct horizontal_wrapped rows with adaptive ComboBox width (`.min(260.0)`) and compact subpath (`90.0px`) |
+| `src/ui/footer.rs` | modified | Added `< 380px` check stacking status message above right-aligned italic `Made by Ijash. Github: musicbox` with `.truncate()` |
 | `tests/gui/playlist_tests.rs` | modified | Added test for `MusicBoxApp::new` startup device and directory discovery |
 | `tests/gui/theme_tests.rs` | modified | Added test verifying rendering at compact `300x400px` viewport size |
 

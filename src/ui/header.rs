@@ -22,7 +22,7 @@ pub fn render_header(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
         // Undo button
         let can_undo = app.session.can_undo();
         if ui
-            .add_enabled(can_undo, egui::Button::new("↩ Undo"))
+            .add_enabled(can_undo, egui::Button::new("← Undo"))
             .clicked()
             && let Some(state) = app.session.undo_project(app.project.clone())
         {
@@ -35,7 +35,7 @@ pub fn render_header(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
         // Redo button
         let can_redo = app.session.can_redo();
         if ui
-            .add_enabled(can_redo, egui::Button::new("↪ Redo"))
+            .add_enabled(can_redo, egui::Button::new("→ Redo"))
             .clicked()
             && let Some(state) = app.session.redo_project(app.project.clone())
         {

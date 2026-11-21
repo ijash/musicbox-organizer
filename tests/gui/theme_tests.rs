@@ -64,6 +64,13 @@ fn test_footer_hyperlink_and_status() {
         app,
     );
 
+    // Wide footer test
+    harness.set_size(egui::vec2(600.0, 400.0));
+    harness.run();
+    assert_eq!(harness.state().status_message, "Test status operational");
+
+    // Narrow footer test (< 380px stacked)
+    harness.set_size(egui::vec2(300.0, 400.0));
     harness.run();
     assert_eq!(harness.state().status_message, "Test status operational");
 }
