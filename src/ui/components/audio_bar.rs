@@ -1,6 +1,6 @@
 use crate::services::AudioPreviewPlayer;
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Button, Frame, Label, Orientation, TreeView};
+use gtk::{Box as GtkBox, Frame, Label, Orientation, TreeView};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -15,6 +15,8 @@ pub fn build_audio_bar(
     project: &Rc<RefCell<crate::models::ProjectFile>>,
     audio_player: &Rc<RefCell<AudioPreviewPlayer>>,
 ) -> AudioBarComponent {
+    use crate::ui::icons::AppIcon;
+
     let preview_frame = Frame::new(Some("Audio Preview Player"));
     let preview_box = GtkBox::new(Orientation::Horizontal, 8);
     preview_box.set_margin_start(8);
@@ -22,9 +24,9 @@ pub fn build_audio_bar(
     preview_box.set_margin_top(4);
     preview_box.set_margin_bottom(4);
 
-    let play_btn = Button::with_label("▶ Play");
-    let pause_btn = Button::with_label("⏸ Pause");
-    let stop_btn = Button::with_label("⏹ Stop");
+    let play_btn = AppIcon::Play.button("Play");
+    let pause_btn = AppIcon::Pause.button("Pause");
+    let stop_btn = AppIcon::Stop.button("Stop");
     let audio_status_label = Label::new(Some("Select track to preview audio"));
     audio_status_label.set_xalign(0.0);
 

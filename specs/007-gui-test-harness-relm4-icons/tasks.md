@@ -14,9 +14,9 @@
 
 **Purpose**: Add in-use icon definitions and test harness infrastructure
 
-- [ ] T001 [P] Implement `src/ui/icons.rs` with embedded SVG data for in-use icons (FR-003, FR-004)
-- [ ] T002 [P] Create `tests/gui/mod.rs` and `tests/gui_tests.rs` test harness target
-- [ ] T003 Create executable script `tests/gui/run_gui_tests.sh` with `xvfb-run -a` wrapper (FR-001)
+- [X] T001 [P] Implement `src/ui/icons.rs` with embedded SVG data for in-use icons (FR-003, FR-004)
+- [X] T002 [P] Create `tests/gui/mod.rs` and `tests/gui_tests.rs` test harness target
+- [X] T003 Create executable script `tests/gui/run_gui_tests.sh` with `xvfb-run -a` wrapper (FR-001)
 
 ---
 
@@ -26,9 +26,9 @@
 
 **Independent Test**: Launch GUI, verify standard vector icons render on all buttons across dark and light themes.
 
-- [ ] T004 [US2] Update `src/ui/components/playlist_table.rs` toolbar buttons (Scan, Add, Remove, Up, Down, Save, Open) to use `src/ui/icons.rs` icons (FR-005)
-- [ ] T005 [US2] Update `src/ui/components/audio_bar.rs` buttons (Play, Pause, Stop) to use `src/ui/icons.rs` icons (FR-005)
-- [ ] T006 [US2] Update `src/ui/components/header.rs` theme button to use `src/ui/icons.rs` icons (FR-005)
+- [X] T004 [US2] Update `src/ui/components/playlist_table.rs` toolbar buttons (Scan, Add, Remove, Up, Down, Save, Open) to use `src/ui/icons.rs` icons (FR-005)
+- [X] T005 [US2] Update `src/ui/components/audio_bar.rs` buttons (Play, Pause, Stop) to use `src/ui/icons.rs` icons (FR-005)
+- [X] T006 [US2] Update `src/ui/components/header.rs` theme button to use `src/ui/icons.rs` icons (FR-005)
 
 ---
 
@@ -38,8 +38,8 @@
 
 **Independent Test**: Run `./tests/gui/run_gui_tests.sh`, confirm all interactive simulation steps pass in <10s.
 
-- [ ] T007 [US1] Implement `tests/gui/harness.rs` programmatic driver with event pump and button click simulation
-- [ ] T008 [US1] Implement automated test suite in `tests/gui_tests.rs` testing track addition, inline edit, reorder up/down, remove, audio preview, and theme toggle (FR-002)
+- [X] T007 [US1] Implement `tests/gui/harness.rs` programmatic driver with event pump and button click simulation
+- [X] T008 [US1] Implement automated test suite in `tests/gui_tests.rs` testing track addition, inline edit, reorder up/down, remove, audio preview, and theme toggle (FR-002)
 
 ---
 
@@ -47,6 +47,6 @@
 
 **Purpose**: Verify binary size ceiling and Constitution compliance
 
-- [ ] T009 Run `./tests/gui/run_gui_tests.sh` under `xvfb-run` and verify 0 failures
-- [ ] T010 Run `cargo test` (all unit and integration tests pass) and rebuild release binary (`cargo build --release`) per Constitution Principle VII
-- [ ] T011 Audit release binary size (`ls -lh target/release/musicbox`) ensuring it remains <2.5 MB per Constitution Principle I
+- [X] T009 Run `./tests/gui/run_gui_tests.sh` under `xvfb-run` and verify 0 failures
+- [X] T010 Run `cargo test` (all unit and integration tests pass) and rebuild release binary (`cargo build --release`) per Constitution Principle VII
+- [X] T011 Audit release binary size (`ls -lh target/release/musicbox`) ensuring it remains <2.5 MB per Constitution Principle I

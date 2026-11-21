@@ -28,18 +28,20 @@ pub fn build_playlist_table(
 ) -> PlaylistTableComponent {
     let root_box = GtkBox::new(Orientation::Vertical, 6);
 
-    // --- Action Buttons Toolbar ---
+    // --- Action Buttons Toolbar with Standardized Relm4 Icons ---
+    use crate::ui::icons::AppIcon;
+
     let toolbar_box = GtkBox::new(Orientation::Horizontal, 6);
-    let scan_dir_btn = Button::with_label("📁 Scan Folder...");
-    let add_track_btn = Button::with_label("+ Add MP3");
-    let remove_track_btn = Button::with_label("✖ Remove");
-    let move_up_btn = Button::with_label("▲ Up");
-    let move_down_btn = Button::with_label("▼ Down");
-    let audio_tools_btn = Button::with_label("🎛 Audio Tools (Soon)");
+    let scan_dir_btn = AppIcon::FolderOpen.button("Scan Folder...");
+    let add_track_btn = AppIcon::ListAdd.button("Add MP3");
+    let remove_track_btn = AppIcon::ListRemove.button("Remove");
+    let move_up_btn = AppIcon::GoUp.button("Up");
+    let move_down_btn = AppIcon::GoDown.button("Down");
+    let audio_tools_btn = Button::with_label("Audio Tools (Soon)");
     audio_tools_btn.set_sensitive(false);
-    let export_formats_btn = Button::with_label("📄 Export Text/RTF...");
-    let save_project_btn = Button::with_label("💾 Save");
-    let open_project_btn = Button::with_label("📂 Open");
+    let export_formats_btn = AppIcon::ExportText.button("Export Text/RTF...");
+    let save_project_btn = AppIcon::Save.button("Save");
+    let open_project_btn = AppIcon::Open.button("Open");
 
     toolbar_box.pack_start(&scan_dir_btn, false, false, 0);
     toolbar_box.pack_start(&add_track_btn, false, false, 0);

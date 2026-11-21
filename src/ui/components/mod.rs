@@ -10,12 +10,12 @@ pub mod playlist_table;
 pub mod export_panel;
 
 #[cfg(target_os = "linux")]
-pub use audio_bar::build_audio_bar;
+pub use audio_bar::{build_audio_bar, AudioBarComponent};
 #[cfg(target_os = "linux")]
-pub use export_panel::build_export_panel;
+pub use export_panel::{build_export_panel, ExportPanelComponent};
 #[cfg(target_os = "linux")]
-pub use footer::build_footer;
+pub use footer::{build_footer, FooterComponent};
 #[cfg(target_os = "linux")]
-pub use header::build_header;
+pub use header::{build_header, HeaderComponent};
 #[cfg(target_os = "linux")]
-pub use playlist_table::build_playlist_table;
+pub use playlist_table::{build_playlist_table, PlaylistTableComponent};

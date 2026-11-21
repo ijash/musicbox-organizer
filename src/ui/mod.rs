@@ -1,6 +1,8 @@
 pub mod export_dialog;
 pub mod warnings;
 #[cfg(target_os = "linux")]
+pub mod icons;
+#[cfg(target_os = "linux")]
 pub mod theme;
 #[cfg(target_os = "linux")]
 pub mod components;

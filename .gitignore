@@ -27,6 +27,7 @@ rustc-ice-*.txt
 .env
 .env.local
 *.log
+.musicbox_config.json
 
 # IDE
 .vscode/
