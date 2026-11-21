@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 /// ID3 metadata extracted from or written to an audio file
 /// cite: data-model.md TrackMetadata
@@ -26,7 +26,12 @@ pub struct OrganizerTrack {
 }
 
 impl OrganizerTrack {
-    pub fn new(index: u32, file_path: PathBuf, metadata: TrackMetadata, xxyy_prefix: String) -> Self {
+    pub fn new(
+        index: u32,
+        file_path: PathBuf,
+        metadata: TrackMetadata,
+        xxyy_prefix: String,
+    ) -> Self {
         let original_filename = file_path
             .file_name()
             .map(|f| f.to_string_lossy().to_string())

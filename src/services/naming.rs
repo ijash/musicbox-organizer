@@ -1,14 +1,18 @@
-/// XXYY Naming Algorithm: Base-26 sequence (AAAA → ZZZZ)
-/// Supports max 17,576 tracks (26^4)
-/// 
-/// cite: data-model.md Naming Sequence
+//! XXYY Naming Algorithm: Base-26 sequence (AAAA → ZZZZ)
+//! Supports max 17,576 tracks (26^4)
+//!
+//! cite: data-model.md Naming Sequence
 
 const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const MAX_TRACKS: u32 = 17_576; // 26^4
 
 pub fn track_index_to_xxyy(index: u32) -> Result<String, String> {
     if index >= MAX_TRACKS {
-        return Err(format!("Track index {} exceeds max {}", index, MAX_TRACKS - 1));
+        return Err(format!(
+            "Track index {} exceeds max {}",
+            index,
+            MAX_TRACKS - 1
+        ));
     }
 
     // Scheme: index = c0*676 + c1*26 + c3, with c2 = c0
@@ -30,12 +34,18 @@ pub fn track_index_to_xxyy(index: u32) -> Result<String, String> {
 
 pub fn xxyy_to_track_index(xxyy: &str) -> Result<u32, String> {
     if xxyy.len() != 4 {
-        return Err(format!("XXYY string must be exactly 4 characters, got {}", xxyy.len()));
+        return Err(format!(
+            "XXYY string must be exactly 4 characters, got {}",
+            xxyy.len()
+        ));
     }
 
     let chars: Vec<char> = xxyy.chars().collect();
     if chars.len() != 4 {
-        return Err(format!("XXYY string must be exactly 4 characters, got {}", chars.len()));
+        return Err(format!(
+            "XXYY string must be exactly 4 characters, got {}",
+            chars.len()
+        ));
     }
 
     // Validate all chars first
@@ -53,7 +63,10 @@ pub fn xxyy_to_track_index(xxyy: &str) -> Result<u32, String> {
     let index = c0 * 676 + c1 * 26 + c3;
 
     if index >= MAX_TRACKS {
-        return Err(format!("XXYY '{}' maps to index {} which exceeds max", xxyy, index));
+        return Err(format!(
+            "XXYY '{}' maps to index {} which exceeds max",
+            xxyy, index
+        ));
     }
 
     Ok(index)

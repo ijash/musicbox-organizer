@@ -20,7 +20,8 @@ impl ExportService {
         // Validate device exists and has sufficient space
         let is_removable = self.device_manager.check_removable(&job.device_id)?;
         if !is_removable {
-            let msg = "Device is internal (not removable). Select a USB or SD card instead.".to_string();
+            let msg =
+                "Device is internal (not removable). Select a USB or SD card instead.".to_string();
             job.fail(msg.clone()).ok();
             return Err(msg.into());
         }
@@ -40,13 +41,16 @@ impl ExportService {
                 job.fail(msg.clone()).ok();
                 return Err(msg.into());
             }
-            job.start_formatting().map_err(|e| -> Box<dyn Error> { e.into() })?;
-            self.device_manager.format_device(&job.device_id, crate::models::FileSystem::FAT32)
+            job.start_formatting()
+                .map_err(|e| -> Box<dyn Error> { e.into() })?;
+            self.device_manager
+                .format_device(&job.device_id, crate::models::FileSystem::FAT32)
                 .map_err(|e| {
                     job.fail(format!("Format failed: {}", e)).ok();
                     e
                 })?;
-            job.format_complete().map_err(|e| -> Box<dyn Error> { e.into() })?;
+            job.format_complete()
+                .map_err(|e| -> Box<dyn Error> { e.into() })?;
         } else {
             job.start().map_err(|e| -> Box<dyn Error> { e.into() })?;
         }
@@ -61,16 +65,19 @@ impl ExportService {
         for (idx, track) in job.tracks.iter_mut().enumerate() {
             // Check for device disconnection before copying next file
             if !dest_path.exists() || self.device_manager.check_removable(&job.device_id).is_err() {
-                copy_err = Some("Device disconnected during export. Please reconnect and retry.".to_string());
+                copy_err = Some(
+                    "Device disconnected during export. Please reconnect and retry.".to_string(),
+                );
                 break;
             }
 
             let source = Path::new(&track.source_path);
-            let formatted_filename = if track.xxyy_name.starts_with('[') && track.xxyy_name.ends_with(']') {
-                track.xxyy_name.clone()
-            } else {
-                format!("[{}-{}]", track.xxyy_name, track.filename)
-            };
+            let formatted_filename =
+                if track.xxyy_name.starts_with('[') && track.xxyy_name.ends_with(']') {
+                    track.xxyy_name.clone()
+                } else {
+                    format!("[{}-{}]", track.xxyy_name, track.filename)
+                };
             let dest_file = dest_path.join(&formatted_filename);
 
             // Copy file
@@ -87,7 +94,10 @@ impl ExportService {
                     job.files_written = idx + 1;
                 }
                 Err(e) => {
-                    copy_err = Some(format!("Failed to read metadata for {}: {}", track.filename, e));
+                    copy_err = Some(format!(
+                        "Failed to read metadata for {}: {}",
+                        track.filename, e
+                    ));
                     break;
                 }
             }

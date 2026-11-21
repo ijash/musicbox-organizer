@@ -7,6 +7,12 @@ use std::path::{Path, PathBuf};
 
 pub struct Id3Service;
 
+impl Default for Id3Service {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Id3Service {
     pub fn new() -> Self {
         Self
@@ -76,14 +82,21 @@ impl Id3Service {
     }
 
     /// Rename file to [XXYY-original.mp3] format (FR-008)
-    pub fn apply_xxyy_rename(&self, path: &Path, track_index: u32) -> Result<PathBuf, Box<dyn Error>> {
+    pub fn apply_xxyy_rename(
+        &self,
+        path: &Path,
+        track_index: u32,
+    ) -> Result<PathBuf, Box<dyn Error>> {
         let filename = path
             .file_name()
             .ok_or_else(|| format!("Invalid path: {}", path.display()))?
             .to_string_lossy();
 
         // Strip existing [XXYY-] prefix if present so we don't nest prefixes
-        let clean_filename = if filename.starts_with('[') && filename.len() > 6 && filename.chars().nth(5) == Some('-') {
+        let clean_filename = if filename.starts_with('[')
+            && filename.len() > 6
+            && filename.chars().nth(5) == Some('-')
+        {
             if let Some(end_bracket) = filename.find(']') {
                 &filename[end_bracket + 1..]
             } else {
@@ -93,8 +106,9 @@ impl Id3Service {
             &filename
         };
 
-        let new_filename = naming::format_export_filename(track_index, clean_filename.trim_start_matches('-'))
-            .map_err(|e| format!("Failed to generate sequence: {}", e))?;
+        let new_filename =
+            naming::format_export_filename(track_index, clean_filename.trim_start_matches('-'))
+                .map_err(|e| format!("Failed to generate sequence: {}", e))?;
 
         let parent = path.parent().unwrap_or_else(|| Path::new("."));
         let target_path = parent.join(&new_filename);

@@ -21,11 +21,11 @@ impl DeviceManager for WindowsDeviceManager {
     fn enumerate_devices(&self) -> Result<Vec<Device>, Box<dyn Error>> {
         #[cfg(windows)]
         {
-            use windows::core::PCWSTR;
             use windows::Win32::Storage::FileSystem::{
-                GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives, GetVolumeInformationW,
-                DRIVE_REMOVABLE,
+                DRIVE_REMOVABLE, GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives,
+                GetVolumeInformationW,
             };
+            use windows::core::PCWSTR;
 
             let drives_mask = unsafe { GetLogicalDrives() };
             let mut devices = Vec::new();
@@ -116,7 +116,11 @@ impl DeviceManager for WindowsDeviceManager {
         Ok(true)
     }
 
-    fn format_device(&self, _device_id: &str, _filesystem: FileSystem) -> Result<(), Box<dyn Error>> {
+    fn format_device(
+        &self,
+        _device_id: &str,
+        _filesystem: FileSystem,
+    ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
 

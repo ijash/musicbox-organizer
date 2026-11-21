@@ -6,6 +6,12 @@ use std::path::{Path, PathBuf};
 
 pub struct ExportConfigService;
 
+impl Default for ExportConfigService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExportConfigService {
     pub fn new() -> Self {
         Self
@@ -55,15 +61,12 @@ impl ExportConfigService {
                 .tracks
                 .iter()
                 .map(|t| {
-                    let mut meta = TrackMetadata::default();
-                    meta.title = t.title.clone();
-                    meta.artist = t.artist.clone();
-                    OrganizerTrack::new(
-                        t.index,
-                        PathBuf::from(&t.file_path),
-                        meta,
-                        "AAAA".into(),
-                    )
+                    let meta = TrackMetadata {
+                        title: t.title.clone(),
+                        artist: t.artist.clone(),
+                        ..Default::default()
+                    };
+                    OrganizerTrack::new(t.index, PathBuf::from(&t.file_path), meta, "AAAA".into())
                 })
                 .collect();
             RtfExporter::export_to_file(&rtf_path, &project.metadata.name, &organizer_tracks)?;

@@ -16,15 +16,24 @@ pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
         ui.add_space(8.0);
         let has_selection = !app.selected_track_indices.is_empty();
 
-        if ui.add_enabled(has_selection, egui::Button::new("🗑 Remove")).clicked() {
+        if ui
+            .add_enabled(has_selection, egui::Button::new("🗑 Remove"))
+            .clicked()
+        {
             remove_selected_tracks(app);
         }
 
-        if ui.add_enabled(can_move_up(app), egui::Button::new("⬆ Up")).clicked() {
+        if ui
+            .add_enabled(can_move_up(app), egui::Button::new("⬆ Up"))
+            .clicked()
+        {
             move_selected_up(app);
         }
 
-        if ui.add_enabled(can_move_down(app), egui::Button::new("⬇ Down")).clicked() {
+        if ui
+            .add_enabled(can_move_down(app), egui::Button::new("⬇ Down"))
+            .clicked()
+        {
             move_selected_down(app);
         }
 
@@ -70,7 +79,9 @@ fn scan_folder_dialog(app: &mut MusicBoxApp) {
 }
 
 fn add_mp3_dialog(app: &mut MusicBoxApp) {
-    if let Some(files) = rfd::FileDialog::new().add_filter("MP3 Audio", &["mp3"]).pick_files()
+    if let Some(files) = rfd::FileDialog::new()
+        .add_filter("MP3 Audio", &["mp3"])
+        .pick_files()
         && !files.is_empty()
     {
         app.session.push_undo(app.project.clone());
@@ -166,7 +177,10 @@ fn reindex_tracks(tracks: &mut [ProjectTrack]) {
 }
 
 fn open_project_dialog(app: &mut MusicBoxApp) {
-    if let Some(file) = rfd::FileDialog::new().add_filter("Playlist Project", &["txt", "json"]).pick_file() {
+    if let Some(file) = rfd::FileDialog::new()
+        .add_filter("Playlist Project", &["txt", "json"])
+        .pick_file()
+    {
         match ProjectFile::load(&file) {
             Ok(proj) => {
                 app.session.push_undo(app.project.clone());
@@ -184,7 +198,10 @@ fn open_project_dialog(app: &mut MusicBoxApp) {
 }
 
 fn save_project(app: &mut MusicBoxApp) {
-    let path = app.project_path.clone().unwrap_or_else(|| PathBuf::from("playlist.txt"));
+    let path = app
+        .project_path
+        .clone()
+        .unwrap_or_else(|| PathBuf::from("playlist.txt"));
     match app.project.save(&path) {
         Ok(()) => {
             app.project_path = Some(path.clone());
@@ -205,7 +222,11 @@ fn export_text_dialog(app: &mut MusicBoxApp) {
         };
         match service.export_playlist(&folder, &selection, &app.project) {
             Ok(files) => {
-                app.status_message = format!("Exported {} text/RTF playlist file(s) to {}", files.len(), folder.display());
+                app.status_message = format!(
+                    "Exported {} text/RTF playlist file(s) to {}",
+                    files.len(),
+                    folder.display()
+                );
             }
             Err(e) => {
                 app.status_message = format!("Text export error: {}", e);

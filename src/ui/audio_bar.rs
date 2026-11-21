@@ -1,6 +1,7 @@
 use crate::services::AudioPreviewPlayer;
 use crate::ui::app::MusicBoxApp;
 
+/// cite: data-model.md: MusicBoxApp.preview_player, data-model.md: MusicBoxApp.playing_track_idx
 pub fn render_audio_bar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         ui.strong("Audio Preview:");
@@ -22,24 +23,47 @@ pub fn render_audio_bar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             .map(|p| p.is_playing())
             .unwrap_or(false);
 
-        let play_btn_enabled = target_idx.is_some() && (!is_playing || app.preview_player.as_ref().map(|p| p.is_paused()).unwrap_or(false));
-        if ui.add_enabled(play_btn_enabled, egui::Button::new("▶ Play")).clicked()
+        let play_btn_enabled = target_idx.is_some()
+            && (!is_playing
+                || app
+                    .preview_player
+                    .as_ref()
+                    .map(|p| p.is_paused())
+                    .unwrap_or(false));
+        if ui
+            .add_enabled(play_btn_enabled, egui::Button::new("▶ Play"))
+            .clicked()
             && let Some(idx) = target_idx
         {
             play_track(app, idx);
         }
 
         // Pause Button
-        let pause_btn_enabled = is_playing && !app.preview_player.as_ref().map(|p| p.is_paused()).unwrap_or(false);
-        if ui.add_enabled(pause_btn_enabled, egui::Button::new("⏸ Pause")).clicked()
+        let pause_btn_enabled = is_playing
+            && !app
+                .preview_player
+                .as_ref()
+                .map(|p| p.is_paused())
+                .unwrap_or(false);
+        if ui
+            .add_enabled(pause_btn_enabled, egui::Button::new("⏸ Pause"))
+            .clicked()
             && let Some(player) = &mut app.preview_player
         {
             player.pause();
         }
 
         // Stop Button
-        let stop_btn_enabled = is_playing || app.preview_player.as_ref().map(|p| p.is_paused()).unwrap_or(false);
-        if ui.add_enabled(stop_btn_enabled, egui::Button::new("⏹ Stop")).clicked() {
+        let stop_btn_enabled = is_playing
+            || app
+                .preview_player
+                .as_ref()
+                .map(|p| p.is_paused())
+                .unwrap_or(false);
+        if ui
+            .add_enabled(stop_btn_enabled, egui::Button::new("⏹ Stop"))
+            .clicked()
+        {
             if let Some(player) = &mut app.preview_player {
                 player.stop();
             }
@@ -55,7 +79,12 @@ pub fn render_audio_bar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                 } else {
                     track.title.as_str()
                 };
-                let state_str = if app.preview_player.as_ref().map(|p| p.is_paused()).unwrap_or(false) {
+                let state_str = if app
+                    .preview_player
+                    .as_ref()
+                    .map(|p| p.is_paused())
+                    .unwrap_or(false)
+                {
                     "Paused"
                 } else {
                     "Playing"
@@ -91,7 +120,10 @@ fn play_track(app: &mut MusicBoxApp, idx: usize) {
                 match player.play_file(path) {
                     Ok(()) => {
                         app.playing_track_idx = Some(idx);
-                        app.status_message = format!("Playing: {}", crate::ui::playlist_table::get_export_filename(track));
+                        app.status_message = format!(
+                            "Playing: {}",
+                            crate::ui::playlist_table::get_export_filename(track)
+                        );
                     }
                     Err(e) => {
                         app.status_message = format!("Playback error: {}", e);

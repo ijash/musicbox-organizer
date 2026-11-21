@@ -4,7 +4,10 @@ use std::path::Path;
 
 pub fn get_export_filename(track: &ProjectTrack) -> String {
     let path = Path::new(&track.file_path);
-    let original_filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("track.mp3");
+    let original_filename = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("track.mp3");
     crate::services::naming::format_export_filename(track.index, original_filename)
         .unwrap_or_else(|_| format!("[{:04}-{}]", track.index + 1, original_filename))
 }
@@ -32,11 +35,26 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
 
             // Render table header
             ui.horizontal(|ui| {
-                ui.add_sized([40.0, row_height], egui::Label::new(egui::RichText::new("#").strong()));
-                ui.add_sized([180.0, row_height], egui::Label::new(egui::RichText::new("Export Filename").strong()));
-                ui.add_sized([220.0, row_height], egui::Label::new(egui::RichText::new("Title").strong()));
-                ui.add_sized([180.0, row_height], egui::Label::new(egui::RichText::new("Artist").strong()));
-                ui.add_sized([(available_width - 640.0).max(100.0), row_height], egui::Label::new(egui::RichText::new("Source File").strong()));
+                ui.add_sized(
+                    [40.0, row_height],
+                    egui::Label::new(egui::RichText::new("#").strong()),
+                );
+                ui.add_sized(
+                    [180.0, row_height],
+                    egui::Label::new(egui::RichText::new("Export Filename").strong()),
+                );
+                ui.add_sized(
+                    [220.0, row_height],
+                    egui::Label::new(egui::RichText::new("Title").strong()),
+                );
+                ui.add_sized(
+                    [180.0, row_height],
+                    egui::Label::new(egui::RichText::new("Artist").strong()),
+                );
+                ui.add_sized(
+                    [(available_width - 640.0).max(100.0), row_height],
+                    egui::Label::new(egui::RichText::new("Source File").strong()),
+                );
             });
             ui.separator();
 
@@ -86,8 +104,8 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                     let is_editing_title = app.editing_cell == Some((row_idx, TableColumn::Title));
                     let mut current_title = track.title.clone();
                     if is_editing_title {
-                        let text_edit = egui::TextEdit::singleline(&mut current_title)
-                            .desired_width(220.0);
+                        let text_edit =
+                            egui::TextEdit::singleline(&mut current_title).desired_width(220.0);
                         let text_resp = ui.add(text_edit);
                         if text_resp.lost_focus() {
                             app.editing_cell = None;
@@ -95,7 +113,11 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                             new_title_val = Some(current_title);
                         }
                     } else {
-                        let display_title = if current_title.is_empty() { "-" } else { &current_title };
+                        let display_title = if current_title.is_empty() {
+                            "-"
+                        } else {
+                            &current_title
+                        };
                         let label_resp = ui.add_sized(
                             [220.0, row_height],
                             egui::SelectableLabel::new(false, display_title),
@@ -106,11 +128,12 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                     }
 
                     // Inline-editable Artist column
-                    let is_editing_artist = app.editing_cell == Some((row_idx, TableColumn::Artist));
+                    let is_editing_artist =
+                        app.editing_cell == Some((row_idx, TableColumn::Artist));
                     let mut current_artist = track.artist.clone();
                     if is_editing_artist {
-                        let text_edit = egui::TextEdit::singleline(&mut current_artist)
-                            .desired_width(180.0);
+                        let text_edit =
+                            egui::TextEdit::singleline(&mut current_artist).desired_width(180.0);
                         let text_resp = ui.add(text_edit);
                         if text_resp.lost_focus() {
                             app.editing_cell = None;
@@ -118,7 +141,11 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                             new_artist_val = Some(current_artist);
                         }
                     } else {
-                        let display_artist = if current_artist.is_empty() { "-" } else { &current_artist };
+                        let display_artist = if current_artist.is_empty() {
+                            "-"
+                        } else {
+                            &current_artist
+                        };
                         let label_resp = ui.add_sized(
                             [180.0, row_height],
                             egui::SelectableLabel::new(false, display_artist),

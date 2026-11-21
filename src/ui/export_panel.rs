@@ -1,10 +1,11 @@
 use crate::models::Device;
 use crate::services::create_device_manager;
-use crate::ui::app::MusicBoxApp;
 use crate::ui::ExportProgressMessage;
+use crate::ui::app::MusicBoxApp;
 use std::sync::mpsc;
 use std::thread;
 
+/// cite: data-model.md: ExportPanelState.selected_device_id, data-model.md: ExportPanelState.show_reformat_confirm
 #[derive(Debug, Clone)]
 pub struct ExportPanelState {
     pub available_devices: Vec<Device>,
@@ -47,7 +48,12 @@ pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                 app.export_panel
                     .selected_device_id
                     .as_ref()
-                    .and_then(|id| app.export_panel.available_devices.iter().find(|d| &d.id == id))
+                    .and_then(|id| {
+                        app.export_panel
+                            .available_devices
+                            .iter()
+                            .find(|d| &d.id == id)
+                    })
                     .map(|d| d.name.as_str())
                     .unwrap_or("No device selected"),
             )
@@ -76,7 +82,10 @@ pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             && app.export_panel.selected_device_id.is_some()
             && !app.project.tracks.is_empty();
 
-        if ui.add_enabled(export_enabled, egui::Button::new("💾 Export Playlist")).clicked() {
+        if ui
+            .add_enabled(export_enabled, egui::Button::new("💾 Export Playlist"))
+            .clicked()
+        {
             if app.export_panel.reformat_enabled {
                 app.export_panel.show_reformat_confirm = true;
             } else {
@@ -84,8 +93,12 @@ pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             }
         }
 
-        let eject_enabled = !app.export_panel.is_exporting && app.export_panel.selected_device_id.is_some();
-        if ui.add_enabled(eject_enabled, egui::Button::new("⏏ Eject")).clicked() {
+        let eject_enabled =
+            !app.export_panel.is_exporting && app.export_panel.selected_device_id.is_some();
+        if ui
+            .add_enabled(eject_enabled, egui::Button::new("⏏ Eject"))
+            .clicked()
+        {
             eject_device(app);
         }
     });
@@ -131,7 +144,10 @@ fn scan_devices(app: &mut MusicBoxApp) {
             } else {
                 app.export_panel.selected_device_id = None;
             }
-            app.status_message = format!("Found {} removable device(s)", app.export_panel.available_devices.len());
+            app.status_message = format!(
+                "Found {} removable device(s)",
+                app.export_panel.available_devices.len()
+            );
         }
         Err(e) => {
             app.status_message = format!("Device scan failed: {}", e);
@@ -141,7 +157,10 @@ fn scan_devices(app: &mut MusicBoxApp) {
 
 fn start_export(app: &mut MusicBoxApp) {
     let dev = match app.export_panel.selected_device_id.as_ref().and_then(|id| {
-        app.export_panel.available_devices.iter().find(|d| &d.id == id)
+        app.export_panel
+            .available_devices
+            .iter()
+            .find(|d| &d.id == id)
     }) {
         Some(d) => d.clone(),
         None => return,
@@ -171,12 +190,17 @@ fn start_export(app: &mut MusicBoxApp) {
 
     thread::spawn(move || {
         let total = tracks.len();
-        let _ = tx.send(ExportProgressMessage::Started { total_tracks: total });
+        let _ = tx.send(ExportProgressMessage::Started {
+            total_tracks: total,
+        });
 
         if reformat {
             let mgr = create_device_manager();
             if let Err(e) = mgr.format_device(&dev.id, dev.filesystem) {
-                let _ = tx.send(ExportProgressMessage::Failed(format!("Reformat failed: {}", e)));
+                let _ = tx.send(ExportProgressMessage::Failed(format!(
+                    "Reformat failed: {}",
+                    e
+                )));
                 return;
             }
         }
@@ -184,7 +208,10 @@ fn start_export(app: &mut MusicBoxApp) {
         if !target_dir.exists()
             && let Err(e) = std::fs::create_dir_all(&target_dir)
         {
-            let _ = tx.send(ExportProgressMessage::Failed(format!("Create dir error: {}", e)));
+            let _ = tx.send(ExportProgressMessage::Failed(format!(
+                "Create dir error: {}",
+                e
+            )));
             return;
         }
 
@@ -201,7 +228,10 @@ fn start_export(app: &mut MusicBoxApp) {
             match std::fs::copy(&track.file_path, &dest) {
                 Ok(bytes) => total_bytes += bytes,
                 Err(e) => {
-                    let _ = tx.send(ExportProgressMessage::Failed(format!("Export error on {}: {}", track.file_path, e)));
+                    let _ = tx.send(ExportProgressMessage::Failed(format!(
+                        "Export error on {}: {}",
+                        track.file_path, e
+                    )));
                     return;
                 }
             }

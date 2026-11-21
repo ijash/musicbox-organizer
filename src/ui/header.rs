@@ -1,5 +1,6 @@
 use crate::ui::app::MusicBoxApp;
 
+/// cite: data-model.md: MusicBoxApp.dark_mode
 pub fn render_header(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         ui.heading("🎵 MusicBox Organizer");
@@ -7,11 +8,19 @@ pub fn render_header(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
 
         ui.add_space(16.0);
         let track_count = app.project.tracks.len();
-        ui.label(format!("{} track{}", track_count, if track_count == 1 { "" } else { "s" }));
+        ui.label(format!(
+            "{} track{}",
+            track_count,
+            if track_count == 1 { "" } else { "s" }
+        ));
 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             // Theme toggle
-            let theme_label = if app.dark_mode { "☀ Light" } else { "🌙 Dark" };
+            let theme_label = if app.dark_mode {
+                "☀ Light"
+            } else {
+                "🌙 Dark"
+            };
             if ui.button(theme_label).clicked() {
                 app.dark_mode = !app.dark_mode;
             }
@@ -20,7 +29,9 @@ pub fn render_header(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
 
             // Redo button
             let can_redo = app.session.can_redo();
-            if ui.add_enabled(can_redo, egui::Button::new("⮎ Redo")).clicked()
+            if ui
+                .add_enabled(can_redo, egui::Button::new("⮎ Redo"))
+                .clicked()
                 && let Some(state) = app.session.redo_project(app.project.clone())
             {
                 app.project = state;
@@ -31,7 +42,9 @@ pub fn render_header(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
 
             // Undo button
             let can_undo = app.session.can_undo();
-            if ui.add_enabled(can_undo, egui::Button::new("⮌ Undo")).clicked()
+            if ui
+                .add_enabled(can_undo, egui::Button::new("⮌ Undo"))
+                .clicked()
                 && let Some(state) = app.session.undo_project(app.project.clone())
             {
                 app.project = state;

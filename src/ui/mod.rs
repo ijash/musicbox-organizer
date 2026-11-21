@@ -9,7 +9,7 @@ pub mod playlist_table;
 pub mod toolbar;
 pub mod warnings;
 
-pub use app::{run_gui, MusicBoxApp, TableColumn};
+pub use app::{MusicBoxApp, TableColumn, run_gui};
 pub use dsp_dialog::DspDialogState;
 pub use export_dialog::ExportDialog;
 pub use export_panel::ExportPanelState;
@@ -17,18 +17,34 @@ pub use warnings::ReformatWarningDialog;
 
 #[derive(Debug, Clone)]
 pub enum DspProgressMessage {
-    Started { total_tracks: usize },
-    Step { current: usize, total: usize, filename: String },
-    Finished { succeeded: usize, failed: usize, errors: Vec<String> },
+    Started {
+        total_tracks: usize,
+    },
+    Step {
+        current: usize,
+        total: usize,
+        filename: String,
+    },
+    Finished {
+        succeeded: usize,
+        failed: usize,
+        errors: Vec<String>,
+    },
     Failed(String),
 }
 
 #[derive(Debug, Clone)]
 pub enum ExportProgressMessage {
-    Started { total_tracks: usize },
-    Step { current: usize, total: usize, filename: String },
-    Finished { total_bytes: u64 },
+    Started {
+        total_tracks: usize,
+    },
+    Step {
+        current: usize,
+        total: usize,
+        filename: String,
+    },
+    Finished {
+        total_bytes: u64,
+    },
     Failed(String),
 }
-
-

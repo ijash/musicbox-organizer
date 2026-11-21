@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use musicbox_organizer::models::{PlaylistMetadata, ProjectFile};
-use musicbox_organizer::services::{create_device_manager, ExportService};
+use musicbox_organizer::services::{ExportService, create_device_manager};
 use musicbox_organizer::ui::ExportDialog;
 use std::env;
 use std::path::Path;
@@ -15,14 +15,22 @@ fn print_help() {
     println!("  musicbox gui                 - Launch desktop GUI window");
     println!("  musicbox scan [dir]          - Scan directory for MP3 files and display ID3 tags");
     println!("  musicbox tag <file> [t] [a]  - View or update ID3 tag (title, artist)");
-    println!("  musicbox status              - Show active project and connected removable devices");
-    println!("  musicbox save [path]         - Save current project locally (does NOT write to USB/SD)");
+    println!(
+        "  musicbox status              - Show active project and connected removable devices"
+    );
+    println!(
+        "  musicbox save [path]         - Save current project locally (does NOT write to USB/SD)"
+    );
     println!("  musicbox export              - Export playlist to connected USB/SD device");
     println!("  musicbox export-text [dir]   - Export txt & rtf to playlist-text/ folder");
     println!("  musicbox check-compat <dir>  - Audit directory for primitive device compatibility");
     println!("\nWorkflows (Save vs Export):");
-    println!("  - 'Save Project' persists project metadata (.txt) locally in current directory for editing.");
-    println!("  - 'Export Playlist' writes audio files with [XXYY-filename.mp3] naming to removable media.");
+    println!(
+        "  - 'Save Project' persists project metadata (.txt) locally in current directory for editing."
+    );
+    println!(
+        "  - 'Export Playlist' writes audio files with [XXYY-filename.mp3] naming to removable media."
+    );
 }
 
 fn auto_load_project() -> Option<ProjectFile> {
@@ -30,7 +38,10 @@ fn auto_load_project() -> Option<ProjectFile> {
     if default_path.exists() {
         match ProjectFile::load(default_path) {
             Ok(project) => {
-                println!("Loaded project '{}' from {}", project.metadata.name, DEFAULT_PROJECT_NAME);
+                println!(
+                    "Loaded project '{}' from {}",
+                    project.metadata.name, DEFAULT_PROJECT_NAME
+                );
                 Some(project)
             }
             Err(e) => {
@@ -51,7 +62,7 @@ fn main() {
         let is_cli = args.len() > 1 && args[1] != "gui";
         if is_cli {
             unsafe {
-                use windows::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
+                use windows::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
                 let _ = AttachConsole(ATTACH_PARENT_PROCESS);
             }
         }
@@ -89,7 +100,10 @@ fn main() {
                         let id3_svc = musicbox_organizer::services::Id3Service::new();
                         for t in tracks {
                             let meta = id3_svc.read_tags(&t.file_path).unwrap_or(t.metadata);
-                            println!("  [{}] {} | Title: '{}' | Artist: '{}'", t.xxyy_prefix, t.original_filename, meta.title, meta.artist);
+                            println!(
+                                "  [{}] {} | Title: '{}' | Artist: '{}'",
+                                t.xxyy_prefix, t.original_filename, meta.title, meta.artist
+                            );
                         }
                     }
                 }
@@ -108,7 +122,10 @@ fn main() {
                                 meta.artist = new_artist.clone();
                             }
                             match id3_svc.write_tags(path, &meta) {
-                                Ok(_) => println!("Updated tags for {}: Title='{}', Artist='{}'", file_str, meta.title, meta.artist),
+                                Ok(_) => println!(
+                                    "Updated tags for {}: Title='{}', Artist='{}'",
+                                    file_str, meta.title, meta.artist
+                                ),
                                 Err(e) => eprintln!("Failed to write tags: {}", e),
                             }
                         } else {
@@ -137,7 +154,11 @@ fn main() {
             };
             match service.export_playlist(Path::new(base_dir), &selection, &project) {
                 Ok(files) => {
-                    println!("Exported {} playlist files to '{}/playlist-text/':", files.len(), base_dir);
+                    println!(
+                        "Exported {} playlist files to '{}/playlist-text/':",
+                        files.len(),
+                        base_dir
+                    );
                     for f in files {
                         println!("  - {}", f.display());
                     }
@@ -155,17 +176,58 @@ fn main() {
                     println!("Device Compatibility Audit Report for '{}'", target_dir);
                     println!("============================================================");
                     println!("Total audio files:     {}", report.total_files);
-                    println!("ASCII byte-order sort: {}", if report.is_sorted { "PASS" } else { "FAIL (out of order)" });
-                    println!("ASCII character check: {}", if report.ascii_violations.is_empty() { "PASS" } else { "FAIL" });
-                    println!("FAT32 path length:     {}", if report.length_violations.is_empty() { "PASS" } else { "FAIL (>255 bytes)" });
-                    println!("Naming format [XXYY-]: {}", if report.format_violations.is_empty() { "PASS" } else { "WARN (non-standard)" });
+                    println!(
+                        "ASCII byte-order sort: {}",
+                        if report.is_sorted {
+                            "PASS"
+                        } else {
+                            "FAIL (out of order)"
+                        }
+                    );
+                    println!(
+                        "ASCII character check: {}",
+                        if report.ascii_violations.is_empty() {
+                            "PASS"
+                        } else {
+                            "FAIL"
+                        }
+                    );
+                    println!(
+                        "FAT32 path length:     {}",
+                        if report.length_violations.is_empty() {
+                            "PASS"
+                        } else {
+                            "FAIL (>255 bytes)"
+                        }
+                    );
+                    println!(
+                        "Naming format [XXYY-]: {}",
+                        if report.format_violations.is_empty() {
+                            "PASS"
+                        } else {
+                            "WARN (non-standard)"
+                        }
+                    );
                     println!("------------------------------------------------------------");
-                    println!("Overall status:        {}", if report.overall_compatible { "100% COMPATIBLE" } else { "INCOMPATIBLE" });
+                    println!(
+                        "Overall status:        {}",
+                        if report.overall_compatible {
+                            "100% COMPATIBLE"
+                        } else {
+                            "INCOMPATIBLE"
+                        }
+                    );
                     if !report.ascii_violations.is_empty() {
-                        println!("Non-ASCII filenames detected: {:?}", report.ascii_violations);
+                        println!(
+                            "Non-ASCII filenames detected: {:?}",
+                            report.ascii_violations
+                        );
                     }
                     if !report.length_violations.is_empty() {
-                        println!("Path length violations detected: {:?}", report.length_violations);
+                        println!(
+                            "Path length violations detected: {:?}",
+                            report.length_violations
+                        );
                     }
                     println!("============================================================");
                 }
@@ -173,7 +235,10 @@ fn main() {
             }
         }
         "save" => {
-            let target_path = args.get(2).map(|s| s.as_str()).unwrap_or(DEFAULT_PROJECT_NAME);
+            let target_path = args
+                .get(2)
+                .map(|s| s.as_str())
+                .unwrap_or(DEFAULT_PROJECT_NAME);
             match project.save(target_path) {
                 Ok(_) => println!("Successfully saved project locally to {}", target_path),
                 Err(e) => eprintln!("Failed to save project: {}", e),
@@ -193,7 +258,12 @@ fn main() {
             }
 
             let dev = dialog.selected_device().unwrap();
-            println!("Target device: {} [{}] ({:.2} GB capacity)", dev.name, dev.id, dev.capacity_bytes as f64 / 1e9);
+            println!(
+                "Target device: {} [{}] ({:.2} GB capacity)",
+                dev.name,
+                dev.id,
+                dev.capacity_bytes as f64 / 1e9
+            );
 
             if project.tracks.is_empty() {
                 println!("Playlist is empty (0 tracks). Add tracks before exporting.");
@@ -211,7 +281,10 @@ fn main() {
                         .file_name()
                         .map(|f| f.to_string_lossy().to_string())
                         .unwrap_or_else(|| format!("track_{}.mp3", pt.index));
-                    let xxyy_name = musicbox_organizer::services::naming::format_export_filename(pt.index, &filename).ok()?;
+                    let xxyy_name = musicbox_organizer::services::naming::format_export_filename(
+                        pt.index, &filename,
+                    )
+                    .ok()?;
                     let file_size_bytes = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
                     Some(musicbox_organizer::models::Track {
                         index: pt.index,
@@ -284,7 +357,10 @@ fn main() {
             }
         }
         _ => {
-            println!("MusicBox Organizer (active project: '{}')", project.metadata.name);
+            println!(
+                "MusicBox Organizer (active project: '{}')",
+                project.metadata.name
+            );
             println!("Tracks count: {}", project.tracks.len());
             let manager = create_device_manager();
             match manager.enumerate_devices() {
@@ -294,7 +370,12 @@ fn main() {
                     } else {
                         println!("Connected removable media ({}):", devices.len());
                         for d in devices {
-                            println!("  - {} [{}] ({:.1} GB free)", d.name, d.id, d.available_bytes as f64 / 1e9);
+                            println!(
+                                "  - {} [{}] ({:.1} GB free)",
+                                d.name,
+                                d.id,
+                                d.available_bytes as f64 / 1e9
+                            );
                         }
                     }
                 }
@@ -304,4 +385,3 @@ fn main() {
         }
     }
 }
-

@@ -1,16 +1,17 @@
 use crate::services::{AudioProcessor, NativeAudioProcessor};
-use crate::ui::app::MusicBoxApp;
 use crate::ui::DspProgressMessage;
+use crate::ui::app::MusicBoxApp;
 use std::sync::mpsc;
 use std::thread;
 
+/// cite: data-model.md: DspDialogState.normalize_target_db, data-model.md: DspDialogState.trim_threshold_db
 #[derive(Debug, Clone)]
 pub struct DspDialogState {
     pub is_open: bool,
     pub normalize_enabled: bool,
     pub normalize_target_db: f32, // Default: -14.0
     pub trim_enabled: bool,
-    pub trim_threshold_db: f32,   // Default: -45.0
+    pub trim_threshold_db: f32, // Default: -45.0
     pub is_processing: bool,
     pub progress_percent: f32,
     pub progress_text: String,
@@ -58,11 +59,18 @@ pub fn render_dsp_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) {
             ui.add_space(8.0);
 
             ui.group(|ui| {
-                ui.checkbox(&mut app.dsp_dialog.normalize_enabled, "Normalize Volume (LUFS)");
+                ui.checkbox(
+                    &mut app.dsp_dialog.normalize_enabled,
+                    "Normalize Volume (LUFS)",
+                );
                 if app.dsp_dialog.normalize_enabled {
                     ui.horizontal(|ui| {
                         ui.label("Target Loudness (dB LUFS):");
-                        ui.add(egui::DragValue::new(&mut app.dsp_dialog.normalize_target_db).range(-30.0..=0.0).speed(0.5));
+                        ui.add(
+                            egui::DragValue::new(&mut app.dsp_dialog.normalize_target_db)
+                                .range(-30.0..=0.0)
+                                .speed(0.5),
+                        );
                     });
                 }
             });
@@ -70,11 +78,18 @@ pub fn render_dsp_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) {
             ui.add_space(4.0);
 
             ui.group(|ui| {
-                ui.checkbox(&mut app.dsp_dialog.trim_enabled, "Trim Leading/Trailing Silence");
+                ui.checkbox(
+                    &mut app.dsp_dialog.trim_enabled,
+                    "Trim Leading/Trailing Silence",
+                );
                 if app.dsp_dialog.trim_enabled {
                     ui.horizontal(|ui| {
                         ui.label("Silence Threshold (dB):");
-                        ui.add(egui::DragValue::new(&mut app.dsp_dialog.trim_threshold_db).range(-80.0..=-10.0).speed(1.0));
+                        ui.add(
+                            egui::DragValue::new(&mut app.dsp_dialog.trim_threshold_db)
+                                .range(-80.0..=-10.0)
+                                .speed(1.0),
+                        );
                     });
                 }
             });
@@ -92,7 +107,8 @@ pub fn render_dsp_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) {
 
             ui.add_space(12.0);
             ui.horizontal(|ui| {
-                let apply_btn = ui.add_enabled(!app.dsp_dialog.is_processing, egui::Button::new("Apply"));
+                let apply_btn =
+                    ui.add_enabled(!app.dsp_dialog.is_processing, egui::Button::new("Apply"));
                 if apply_btn.clicked() {
                     start_dsp_processing(app);
                 }
@@ -114,7 +130,8 @@ fn start_dsp_processing(app: &mut MusicBoxApp) {
 
     // Stop audio player if an edited track is playing
     if let Some(playing_idx) = app.playing_track_idx {
-        let is_playing_selected = app.selected_track_indices.is_empty() || app.selected_track_indices.contains(&playing_idx);
+        let is_playing_selected = app.selected_track_indices.is_empty()
+            || app.selected_track_indices.contains(&playing_idx);
         if is_playing_selected {
             if let Some(player) = &mut app.preview_player {
                 player.stop();
@@ -134,7 +151,12 @@ fn start_dsp_processing(app: &mut MusicBoxApp) {
 
     let tracks_to_process: Vec<(usize, std::path::PathBuf)> = indices
         .into_iter()
-        .filter_map(|idx| app.project.tracks.get(idx).map(|t| (idx, std::path::PathBuf::from(&t.file_path))))
+        .filter_map(|idx| {
+            app.project
+                .tracks
+                .get(idx)
+                .map(|t| (idx, std::path::PathBuf::from(&t.file_path)))
+        })
         .collect();
 
     let normalize_enabled = app.dsp_dialog.normalize_enabled;
@@ -151,7 +173,9 @@ fn start_dsp_processing(app: &mut MusicBoxApp) {
 
     thread::spawn(move || {
         let total = tracks_to_process.len();
-        let _ = tx.send(DspProgressMessage::Started { total_tracks: total });
+        let _ = tx.send(DspProgressMessage::Started {
+            total_tracks: total,
+        });
 
         let processor = NativeAudioProcessor::new();
         let mut succeeded = 0;
@@ -159,7 +183,11 @@ fn start_dsp_processing(app: &mut MusicBoxApp) {
         let mut errors = Vec::new();
 
         for (i, (_idx, path)) in tracks_to_process.into_iter().enumerate() {
-            let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("track").to_string();
+            let filename = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("track")
+                .to_string();
             let _ = tx.send(DspProgressMessage::Step {
                 current: i + 1,
                 total,
@@ -175,7 +203,10 @@ fn start_dsp_processing(app: &mut MusicBoxApp) {
             }
 
             // Normalize second if enabled
-            if !track_failed && normalize_enabled && let Err(e) = processor.normalize_volume(&path, normalize_target) {
+            if !track_failed
+                && normalize_enabled
+                && let Err(e) = processor.normalize_volume(&path, normalize_target)
+            {
                 errors.push(format!("{}: normalize error: {}", filename, e));
                 track_failed = true;
             }
@@ -187,6 +218,10 @@ fn start_dsp_processing(app: &mut MusicBoxApp) {
             }
         }
 
-        let _ = tx.send(DspProgressMessage::Finished { succeeded, failed, errors });
+        let _ = tx.send(DspProgressMessage::Finished {
+            succeeded,
+            failed,
+            errors,
+        });
     });
 }

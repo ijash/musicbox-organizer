@@ -1,6 +1,6 @@
 pub mod models;
-pub mod services;
 pub mod platform;
+pub mod services;
 pub mod ui;
 
 pub use models::*;

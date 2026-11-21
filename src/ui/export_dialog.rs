@@ -17,6 +17,12 @@ pub struct ExportDialog {
     pub current_job: Option<ExportJob>,
 }
 
+impl Default for ExportDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExportDialog {
     pub fn new() -> Self {
         Self {
@@ -39,10 +45,10 @@ impl ExportDialog {
         self.is_loading = false;
 
         // Reset selected device if no longer connected
-        if let Some(id) = &self.selected_device_id {
-            if !self.devices.iter().any(|d| &d.id == id) {
-                self.selected_device_id = None;
-            }
+        if let Some(id) = &self.selected_device_id
+            && !self.devices.iter().any(|d| &d.id == id)
+        {
+            self.selected_device_id = None;
         }
 
         // Auto-select first device if available and none selected
@@ -85,14 +91,15 @@ impl ExportDialog {
     pub fn trigger_export(&mut self, tracks: Vec<Track>) -> Result<(), String> {
         let (device_id, device_name, capacity_bytes) = {
             let device = self.selected_device().ok_or("No device selected")?;
-            (device.id.clone(), device.name.clone(), device.capacity_bytes)
+            (
+                device.id.clone(),
+                device.name.clone(),
+                device.capacity_bytes,
+            )
         };
 
         if self.reformat_enabled {
-            self.warning_dialog = Some(ReformatWarningDialog::new(
-                device_name,
-                capacity_bytes,
-            ));
+            self.warning_dialog = Some(ReformatWarningDialog::new(device_name, capacity_bytes));
             let job = ExportJob::new(device_id, tracks, true)?;
             self.current_job = Some(job);
             Ok(())
@@ -125,12 +132,12 @@ impl ExportDialog {
     }
 
     /// Execute export using service
-    pub fn execute_export(
-        &mut self,
-        export_service: &ExportService,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn execute_export(&mut self, export_service: &ExportService) -> Result<(), Box<dyn Error>> {
         let device = self.selected_device().ok_or("No device selected")?;
-        let mount_path = device.mount_point.clone().unwrap_or_else(|| PathBuf::from("/"));
+        let mount_path = device
+            .mount_point
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("/"));
         let dest = if self.export_subpath == Path::new("/") {
             mount_path
         } else {
@@ -150,4 +157,17 @@ impl ExportDialog {
         }
         Ok(())
     }
+}
+
+/// Text & RTF playlist summary export helper
+pub fn export_text_and_rtf_summary(
+    dest_folder: &Path,
+    project: &crate::models::ProjectFile,
+) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let service = crate::services::ExportConfigService::new();
+    let selection = crate::models::ExportFormatSelection {
+        txt: true,
+        rtf: true,
+    };
+    service.export_playlist(dest_folder, &selection, project)
 }

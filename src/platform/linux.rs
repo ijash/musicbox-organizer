@@ -5,6 +5,12 @@ use std::error::Error;
 /// Linux device manager using /sys/block enumeration (fallback when udisks2 DBus unavailable)
 pub struct LinuxDeviceManager;
 
+impl Default for LinuxDeviceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LinuxDeviceManager {
     pub fn new() -> Self {
         LinuxDeviceManager
@@ -21,7 +27,10 @@ impl LinuxDeviceManager {
                 let name_str = name.to_string_lossy();
 
                 // Skip non-removable candidates (loop, ram, etc.)
-                if name_str.starts_with("loop") || name_str.starts_with("ram") || name_str.starts_with("fd") {
+                if name_str.starts_with("loop")
+                    || name_str.starts_with("ram")
+                    || name_str.starts_with("fd")
+                {
                     continue;
                 }
 
@@ -118,7 +127,11 @@ impl LinuxDeviceManager {
         if let Ok(content) = std::fs::read_to_string("/proc/mounts") {
             for line in content.lines() {
                 let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() >= 3 && parts[2] != "proc" && parts[2] != "sysfs" && parts[2] != "devtmpfs" {
+                if parts.len() >= 3
+                    && parts[2] != "proc"
+                    && parts[2] != "sysfs"
+                    && parts[2] != "devtmpfs"
+                {
                     // Check if this mount involves our disk
                     if line.contains(disk_name) || line.contains(&format!("/dev/{}", disk_name)) {
                         return Some(std::path::PathBuf::from(parts[1]));
@@ -194,17 +207,14 @@ impl DeviceManager for LinuxDeviceManager {
         // Try udisks2 first, then fall back to umount + eject
         let result = std::process::Command::new("udisks2")
             .arg("--unmount")
-            .arg(&device_id)
+            .arg(device_id)
             .output();
         match result {
             Ok(_) => Ok(()),
             Err(_) => {
                 // Fallback: unmount then eject
-                let _ = std::process::Command::new("umount")
-                    .arg(&device_id)
-                    .output();
-                let _ = std::process::Command::new("eject")
-                    .arg(&device_id);
+                let _ = std::process::Command::new("umount").arg(device_id).output();
+                let _ = std::process::Command::new("eject").arg(device_id);
                 Ok(())
             }
         }

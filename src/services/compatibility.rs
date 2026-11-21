@@ -9,6 +9,12 @@ pub struct CompatibilityService {
     profile: DeviceProfile,
 }
 
+impl Default for CompatibilityService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompatibilityService {
     pub fn new() -> Self {
         Self {
@@ -28,7 +34,13 @@ impl CompatibilityService {
     /// Sanitize filename by replacing non-ASCII chars with underscores or safe ASCII
     pub fn sanitize_filename(&self, raw: &str) -> String {
         raw.chars()
-            .map(|ch| if ch.is_ascii() && !ch.is_control() { ch } else { '_' })
+            .map(|ch| {
+                if ch.is_ascii() && !ch.is_control() {
+                    ch
+                } else {
+                    '_'
+                }
+            })
             .collect()
     }
 
@@ -46,13 +58,14 @@ impl CompatibilityService {
         let mut seen_prefixes = std::collections::HashSet::new();
         let mut has_prefix_collision = false;
         for name in &sorted_copy {
-            if name.len() > 5 && name.starts_with('[') {
-                if let Some(hyphen) = name.find('-') {
-                    let prefix = &name[1..hyphen];
-                    if !seen_prefixes.insert(prefix) {
-                        has_prefix_collision = true;
-                        break;
-                    }
+            if name.len() > 5
+                && name.starts_with('[')
+                && let Some(hyphen) = name.find('-')
+            {
+                let prefix = &name[1..hyphen];
+                if !seen_prefixes.insert(prefix) {
+                    has_prefix_collision = true;
+                    break;
                 }
             }
         }
@@ -71,9 +84,8 @@ impl CompatibilityService {
             }
 
             // Pattern check [XXYY-...]
-            let has_valid_prefix = name.starts_with('[')
-                && name.len() > 6
-                && name.chars().nth(5) == Some('-');
+            let has_valid_prefix =
+                name.starts_with('[') && name.len() > 6 && name.chars().nth(5) == Some('-');
             let has_valid_ext = name.ends_with(".mp3") || name.ends_with(".mp3]");
             if !has_valid_prefix || !has_valid_ext {
                 format_violations.push(name.clone());
@@ -110,11 +122,11 @@ impl CompatibilityService {
                 let path_str = path.to_string_lossy();
                 let is_mp3 = path_str.ends_with(".mp3")
                     || path_str.ends_with(".mp3]")
-                    || path.extension().map_or(false, |e| e.eq_ignore_ascii_case("mp3"));
-                if is_mp3 {
-                    if let Some(name) = path.file_name() {
-                        files.push(name.to_string_lossy().to_string());
-                    }
+                    || path
+                        .extension()
+                        .is_some_and(|e| e.eq_ignore_ascii_case("mp3"));
+                if is_mp3 && let Some(name) = path.file_name() {
+                    files.push(name.to_string_lossy().to_string());
                 }
             }
         }

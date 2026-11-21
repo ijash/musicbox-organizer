@@ -43,12 +43,11 @@ impl Default for UserPreferences {
 impl UserPreferences {
     pub fn load_from_dir<P: AsRef<Path>>(dir: P) -> Self {
         let path = dir.as_ref().join(CONFIG_FILE_NAME);
-        if path.exists() {
-            if let Ok(content) = fs::read_to_string(&path) {
-                if let Ok(prefs) = serde_json::from_str(&content) {
-                    return prefs;
-                }
-            }
+        if path.exists()
+            && let Ok(content) = fs::read_to_string(&path)
+            && let Ok(prefs) = serde_json::from_str(&content)
+        {
+            return prefs;
         }
         Self::default()
     }

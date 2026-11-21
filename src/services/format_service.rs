@@ -25,19 +25,20 @@ impl FormatService {
         }
 
         // Mark as formatting
-        job.start_formatting().map_err(|e| -> Box<dyn Error> { e.into() })?;
+        job.start_formatting()
+            .map_err(|e| -> Box<dyn Error> { e.into() })?;
 
         // Format device via platform-specific manager
         self.device_manager
             .format_device(&job.device_id, filesystem)
-            .map_err(|e| {
+            .inspect_err(|_e| {
                 // On failure, revert to PENDING for retry
                 job.status = crate::models::ExportStatus::PENDING;
-                e
             })?;
 
         // Signal format complete; job advances to IN_PROGRESS
-        job.format_complete().map_err(|e| -> Box<dyn Error> { e.into() })?;
+        job.format_complete()
+            .map_err(|e| -> Box<dyn Error> { e.into() })?;
         Ok(())
     }
 

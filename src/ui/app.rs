@@ -89,6 +89,107 @@ impl MusicBoxApp {
         crate::ui::export_panel::render_export_panel(self, ui);
         ui.separator();
         crate::ui::footer::render_footer(self, ui);
+        crate::ui::dsp_dialog::render_dsp_dialog(self, ui.ctx());
+    }
+
+    pub fn poll_dsp_channel(&mut self) {
+        let msgs: Vec<DspProgressMessage> = if let Some(rx) = &self.dsp_rx {
+            let mut list = Vec::new();
+            while let Ok(msg) = rx.try_recv() {
+                list.push(msg);
+            }
+            list
+        } else {
+            Vec::new()
+        };
+
+        let mut done = false;
+        for msg in msgs {
+            match msg {
+                DspProgressMessage::Started { total_tracks } => {
+                    self.dsp_dialog.is_processing = true;
+                    self.dsp_dialog.progress_percent = 0.0;
+                    self.dsp_dialog.progress_text = format!("Processing 0/{}...", total_tracks);
+                }
+                DspProgressMessage::Step {
+                    current,
+                    total,
+                    filename,
+                } => {
+                    self.dsp_dialog.progress_percent = current as f32 / total.max(1) as f32;
+                    self.dsp_dialog.progress_text = format!("({}/{}) {}", current, total, filename);
+                }
+                DspProgressMessage::Finished {
+                    succeeded,
+                    failed,
+                    errors,
+                } => {
+                    self.dsp_dialog.is_processing = false;
+                    self.dsp_dialog.is_open = false;
+                    self.status_message =
+                        format!("DSP complete: {} updated, {} failed", succeeded, failed);
+                    if !errors.is_empty() {
+                        self.dsp_dialog.error_summary = Some(errors.join("\n"));
+                    }
+                    done = true;
+                }
+                DspProgressMessage::Failed(err) => {
+                    self.dsp_dialog.is_processing = false;
+                    self.dsp_dialog.error_summary = Some(err);
+                    done = true;
+                }
+            }
+        }
+        if done {
+            self.dsp_rx = None;
+        }
+    }
+
+    pub fn poll_export_channel(&mut self) {
+        let msgs: Vec<ExportProgressMessage> = if let Some(rx) = &self.export_rx {
+            let mut list = Vec::new();
+            while let Ok(msg) = rx.try_recv() {
+                list.push(msg);
+            }
+            list
+        } else {
+            Vec::new()
+        };
+
+        let mut done = false;
+        for msg in msgs {
+            match msg {
+                ExportProgressMessage::Started { total_tracks } => {
+                    self.export_panel.is_exporting = true;
+                    self.export_panel.export_progress = 0.0;
+                    self.export_panel.export_status = format!("Exporting 0/{}...", total_tracks);
+                }
+                ExportProgressMessage::Step {
+                    current,
+                    total,
+                    filename,
+                } => {
+                    self.export_panel.export_progress = current as f32 / total.max(1) as f32;
+                    self.export_panel.export_status =
+                        format!("({}/{}) {}", current, total, filename);
+                }
+                ExportProgressMessage::Finished { total_bytes } => {
+                    self.export_panel.is_exporting = false;
+                    let mb = total_bytes as f64 / (1024.0 * 1024.0);
+                    self.export_panel.export_status = format!("Export completed ({:.1} MB)", mb);
+                    self.status_message = format!("Export successful: {:.1} MB written", mb);
+                    done = true;
+                }
+                ExportProgressMessage::Failed(err) => {
+                    self.export_panel.is_exporting = false;
+                    self.export_panel.export_status = format!("Export failed: {}", err);
+                    done = true;
+                }
+            }
+        }
+        if done {
+            self.export_rx = None;
+        }
     }
 }
 
@@ -100,66 +201,14 @@ impl eframe::App for MusicBoxApp {
             ctx.set_visuals(egui::Visuals::light());
         }
 
-        // Poll DSP channel
-        if let Some(rx) = &self.dsp_rx {
-            while let Ok(msg) = rx.try_recv() {
-                match msg {
-                    DspProgressMessage::Started { total_tracks } => {
-                        self.dsp_dialog.is_processing = true;
-                        self.dsp_dialog.progress_percent = 0.0;
-                        self.dsp_dialog.progress_text = format!("Processing 0/{}...", total_tracks);
-                    }
-                    DspProgressMessage::Step { current, total, filename } => {
-                        self.dsp_dialog.progress_percent = current as f32 / total.max(1) as f32;
-                        self.dsp_dialog.progress_text = format!("({}/{}) {}", current, total, filename);
-                    }
-                    DspProgressMessage::Finished { succeeded, failed, errors } => {
-                        self.dsp_dialog.is_processing = false;
-                        self.dsp_dialog.is_open = false;
-                        self.status_message = format!("DSP complete: {} updated, {} failed", succeeded, failed);
-                        if !errors.is_empty() {
-                            self.dsp_dialog.error_summary = Some(errors.join("\n"));
-                        }
-                    }
-                    DspProgressMessage::Failed(err) => {
-                        self.dsp_dialog.is_processing = false;
-                        self.dsp_dialog.error_summary = Some(err);
-                    }
-                }
-            }
-            if self.dsp_dialog.is_processing {
-                ctx.request_repaint();
-            }
+        self.poll_dsp_channel();
+        if self.dsp_dialog.is_processing {
+            ctx.request_repaint();
         }
 
-        // Poll Export channel
-        if let Some(rx) = &self.export_rx {
-            while let Ok(msg) = rx.try_recv() {
-                match msg {
-                    ExportProgressMessage::Started { total_tracks } => {
-                        self.export_panel.is_exporting = true;
-                        self.export_panel.export_progress = 0.0;
-                        self.export_panel.export_status = format!("Exporting 0/{}...", total_tracks);
-                    }
-                    ExportProgressMessage::Step { current, total, filename } => {
-                        self.export_panel.export_progress = current as f32 / total.max(1) as f32;
-                        self.export_panel.export_status = format!("({}/{}) {}", current, total, filename);
-                    }
-                    ExportProgressMessage::Finished { total_bytes } => {
-                        self.export_panel.is_exporting = false;
-                        let mb = total_bytes as f64 / (1024.0 * 1024.0);
-                        self.export_panel.export_status = format!("Export completed ({:.1} MB)", mb);
-                        self.status_message = format!("Export successful: {:.1} MB written", mb);
-                    }
-                    ExportProgressMessage::Failed(err) => {
-                        self.export_panel.is_exporting = false;
-                        self.export_panel.export_status = format!("Export failed: {}", err);
-                    }
-                }
-            }
-            if self.export_panel.is_exporting {
-                ctx.request_repaint();
-            }
+        self.poll_export_channel();
+        if self.export_panel.is_exporting {
+            ctx.request_repaint();
         }
 
         // Top Panels: Header & Toolbar
