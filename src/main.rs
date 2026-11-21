@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use musicbox_organizer::models::{PlaylistMetadata, ProjectFile};
 use musicbox_organizer::services::{create_device_manager, ExportService};
 use musicbox_organizer::ui::ExportDialog;
@@ -43,12 +45,28 @@ fn auto_load_project() -> Option<ProjectFile> {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let default_cmd = if env::var("DISPLAY").is_ok() || env::var("WAYLAND_DISPLAY").is_ok() {
-        "gui"
+
+    #[cfg(windows)]
+    {
+        let is_cli = args.len() > 1 && args[1] != "gui";
+        if is_cli {
+            unsafe {
+                use windows::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
+                let _ = AttachConsole(ATTACH_PARENT_PROCESS);
+            }
+        }
+    }
+
+    let command = if args.len() > 1 {
+        args[1].as_str()
     } else {
-        "status"
+        "gui"
     };
-    let command = args.get(1).map(|s| s.as_str()).unwrap_or(default_cmd);
+
+    if command == "gui" {
+        musicbox_organizer::ui::run_gui();
+        return;
+    }
 
     let project = auto_load_project().unwrap_or_else(|| {
         ProjectFile::new(PlaylistMetadata {
@@ -59,12 +77,6 @@ fn main() {
     });
 
     match command {
-        "gui" => {
-            #[cfg(target_os = "linux")]
-            musicbox_organizer::ui::gtk_ui::linux::run_gtk_app();
-            #[cfg(not(target_os = "linux"))]
-            println!("GUI not yet implemented for this platform. Use CLI commands.");
-        }
         "scan" => {
             let scan_dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
             let scanner = musicbox_organizer::services::DirectoryScanner::new();
