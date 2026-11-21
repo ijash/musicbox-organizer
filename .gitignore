@@ -44,3 +44,6 @@ coverage/
 .specify/.runtime/
 .specify/extensions/.cache/
 
+# Deja memory
+.deja/
+
