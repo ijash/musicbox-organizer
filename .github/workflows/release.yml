@@ -44,7 +44,7 @@ jobs:
       - name: Run Linux tests & headless GUI test harness
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cargo test --verbose
+          xvfb-run -a cargo test --verbose
           chmod +x ./tests/gui/run_gui_tests.sh
           ./tests/gui/run_gui_tests.sh
 
