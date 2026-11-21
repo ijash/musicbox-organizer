@@ -1,12 +1,10 @@
 <!-- SYNC IMPACT REPORT
-Version: 1.7.0 → 1.7.0 (Amendment for v0.3.0 cross-platform GUI unification)
+Version: 1.7.0 → 1.8.0 (Minor amendment for strict branch isolation and Conventional Commits branch/merge governance)
 Modified Principles:
-- I. Lightweight First (added standalone release binary ceiling < 20 MB with eframe/egui, zero Electron/WebView/external runtime)
-- II. Cross-Platform Native (replaced per-OS UI toolkits GTK3/Win32/Cocoa with single pure-Rust eframe/egui + rfd cross-platform GUI)
-- V. Testable Core Logic & GUI Interaction Verification (supported cross-platform headless GUI verification via egui_kittest under cargo test across Linux, Windows, macOS)
+- VI. Git-First Workflow & Conventional Commits (enforced mandatory dedicated branch off Development, Conventional branch naming <type>/<slug>, and explicit user merge approval constraint)
 Modified Sections:
-- Technical Constraints (updated Tech Stack to pure-Rust eframe/egui + rfd; updated GUI testing to egui_kittest)
-- Development Workflow (updated GUI Interaction Verification to egui_kittest under cargo test)
+- Development Workflow (added Branch Isolation & Conventional Branch Naming rules)
+- Governance (updated Git Governance with strict branch creation, commit formatting, and explicit merge approval gates)
 Added Sections: None
 Removed Sections: None
 Ratification: 2026-11-19
@@ -35,7 +33,7 @@ No network calls required. No installer. App runs from any folder. No temp files
 Business logic (playlist parsing, ID3 editing, file scanning) decoupled from UI. Unit tests required for all non-trivial logic. **Mandatory GUI testing**: Because this is a desktop GUI application, test validation MUST include executing GUI verification. Cross-platform headless GUI verification MUST be supported via `egui_kittest` under `cargo test` across Linux, Windows, and macOS. Interactive UI state flows (clicks, row edits, reordering, theme toggling, dialogs) and UI state bindings MUST be verified automatically to catch regressions before declaring tasks done.
 
 ### VI. Git-First Workflow & Conventional Commits
-Agent handles all commits following git best practices and Conventional Commits v1.0.0 format. Commits atomic and logically coherent. Branches per feature/fix. PR required before merge to main. **Commit message format**: `type(scope): subject` with optional body and footer (Co-authored-by trailer required). Types: `feat:` (new feature), `fix:` (bug fix), `docs:` (documentation), `refactor:` (code restructuring), `test:` (test additions), `chore:` (build/tooling). Subject: lowercase, <50 chars, imperative mood. Body: wrap <72 chars, explain why not what. Force-push forbidden on shared branches. Agent rebases on main before merge to keep history clean. **Auto-commit on feature completion**: When a feature passes all tests and acceptance criteria, agent commits automatically without explicit instruction, organizing commits by feature (one logical unit per commit).
+Agent handles all commits following git best practices and Conventional Commits v1.0.0 format (`https://www.conventionalcommits.org/en/v1.0.0/`). Commits atomic and logically coherent. **Mandatory Branch per Work Item**: Always create a dedicated new branch off `Development` before starting ANY feature, bugfix, refactor, docs, CI, or chore task. Never commit feature or bugfix work directly onto `Development` or `main`. **Conventional Branch Naming**: Branches MUST be named in `<type>/<kebab-case-slug>` format: `feat/<num>-<slug>` (e.g. `feat/010-cross-platform-gui`), `fix/<slug>` (e.g. `fix/dark-icons-compact-buttons`), `docs/<slug>`, `ci/<slug>`, `refactor/<slug>`, `chore/<slug>`, or `test/<slug>`. **Commit message format**: `type(scope): subject` with optional body and footer (Co-authored-by trailer required). Types: `feat:` (new feature), `fix:` (bug fix), `docs:` (documentation), `refactor:` (code restructuring), `test:` (test additions), `chore:` (build/tooling). Subject: lowercase, <50 chars, imperative mood. Body: wrap <72 chars, explain why not what. Force-push forbidden on shared branches. **Auto-commit on feature completion**: When a feature passes all tests and acceptance criteria, agent commits automatically on the dedicated work branch without explicit instruction, organizing commits by feature (one logical unit per commit). **Explicit Merge Approval Only**: Agents MUST NOT merge any branch into `Development` or `main` (and MUST NOT push release tags) unless explicitly instructed by the user. After completing work on a branch, leave it committed on that branch and report readiness for review/merge.
 
 ### VII. Rapid Development & Continuous Rebuild
 Speed matters. Short iteration cycles, fast feedback. No premature optimization or over-engineering. Ship working features quickly, then refine. Toolchain must support fast rebuild/reload. Dev builds unoptimized, release builds optimized. Use platform-native tools to maximize build speed. **Mandatory binary rebuild**: Every implementation task or feature completion MUST conclude by rebuilding the runnable binary (`cargo build --release` or `cargo build`) so the application is always ready for immediate execution and testing by the user.
@@ -58,6 +56,8 @@ Exported playlists MUST be compatible with primitive audio devices (portable spe
 
 **Agent Skills Routing**: Agents MUST invoke relevant skills before performing task phases: load `rust-gui` before writing, refactoring, or reviewing Rust application or `eframe`/`egui` GUI code; load `egui-gui-testing` before writing or running headless GUI tests (`egui_kittest`) and service regression tests. `.specify/memory/constitution.md` always takes precedence over any generic advice inside external skills.
 
+**Branch Isolation & Conventional Branch Naming**: Before making any code, doc, or test edits for a task, create and checkout a dedicated branch branched off `Development` using Conventional Commits naming (`<type>/<kebab-case-slug>`). Features: `feat/<num>-<slug>` (e.g. `feat/010-cross-platform-gui`). Bugfixes: `fix/<slug>`. Maintenance/Tooling: `chore/<slug>`, `docs/<slug>`, `ci/<slug>`, `refactor/<slug>`, `test/<slug>`. Direct commits to `Development` or `main` are strictly forbidden.
+
 **Rebuild Binary After Implementation**: The agent/developer MUST always rebuild the application binary (`cargo build --release` and `cargo build`) immediately upon completing each implementation task, bug fix, or feature before declaring work done. The runnable binary must always be current and testable by the user without manual rebuild steps.
 
 **GUI Interaction Verification**: When delivering or modifying UI features, the agent/developer MUST execute GUI interaction tests via `egui_kittest` under `cargo test` across platforms to verify that UI flows and event handlers do not panic or regress under user interaction.
@@ -66,12 +66,13 @@ Exported playlists MUST be compatible with primitive audio devices (portable spe
 
 **Code Review**: Every PR verifies cross-platform compatibility. At least one test run per target OS before merge.
 
-**Release**: Single automated build per platform produces standalone executable. No version check; no auto-update (users download new version manually).
+**Release**: Single automated build per platform produces standalone executable. No version check; no auto-update (users download new version manually). Release tags (`v*`) MUST NOT be pushed without explicit user instruction.
 
 ## Governance
 
 Constitution is law. Violations caught in code review and PR testing gates. Amendments require ratification; version bumps follow semver (MAJOR: principle removal/redefinition, MINOR: new principle or constraint, PATCH: clarification/wording).
 
-**Git Governance**: All commits agent-created using Conventional Commits v1.0.0 format per principle VI. No manual commits allowed. Agent creates branches, manages PRs, handles rebasing/merging. Commits include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer. Agent auto-commits when features complete (pass tests + acceptance criteria) without requiring explicit instruction. PRs reviewed before merge. No merging without passing CI tests.
+**Git Governance**: All commits agent-created using Conventional Commits v1.0.0 format per principle VI. No manual commits allowed. Agent creates dedicated branches (`<type>/<kebab-case-slug>`) branched off `Development`. Direct commits to `Development` or `main` are prohibited. Commits include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer. Agent auto-commits on the dedicated work branch when features complete (pass tests + acceptance criteria) without requiring explicit instruction. Agents MUST NOT merge into `Development` or `main` without explicit user instruction. PRs reviewed before merge. No merging without passing CI tests.
 
-**Version**: 1.7.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-22
+**Version**: 1.8.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-22
+
