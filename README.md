@@ -128,8 +128,7 @@ git push origin v0.2.0
 
 Planned enhancements for upcoming versions:
 
-- **v0.2.0**: Audio DSP editing suite (volume normalization, silence trimming) with native GTK3 background processing dialog (Completed).
-- **v0.2.0**: Native desktop GUI frontends for Windows (Win32) and macOS (Cocoa).
+- **v0.3.0**: Native desktop GUI frontends for Windows (Win32) and macOS (Cocoa).
 - **v0.3.0**: DOCX printable catalog exporter.
 - **v0.3.0**: Custom export path templates (e.g., `/Artist/Album/`).
 
@@ -137,12 +136,19 @@ Planned enhancements for upcoming versions:
 
 ### v0.2.0 (2026-11-21)
 
-- Pure-Rust audio DSP suite (`NativeAudioProcessor`) featuring:
-  - EBU R128 LUFS loudness normalization with -1.0 dBTP true-peak ceiling.
+- **Feature 008 (Audio DSP Editing Suite)**:
+  - Pure-Rust volume normalization (EBU R128 LUFS targeting, -1.0 dBTP true-peak ceiling).
   - Windowed RMS silence trimming with ~50 ms safety padding and channel boundary preservation.
   - Atomic MP3 encoding via `mp3lame-encoder` with verbatim ID3 tag retention.
-- Native GTK3 Audio Tools dialog with non-blocking GLib background worker thread and progress streaming.
-- Relm4/GNOME symbolic `AudioTools` vector SVG icon embedded in binary.
+  - Native GTK3 Audio Tools dialog with non-blocking GLib background worker thread and progress streaming.
+  - Relm4/GNOME symbolic `AudioTools` vector SVG icon embedded in binary.
+- **Feature 009 (Cross-Platform CI & Automated Releases)**:
+  - Multi-OS GitHub Actions matrix build for Linux (`x86_64`), Windows (`x86_64`), and macOS (`arm64`).
+  - Quota-friendly triggers (`v*` tag push and manual `workflow_dispatch`).
+  - Automated `SHA256SUMS.txt` generation and GitHub Release publishing via `softprops/action-gh-release@v2`.
+- **UI Bugfixes & Enhancements**:
+  - Theme-aware SVG rasterization fixing black-on-dark icon contrast in Dark Mode.
+  - Compact desktop button padding (`2px 6px`) and min-height (`24px`).
 - Headless GTK GUI testing via `xvfb-run`.
 - Release executable size strictly maintained under 2.5 MB ceiling (currently 2.2 MB).
 
