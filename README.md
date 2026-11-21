@@ -28,7 +28,24 @@ The application automatically assigns a 4-letter base-26 prefix (`[AAAA-filename
 - **Dark Mode**: Default dark theme with a toggleable light theme, saved independently of OS settings.
 - **Device Compatibility Audit**: Programmatically verifies filenames and directory trees against ASCII sorting rules and FAT32 path length limits.
 
-## Getting Started
+## Download & Quick Start
+
+Pre-compiled standalone executables are available on the [Latest GitHub Release](https://github.com/ijash/musicbox-organizer/releases/latest). No Rust or Cargo installation required.
+
+[![GitHub Release](https://img.shields.io/github/v/release/ijash/musicbox-organizer?style=flat-square)](https://github.com/ijash/musicbox-organizer/releases/latest)
+
+| Operating System | Package Archive | Quick Start Steps |
+|---|---|---|
+| **Linux (x86_64)** | `musicbox-linux-x86_64.tar.gz` | Extract, `chmod +x musicbox`, run `./musicbox` (full GTK3 GUI + CLI). |
+| **Windows (x86_64)** | `musicbox-windows-x86_64.zip` | Extract and run `musicbox.exe` (CLI; native Win32 GUI planned). |
+| **macOS (Apple Silicon ARM64)** | `musicbox-macos-arm64.tar.gz` | Extract, `chmod +x musicbox`, run `./musicbox` (CLI; native Cocoa GUI planned). |
+
+Verify archive integrity:
+```bash
+sha256sum -c SHA256SUMS.txt
+```
+
+## Building from Source
 
 ### Prerequisites
 
@@ -58,9 +75,9 @@ The application provides a full CLI interface without opening a graphical window
 | `cargo run -- export-text [dir]` | Export playlist `.txt` and `.rtf` to `playlist-text/` directory |
 | `cargo run -- check-compat [dir]` | Audit directory or media drive for ASCII sort and FAT32 compliance |
 
-## Build Release Binary
+### Build Release Binary
 
-To build a standalone, optimized executable (~1.7 MB) with no runtime web dependencies:
+To build a standalone, optimized executable (~2.2 MB) with no runtime web dependencies:
 
 ```bash
 cargo build --release
