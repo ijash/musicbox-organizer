@@ -2,7 +2,6 @@ use musicbox_organizer::models::{
     Device, ExportJob, ExportStatus, FileSystem, PlaylistMetadata, ProjectFile, ProjectTrack, Track,
 };
 use musicbox_organizer::services::{DeviceManager, ExportService};
-use musicbox_organizer::ui::ExportDialog;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::Write;

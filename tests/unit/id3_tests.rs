@@ -1,4 +1,3 @@
-use musicbox_organizer::models::TrackMetadata;
 use musicbox_organizer::services::id3_service::Id3Service;
 use std::fs;
 use std::path::Path;
