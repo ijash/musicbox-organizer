@@ -36,9 +36,9 @@ Pre-compiled standalone executables are available on the [Latest GitHub Release]
 
 | Operating System | Package Archive | Quick Start Steps |
 |---|---|---|
-| **Linux (x86_64)** | `musicbox-linux-x86_64.tar.gz` | Extract, `chmod +x musicbox`, run `./musicbox` (full GTK3 GUI + CLI). |
-| **Windows (x86_64)** | `musicbox-windows-x86_64.zip` | Extract and run `musicbox.exe` (CLI; native Win32 GUI planned). |
-| **macOS (Apple Silicon ARM64)** | `musicbox-macos-arm64.tar.gz` | Extract, `chmod +x musicbox`, run `./musicbox` (CLI; native Cocoa GUI planned). |
+| **Linux (x86_64)** | `musicbox-linux-x86_64.tar.gz` | Extract, `chmod +x musicbox`, run `./musicbox` (pure-Rust `eframe` GUI + CLI). |
+| **Windows (x86_64)** | `musicbox-windows-x86_64.zip` | Extract and run `musicbox.exe` (pure-Rust `eframe` GUI + CLI). |
+| **macOS (Apple Silicon ARM64)** | `musicbox-macos-arm64.tar.gz` | Extract, `chmod +x musicbox`, run `./musicbox` (pure-Rust `eframe` GUI + CLI). |
 
 Verify archive integrity:
 ```bash
@@ -49,9 +49,9 @@ sha256sum -c SHA256SUMS.txt
 
 ### Prerequisites
 
-- **Rust**: 1.75+ (`cargo`, `rustc`)
-- **Linux**: `libgtk-3-dev`, `libasound2-dev`, `libdbus-1-dev`
-- **Windows / macOS**: Supported via platform-native compilation
+- **Rust**: 2024 edition (`rustc 1.85+`)
+- **Linux**: `libasound2-dev`, `libdbus-1-dev` (pure Rust GUI, zero GTK runtime dependencies)
+- **Windows / macOS**: Standard Rust toolchain (no external library dependencies)
 
 ### Launch GUI
 
@@ -77,7 +77,7 @@ The application provides a full CLI interface without opening a graphical window
 
 ### Build Release Binary
 
-To build a standalone, optimized executable (~2.2 MB) with no runtime web dependencies:
+To build a standalone, optimized executable (< 20 MB ceiling, ~7.8 MB actual) with no external web runtime dependencies:
 
 ```bash
 cargo build --release
@@ -95,7 +95,7 @@ Run directly:
 
 ## Testing
 
-Run unit, contract, and integration tests:
+Run unit, integration, and headless GUI tests across all platforms without requiring display servers (`xvfb-run`):
 
 ```bash
 cargo test
@@ -103,24 +103,24 @@ cargo test
 
 ## Creating a Release
 
-Releases are fully automated via GitHub Actions (`.github/workflows/release.yml`). The cross-platform matrix compiles binaries for Linux, Windows, and macOS, validates automated GUI and size tests, computes `SHA256SUMS.txt`, and publishes a GitHub Release.
+Releases are fully automated via GitHub Actions (`.github/workflows/release.yml`). The cross-platform matrix compiles binaries for Linux, Windows, and macOS, validates automated headless `egui_kittest` GUI and binary size tests (< 20 MB), computes `SHA256SUMS.txt`, and publishes a GitHub Release.
 
 To cut an official release:
 
 ```bash
 # 1. Create an annotated git tag
-git tag -a v0.2.0 -m "Release v0.2.0"
+git tag -a v0.3.0 -m "Release v0.3.0"
 
 # 2. Push the tag to GitHub
-git push origin v0.2.0
+git push origin v0.3.0
 ```
 
 > **Note on CI Quotas**: Standard branch pushes (`Development`, `main`) do not invoke the multi-OS build matrix to preserve private runner minutes. For on-demand pre-release smoke testing across all 3 operating systems without publishing a public release, trigger the workflow manually via GitHub Actions (`workflow_dispatch`).
 
 ## Core Principles
 
-1. **Lightweight First**: Single standalone executable (<50 MB target, ~1.7 MB actual). No Electron, no web runtime.
-2. **Cross-Platform Native**: Native UI per platform (GTK3 on Linux, Win32 on Windows, Cocoa on macOS).
+1. **Lightweight First**: Single standalone executable (< 20 MB ceiling, ~7.8 MB actual). No Electron, no WebView, no web runtime.
+2. **Cross-Platform Native**: Single pure-Rust cross-platform GUI (`eframe`/`egui` + `rfd`) compiled natively for Linux, Windows, and macOS.
 3. **Offline-First & Portable**: No network calls, runs from any directory, leaves no temporary files.
 4. **Device Compatibility**: Lexicographical `[XXYY-filename.mp3]` sequence guarantees sequential playback on primitive audio hardware.
 
@@ -128,26 +128,25 @@ git push origin v0.2.0
 
 Planned enhancements for upcoming versions:
 
-- **v0.3.0**: Native desktop GUI frontends for Windows (Win32) and macOS (Cocoa).
-- **v0.3.0**: DOCX printable catalog exporter.
-- **v0.3.0**: Custom export path templates (e.g., `/Artist/Album/`).
+- **v0.4.0**: DOCX printable catalog exporter.
+- **v0.4.0**: Custom export path templates (e.g., `/Artist/Album/`).
 
 ## Changelog
 
-### v0.2.0 (2026-11-21)
+### v0.3.0 (2026-11-22)
 
-- **Feature 008 (Audio DSP Editing Suite)**:
-  - Pure-Rust volume normalization (EBU R128 LUFS targeting, -1.0 dBTP true-peak ceiling).
-  - Windowed RMS silence trimming with ~50 ms safety padding and channel boundary preservation.
-  - Atomic MP3 encoding via `mp3lame-encoder` with verbatim ID3 tag retention.
-  - Native GTK3 Audio Tools dialog with non-blocking GLib background worker thread and progress streaming.
-  - Relm4/GNOME symbolic `AudioTools` vector SVG icon embedded in binary.
-- **Feature 009 (Cross-Platform CI & Automated Releases)**:
-  - Multi-OS GitHub Actions matrix build for Linux (`x86_64`), Windows (`x86_64`), and macOS (`arm64`).
-  - Quota-friendly triggers (`v*` tag push and manual `workflow_dispatch`).
-  - Automated `SHA256SUMS.txt` generation and GitHub Release publishing via `softprops/action-gh-release@v2`.
-- **UI Bugfixes & Enhancements**:
-  - Theme-aware SVG rasterization fixing black-on-dark icon contrast in Dark Mode.
+- **Feature 010 (Unified Cross-Platform GUI)**:
+  - Migrated UI from Linux-only GTK3 to single pure-Rust cross-platform `eframe`/`egui` (using `glow` backend) and `rfd` native platform file dialogs.
+  - Native GUI window runs identically on Linux, Windows, and macOS with scrollable playlist table, inline Title/Artist editing, reordering, and bounded Undo/Redo.
+  - Complete removal of legacy GTK3, Cocoa, and Objective-C dependencies and files.
+  - Headless cross-platform GUI test harness via `egui_kittest` running under standard `cargo test` with zero display server / `xvfb-run` requirement.
+  - Windows console attachment distinguishing CLI subcommands from GUI double-click launches.
+  - Platform-native removable media enumeration for Linux (`/sys/block`), Windows (Win32 `GetLogicalDrives`/`GetDriveTypeW`), and macOS.
+  - Two-step confirmation guard for media reformatting before export.
+  - In-app audio preview playback controls (`▶ Play`, `⏸ Pause`, `⏹ Stop`) and non-blocking batch Audio DSP dialog.
+  - Dark and Light theme toggle using high-contrast standard Unicode glyphs.
+  - Standalone release binary size strictly constrained under `< 20 MB` (~7.8 MB actual).
+  - Multi-OS CI workflow in `.github/workflows/release.yml` executing `cargo test` across Linux, Windows, and macOS.
   - Compact desktop button padding (`2px 6px`) and min-height (`24px`).
 - Headless GTK GUI testing via `xvfb-run`.
 - Release executable size strictly maintained under 2.5 MB ceiling (currently 2.2 MB).

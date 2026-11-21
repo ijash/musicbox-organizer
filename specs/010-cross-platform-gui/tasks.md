@@ -73,13 +73,13 @@ description: "Task list for Feature 010: Unified Cross-Platform Rust GUI (v0.3.0
 
 ### Tests for User Story 2
 
-- [ ] T012 [P] [US2] Create headless GUI test for audio preview controls and DSP modal parameter toggles in `tests/gui/audio_dsp_tests.rs`
+- [X] T012 [P] [US2] Create headless GUI test for audio preview controls and DSP modal parameter toggles in `tests/gui/audio_dsp_tests.rs`
 
 ### Implementation for User Story 2
 
-- [ ] T013 [P] [US2] Implement audio preview dock with `Play`, `Pause`, `Stop`, and active track status label in `src/ui/audio_bar.rs` citing `data-model.md: MusicBoxApp.preview_player` and `data-model.md: MusicBoxApp.playing_track_idx`
-- [ ] T014 [US2] Implement Audio Tools modal dialog with normalize and silence trimming checkboxes, numeric inputs, and cancel/run buttons in `src/ui/dsp_dialog.rs` citing `data-model.md: DspDialogState.normalize_target_db` and `data-model.md: DspDialogState.trim_threshold_db`
-- [ ] T015 [US2] Wire DSP batch execution to background `std::thread::spawn` with `std::sync::mpsc` progress channel, stopping `preview_player` prior to file overwrite and calling `ctx.request_repaint()` in `src/ui/app.rs`
+- [X] T013 [P] [US2] Implement audio preview dock with `Play`, `Pause`, `Stop`, and active track status label in `src/ui/audio_bar.rs` citing `data-model.md: MusicBoxApp.preview_player` and `data-model.md: MusicBoxApp.playing_track_idx`
+- [X] T014 [US2] Implement Audio Tools modal dialog with normalize and silence trimming checkboxes, numeric inputs, and cancel/run buttons in `src/ui/dsp_dialog.rs` citing `data-model.md: DspDialogState.normalize_target_db` and `data-model.md: DspDialogState.trim_threshold_db`
+- [X] T015 [US2] Wire DSP batch execution to background `std::thread::spawn` with `std::sync::mpsc` progress channel, stopping `preview_player` prior to file overwrite and calling `ctx.request_repaint()` in `src/ui/app.rs`
 
 **Checkpoint**: User Stories 1 and 2 both functional and testable independently
 
@@ -93,12 +93,12 @@ description: "Task list for Feature 010: Unified Cross-Platform Rust GUI (v0.3.0
 
 ### Tests for User Story 3
 
-- [ ] T016 [P] [US3] Create headless GUI test for removable media export panel and two-step reformat guard in `tests/gui/export_panel_tests.rs`
+- [X] T016 [P] [US3] Create headless GUI test for removable media export panel and two-step reformat guard in `tests/gui/export_panel_tests.rs`
 
 ### Implementation for User Story 3
 
-- [ ] T017 [US3] Implement export panel with device selector dropdown, `Scan`, `Subpath`, two-step confirmation dialog for `Reformat before export`, `Export Playlist to Media`, and `Eject Device` in `src/ui/export_panel.rs` citing `data-model.md: ExportPanelState.selected_device_id` and `data-model.md: ExportPanelState.show_reformat_confirm`
-- [ ] T018 [US3] Wire export operation to background `std::thread::spawn` with `ExportProgressMessage` channel and `ctx.request_repaint()` in `src/ui/app.rs`
+- [X] T017 [US3] Implement export panel with device selector dropdown, `Scan`, `Subpath`, two-step confirmation dialog for `Reformat before export`, `Export Playlist to Media`, and `Eject Device` in `src/ui/export_panel.rs` citing `data-model.md: ExportPanelState.selected_device_id` and `data-model.md: ExportPanelState.show_reformat_confirm`
+- [X] T018 [US3] Wire export operation to background `std::thread::spawn` with `ExportProgressMessage` channel and `ctx.request_repaint()` in `src/ui/app.rs`
 
 **Checkpoint**: User Stories 1, 2, and 3 functional and testable independently
 
@@ -112,15 +112,15 @@ description: "Task list for Feature 010: Unified Cross-Platform Rust GUI (v0.3.0
 
 ### Tests for User Story 4
 
-- [ ] T019 [P] [US4] Create headless GUI test verifying Dark/Light theme switching and text color contrast in `tests/gui/theme_tests.rs`
+- [X] T019 [P] [US4] Create headless GUI test verifying Dark/Light theme switching and text color contrast in `tests/gui/theme_tests.rs`
 
 ### Implementation for User Story 4
 
-- [ ] T020 [P] [US4] Implement Dark/Light theme toggle wired to `egui::Visuals::dark()` and `egui::Visuals::light()` in `src/ui/header.rs` citing `data-model.md: MusicBoxApp.dark_mode`
-- [ ] T021 [P] [US4] Implement export text/RTF dialog triggering `RtfExporter` and TXT summary export in `src/ui/export_dialog.rs`
-- [ ] T022 [P] [US4] Implement footer status line and clickable GitHub project hyperlink in `src/ui/footer.rs`
-- [ ] T023 [US4] Replace GTK `xvfb-run` test runner with consolidated `egui_kittest` integration harness in `tests/gui_tests.rs`
-- [ ] T024 [US4] Update `.github/workflows/release.yml` to remove `libgtk-3-dev`/`xvfb`, run cross-platform `cargo test` across Linux, Windows, and macOS, and assert release binary size `< 20 MB`
+- [X] T020 [P] [US4] Implement Dark/Light theme toggle wired to `egui::Visuals::dark()` and `egui::Visuals::light()` in `src/ui/header.rs` citing `data-model.md: MusicBoxApp.dark_mode`
+- [X] T021 [P] [US4] Implement export text/RTF dialog triggering `RtfExporter` and TXT summary export in `src/ui/export_dialog.rs`
+- [X] T022 [P] [US4] Implement footer status line and clickable GitHub project hyperlink in `src/ui/footer.rs`
+- [X] T023 [US4] Replace GTK `xvfb-run` test runner with consolidated `egui_kittest` integration harness in `tests/gui_tests.rs`
+- [X] T024 [US4] Update `.github/workflows/release.yml` to remove `libgtk-3-dev`/`xvfb`, run cross-platform `cargo test` across Linux, Windows, and macOS, and assert release binary size `< 20 MB`
 
 **Checkpoint**: All user stories functional, tested, and automated in CI
 
@@ -130,10 +130,10 @@ description: "Task list for Feature 010: Unified Cross-Platform Rust GUI (v0.3.0
 
 **Purpose**: Cleanup of legacy artifacts, whole-project validation, binary size verification, and documentation updates
 
-- [ ] T025 [P] Clean up obsolete GTK files (`src/ui/gtk_ui.rs`, `tests/gui/run_gui_tests.sh`) and unused assets
-- [ ] T026 Run full validation suite per `quickstart.md`: `cargo test`, `cargo clippy --all-targets -- -D warnings`, and `cargo fmt --check`
-- [ ] T027 Build standalone release binary `cargo build --release` and verify binary size `< 20 MB` (`20,971,520` bytes) per Constitution Principle I & VII
-- [ ] T028 [P] Update `README.md` changelog for `v0.3.0` and cross-platform installation/usage instructions per Constitution Development Workflow
+- [X] T025 [P] Clean up obsolete GTK files (`src/ui/gtk_ui.rs`, `tests/gui/run_gui_tests.sh`) and unused assets
+- [X] T026 Run full validation suite per `quickstart.md`: `cargo test`, `cargo clippy --all-targets -- -D warnings`, and `cargo fmt --check`
+- [X] T027 Build standalone release binary `cargo build --release` and verify binary size `< 20 MB` (`20,971,520` bytes) per Constitution Principle I & VII
+- [X] T028 [P] Update `README.md` changelog for `v0.3.0` and cross-platform installation/usage instructions per Constitution Development Workflow
 
 ---
 
