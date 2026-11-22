@@ -72,11 +72,69 @@ pub fn xxyy_to_track_index(xxyy: &str) -> Result<u32, String> {
     Ok(index)
 }
 
+/// Sanitizes a string into a clean lowercase slug for filenames.
+/// ASCII lowercase, non-alphanumeric chars (except `_` and `-`) replaced with `_`,
+/// consecutive `_` collapsed, leading/trailing `_` trimmed.
+pub fn sanitize_slug(input: &str) -> String {
+    let mut slug = String::with_capacity(input.len());
+    let mut prev_underscore = false;
+
+    for c in input.chars() {
+        if c.is_ascii_alphanumeric() || c == '-' {
+            slug.push(c.to_ascii_lowercase());
+            prev_underscore = false;
+        } else if (c == '_' || c.is_whitespace() || !c.is_ascii() || !c.is_alphanumeric())
+            && !prev_underscore
+        {
+            slug.push('_');
+            prev_underscore = true;
+        }
+    }
+
+    let trimmed = slug.trim_matches('_');
+    if trimmed.is_empty() {
+        "track".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// Formats filename with XXYY prefix convention: XXYY-filename.mp3
 /// cite: Constitution v1.9.0 Principle IX
 pub fn format_export_filename(track_index: u32, original_filename: &str) -> Result<String, String> {
     let xxyy = track_index_to_xxyy(track_index)?;
     Ok(format!("{}-{}", xxyy, original_filename))
+}
+
+/// Formats export filename prioritizing ID3 title: XXYY-<slug>.mp3
+/// Falls back to sanitized original filename stem if id3_title is empty after trimming.
+/// cite: Constitution v1.9.0 Principle IX
+pub fn format_export_filename_from_title(
+    track_index: u32,
+    id3_title: &str,
+    original_filename: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let xxyy = track_index_to_xxyy(track_index).map_err(Box::<dyn std::error::Error>::from)?;
+    let path = std::path::Path::new(original_filename);
+
+    let stem = if !id3_title.trim().is_empty() {
+        id3_title.trim()
+    } else {
+        path.file_stem()
+            .and_then(|s| s.to_str())
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or("track")
+    };
+
+    let slug = sanitize_slug(stem);
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .filter(|e| !e.is_empty())
+        .unwrap_or_else(|| "mp3".to_string());
+
+    Ok(format!("{}-{}.{}", xxyy, slug, ext))
 }
 
 #[cfg(test)]
@@ -140,5 +198,26 @@ mod tests {
     #[test]
     fn test_invalid_char() {
         assert!(xxyy_to_track_index("AAA1").is_err());
+    }
+
+    #[test]
+    fn test_format_export_filename_from_title_musang_pandan() {
+        // Track 26 gives ABAA in XXYY scheme
+        let res = format_export_filename_from_title(26, "Musang Pandan", "song.mp3").unwrap();
+        assert_eq!(res, "ABAA-musang_pandan.mp3");
+    }
+
+    #[test]
+    fn test_format_export_filename_from_title_empty_title_fallback() {
+        let res = format_export_filename_from_title(0, "   ", "My Song (Remix).MP3").unwrap();
+        assert_eq!(res, "AAAA-my_song_remix.mp3");
+    }
+
+    #[test]
+    fn test_sanitize_slug_varieties() {
+        assert_eq!(sanitize_slug("Hello World!"), "hello_world");
+        assert_eq!(sanitize_slug("___a___b___"), "a_b");
+        assert_eq!(sanitize_slug("Track-01 (Live)"), "track-01_live");
+        assert_eq!(sanitize_slug(""), "track");
     }
 }

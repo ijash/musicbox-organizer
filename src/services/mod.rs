@@ -30,7 +30,10 @@ pub use export_config::ExportConfigService;
 pub use export_service::ExportService;
 pub use format_service::FormatService;
 pub use id3_service::Id3Service;
-pub use naming::{track_index_to_xxyy, xxyy_to_track_index};
+pub use naming::{
+    format_export_filename, format_export_filename_from_title, sanitize_slug, track_index_to_xxyy,
+    xxyy_to_track_index,
+};
 pub use pdf_exporter::PdfCatalogExporter;
 pub use rtf_exporter::RtfExporter;
 pub use scanner::DirectoryScanner;

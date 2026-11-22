@@ -7,7 +7,7 @@ use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
 use krilla::image::Image;
 use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
-use krilla::paint::{Fill, FillRule, Paint, Stroke};
+use krilla::paint::{Fill, FillRule, Paint, Stroke, StrokeDash};
 use krilla::text::Font;
 use krilla::text::TextDirection;
 use std::error::Error;
@@ -53,7 +53,7 @@ impl PdfCatalogExporter {
         let width_pt = config.dimensions.width_pt();
         let height_pt = config.dimensions.height_pt();
         let margin_pt = config.dimensions.margin_pt();
-        let content_margin = margin_pt.max(if config.cut_border { 4.5 } else { 2.0 });
+        let content_margin = margin_pt.max(if config.cut_border { 1.5 } else { 0.5 });
 
         let has_header = config.fields.header_title;
         let track_lines: Vec<String> = tracks
@@ -105,14 +105,21 @@ impl PdfCatalogExporter {
 
         // 2. Draw Optional Cut Border / Crop Marks
         if config.cut_border {
-            let border_rgb = RgbColor::new(
-                theme.border_color[0],
-                theme.border_color[1],
-                theme.border_color[2],
-            );
+            let is_dark =
+                theme.bg_color[0] < 128 && theme.bg_color[1] < 128 && theme.bg_color[2] < 128;
+            let border_color = if is_dark {
+                [180, 180, 180]
+            } else {
+                [80, 80, 80]
+            };
+            let border_rgb = RgbColor::new(border_color[0], border_color[1], border_color[2]);
             let border_stroke = Stroke {
                 paint: Paint::from(border_rgb),
-                width: 0.5,
+                width: 0.75,
+                dash: Some(StrokeDash {
+                    array: vec![4.0, 2.5],
+                    offset: 0.0,
+                }),
                 ..Default::default()
             };
             surface.set_stroke(Some(border_stroke));
@@ -143,18 +150,30 @@ impl PdfCatalogExporter {
         };
         surface.set_fill(Some(text_fill));
 
+        let font_size = layout.computed_font_size_pt;
+
         if has_header {
-            let header_text = playlist_title.unwrap_or("Playlist Catalog");
-            let header_font_size = theme.header_font_size;
+            let default_title = std::env::current_dir()
+                .ok()
+                .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
+                .filter(|s| !s.trim().is_empty())
+                .unwrap_or_else(|| "Playlist Catalog".to_string());
+            let header_text = playlist_title
+                .filter(|s| !s.trim().is_empty())
+                .unwrap_or(&default_title);
+
+            let header_font_size =
+                (font_size * 1.25).clamp(2.5, (height_pt * 0.14).min(theme.header_font_size));
+            let header_baseline = current_y + header_font_size * 0.82;
             surface.draw_text(
-                Point::from_xy(content_margin, current_y + header_font_size * 0.82),
+                Point::from_xy(content_margin, header_baseline),
                 ROBOTO_BOLD.clone(),
                 header_font_size,
                 header_text,
                 false,
                 TextDirection::Auto,
             );
-            current_y += header_font_size * 1.5 + 4.0;
+            current_y += header_font_size + (header_font_size * 0.35);
 
             // Subtle divider line
             let div_rgb = RgbColor::new(
@@ -177,15 +196,15 @@ impl PdfCatalogExporter {
             }
             surface.set_stroke(None);
 
-            current_y += 6.0;
+            current_y += (header_font_size * 0.35).max(2.0);
         }
 
         // 4. Draw Tracks in Columns
         let cols = layout.column_count;
         let row_height = layout.row_height_pt;
-        let font_size = layout.computed_font_size_pt;
 
         let tracks_per_col = tracks.len().div_ceil(cols);
+        let eff_column_gap = (font_size * 1.2).clamp(2.0, theme.column_gap);
 
         let mut col_x = Vec::with_capacity(cols);
         let mut cur_x = content_margin;
@@ -196,7 +215,7 @@ impl PdfCatalogExporter {
                 .get(c_idx)
                 .copied()
                 .unwrap_or(layout.column_width_pt);
-            cur_x += w + theme.column_gap;
+            cur_x += w + eff_column_gap;
         }
 
         for (idx, _track) in tracks.iter().enumerate() {

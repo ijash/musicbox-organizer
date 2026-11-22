@@ -151,3 +151,58 @@ fn test_toolbar_track_removal_and_move_sync_playing_index() {
     assert_eq!(harness.state().project.tracks[0].title, "Track 2");
     assert_eq!(harness.state().playing_track_idx, None);
 }
+
+#[test]
+fn test_playlist_full_row_selection_and_inline_edit() {
+    use egui_kittest::kittest::Queryable;
+    use musicbox_organizer::ui::TableColumn;
+
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Initial Title".to_string(),
+        artist: "Initial Artist".to_string(),
+        file_path: "/music/track0.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 1,
+        title: "Second Title".to_string(),
+        artist: "Second Artist".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+    harness.run();
+
+    // 1. Single click on Title enters edit mode immediately and selects row
+    let title_cell = harness.get_by_label("Initial Title");
+    title_cell.click();
+    harness.run();
+
+    assert!(harness.state().selected_track_indices.contains(&0));
+    assert_eq!(harness.state().editing_cell, Some((0, TableColumn::Title)));
+    assert_eq!(harness.state().edit_buffer, "Initial Title");
+
+    // 2. Click outside (on row 1 '#' cell) commits edit and selects row 1
+    harness.state_mut().edit_buffer = "Edited Title".to_string();
+    let row1_num = harness.get_by_label("02");
+    row1_num.click();
+    harness.run();
+
+    assert_eq!(harness.state().editing_cell, None);
+    assert_eq!(harness.state().project.tracks[0].title, "Edited Title");
+    assert!(harness.state().selected_track_indices.contains(&1));
+
+    // 3. Single click on Artist of row 1 enters artist edit mode
+    let artist_cell = harness.get_by_label("Second Artist");
+    artist_cell.click();
+    harness.run();
+
+    assert_eq!(harness.state().editing_cell, Some((1, TableColumn::Artist)));
+    assert_eq!(harness.state().edit_buffer, "Second Artist");
+}

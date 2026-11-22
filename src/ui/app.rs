@@ -26,6 +26,7 @@ pub struct MusicBoxApp {
     // Playlist Table Interaction
     pub selected_track_indices: BTreeSet<usize>,
     pub editing_cell: Option<(usize, TableColumn)>,
+    pub edit_buffer: String,
 
     // Audio Preview Player
     pub preview_player: Option<AudioPreviewPlayer>,
@@ -73,6 +74,7 @@ impl Default for MusicBoxApp {
             project_path: None,
             selected_track_indices: BTreeSet::new(),
             editing_cell: None,
+            edit_buffer: String::new(),
             preview_player: None,
             playing_track_idx: None,
             dsp_dialog: DspDialogState::default(),

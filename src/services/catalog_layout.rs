@@ -82,10 +82,11 @@ impl CatalogLayoutSolver {
         let canvas_width = (width_pt - 2.0 * margin_pt).max(10.0);
         let mut canvas_height = (height_pt - 2.0 * margin_pt).max(10.0);
 
-        // Header height allocation
+        // Header height allocation: scale header font proportionally
         if has_header {
-            let header_space = theme.header_font_size * 1.5 + 8.0;
-            if canvas_height > header_space + 20.0 {
+            let est_header_f = (height_pt * 0.14).min(theme.header_font_size).max(2.5);
+            let header_space = est_header_f + est_header_f * 0.35 + 4.0;
+            if canvas_height > header_space + 10.0 {
                 canvas_height -= header_space;
             }
         }
@@ -125,15 +126,15 @@ impl CatalogLayoutSolver {
         const MAX_AUTOFIT_FONT_SIZE: f32 = 24.0;
 
         for cols in 1..=max_candidates {
-            let total_gap = (cols - 1) as f32 * theme.column_gap;
-            if canvas_width <= total_gap + 30.0 {
+            let rows_needed = track_count.div_ceil(cols);
+            // Reserve font_size * 0.25 bottom descender space so last row never touches bottom edge
+            let f_vert = (canvas_height / (rows_needed as f32 * theme.line_height + 0.25)).max(1.0);
+            let col_gap = (f_vert * 1.2).clamp(2.0, theme.column_gap);
+            let total_gap = (cols - 1) as f32 * col_gap;
+            if canvas_width <= total_gap + 20.0 {
                 continue;
             }
             let available_for_cols = canvas_width - total_gap;
-            let rows_needed = track_count.div_ceil(cols);
-
-            // Reserve font_size * 0.25 bottom descender space so last row never touches bottom edge
-            let f_vert = (canvas_height / (rows_needed as f32 * theme.line_height + 0.25)).max(1.0);
             let row_h = (canvas_height - f_vert * 0.25) / (rows_needed as f32);
 
             // Determine max unit width in each column

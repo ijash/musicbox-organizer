@@ -56,7 +56,7 @@ impl ExportCatalogDialog {
             .config
             .dimensions
             .margin_pt()
-            .max(if self.config.cut_border { 4.5 } else { 2.0 });
+            .max(if self.config.cut_border { 1.5 } else { 0.5 });
         CatalogLayoutSolver::solve_with_line_lengths(
             self.config.dimensions.width_pt(),
             self.config.dimensions.height_pt(),
@@ -78,7 +78,7 @@ impl ExportCatalogDialog {
             .config
             .dimensions
             .margin_pt()
-            .max(if self.config.cut_border { 4.5 } else { 2.0 });
+            .max(if self.config.cut_border { 1.5 } else { 0.5 });
         CatalogLayoutSolver::solve_with_line_widths(
             self.config.dimensions.width_pt(),
             self.config.dimensions.height_pt(),
@@ -406,16 +406,28 @@ pub fn convert_project_tracks(tracks: &[ProjectTrack]) -> Vec<OrganizerTrack> {
         .enumerate()
         .map(|(i, pt)| {
             let path = PathBuf::from(&pt.file_path);
-            let filename = path
+            let raw_filename = path
                 .file_name()
                 .map(|f| f.to_string_lossy().to_string())
                 .unwrap_or_else(|| format!("track_{}.mp3", i + 1));
+            let export_name = crate::services::naming::format_export_filename_from_title(
+                pt.index,
+                &pt.title,
+                &raw_filename,
+            )
+            .unwrap_or_else(|_| format!("{:04}-{}", pt.index + 1, raw_filename));
+
+            let xxyy = track_index_to_xxyy(pt.index).unwrap_or_else(|_| format!("{:04}", i + 1));
+            let slug_with_ext = export_name
+                .strip_prefix(&format!("{}-", xxyy))
+                .unwrap_or(&raw_filename)
+                .to_string();
+
             OrganizerTrack {
                 index: (i + 1) as u32,
                 file_path: path,
-                original_filename: filename,
-                xxyy_prefix: track_index_to_xxyy((i + 1) as u32)
-                    .unwrap_or_else(|_| format!("{:04}", i + 1)),
+                original_filename: slug_with_ext,
+                xxyy_prefix: xxyy,
                 metadata: crate::models::TrackMetadata {
                     track_number: Some((i + 1) as u32),
                     title: pt.title.clone(),
