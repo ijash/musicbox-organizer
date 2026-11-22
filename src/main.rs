@@ -13,6 +13,7 @@ fn print_help() {
     println!("Usage:");
     println!("  musicbox                     - Launch desktop GUI window");
     println!("  musicbox gui                 - Launch desktop GUI window");
+    println!("  musicbox --version           - Display version information");
     println!("  musicbox scan [dir]          - Scan directory for MP3 files and display ID3 tags");
     println!("  musicbox tag <file> [t] [a]  - View or update ID3 tag (title, artist)");
     println!(
@@ -146,6 +147,9 @@ fn main() {
         }
         "help" | "--help" | "-h" => {
             print_help();
+        }
+        "version" | "--version" | "-v" => {
+            println!("musicbox {}", env!("CARGO_PKG_VERSION"));
         }
         "export-text" => {
             let base_dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
