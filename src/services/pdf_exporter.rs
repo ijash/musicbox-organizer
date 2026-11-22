@@ -162,8 +162,9 @@ impl PdfCatalogExporter {
                 .filter(|s| !s.trim().is_empty())
                 .unwrap_or(&default_title);
 
-            let header_font_size =
-                (font_size * 1.25).clamp(2.5, (height_pt * 0.14).min(theme.header_font_size));
+            let (header_font_size, divider_offset_y, total_header_height) =
+                CatalogLayoutSolver::header_metrics(font_size, height_pt, theme);
+
             let header_baseline = current_y + header_font_size * 0.82;
             surface.draw_text(
                 Point::from_xy(content_margin, header_baseline),
@@ -173,9 +174,9 @@ impl PdfCatalogExporter {
                 false,
                 TextDirection::Auto,
             );
-            current_y += header_font_size + (header_font_size * 0.35);
 
             // Subtle divider line
+            let div_y = current_y + divider_offset_y;
             let div_rgb = RgbColor::new(
                 theme.accent_color[0],
                 theme.accent_color[1],
@@ -189,14 +190,14 @@ impl PdfCatalogExporter {
             surface.set_stroke(Some(div_stroke));
 
             let mut div_path = PathBuilder::new();
-            div_path.move_to(content_margin, current_y);
-            div_path.line_to(width_pt - content_margin, current_y);
+            div_path.move_to(content_margin, div_y);
+            div_path.line_to(width_pt - content_margin, div_y);
             if let Some(path) = div_path.finish() {
                 surface.draw_path(&path);
             }
             surface.set_stroke(None);
 
-            current_y += (header_font_size * 0.35).max(2.0);
+            current_y += total_header_height;
         }
 
         // 4. Draw Tracks in Columns

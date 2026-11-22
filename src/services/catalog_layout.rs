@@ -198,6 +198,15 @@ pub fn measure_roboto_line_unit_width(text: &str) -> f32 {
 pub struct CatalogLayoutSolver;
 
 impl CatalogLayoutSolver {
+    /// Computes proportional header font metrics: (header_font_size, divider_offset_y, total_header_height)
+    pub fn header_metrics(font_size: f32, height_pt: f32, theme: &CatalogTheme) -> (f32, f32, f32) {
+        let header_font_size =
+            (font_size * 1.25).clamp(2.5, (height_pt * 0.14).min(theme.header_font_size));
+        let divider_offset_y = header_font_size * 1.35;
+        let total_header_height = header_font_size * 1.70;
+        (header_font_size, divider_offset_y, total_header_height)
+    }
+
     /// Solves the optimal column count and font size to fit all tracks on the physical page.
     pub fn solve(
         width_pt: f32,
@@ -256,16 +265,7 @@ impl CatalogLayoutSolver {
         let physical_height_cm = height_pt / 28.346_457;
 
         let canvas_width = (width_pt - 2.0 * margin_pt).max(10.0);
-        let mut canvas_height = (height_pt - 2.0 * margin_pt).max(10.0);
-
-        // Header height allocation: scale header font proportionally
-        if has_header {
-            let est_header_f = (height_pt * 0.14).min(theme.header_font_size).max(2.5);
-            let header_space = est_header_f + est_header_f * 0.35 + 4.0;
-            if canvas_height > header_space + 10.0 {
-                canvas_height -= header_space;
-            }
-        }
+        let canvas_height = (height_pt - 2.0 * margin_pt).max(10.0);
 
         if track_count == 0 {
             return ComputedCatalogLayout {
@@ -303,15 +303,25 @@ impl CatalogLayoutSolver {
 
         for cols in 1..=max_candidates {
             let rows_needed = track_count.div_ceil(cols);
-            // Reserve font_size * 0.25 bottom descender space so last row never touches bottom edge
-            let f_vert = (canvas_height / (rows_needed as f32 * theme.line_height + 0.25)).max(1.0);
-            let col_gap = (f_vert * 1.2).clamp(2.0, theme.column_gap);
+
+            let f_vert = if has_header {
+                let cap_hdr = (height_pt * 0.14).min(theme.header_font_size).max(2.5);
+                let mut f = canvas_height / (rows_needed as f32 * theme.line_height + 0.25 + 2.125);
+                if f * 1.25 > cap_hdr {
+                    f = (canvas_height - cap_hdr * 1.70).max(1.0)
+                        / (rows_needed as f32 * theme.line_height + 0.25);
+                }
+                f.max(1.0)
+            } else {
+                (canvas_height / (rows_needed as f32 * theme.line_height + 0.25)).max(1.0)
+            };
+
+            let col_gap = (f_vert * 1.1).max(3.5);
             let total_gap = (cols - 1) as f32 * col_gap;
             if canvas_width <= total_gap + 20.0 {
                 continue;
             }
             let available_for_cols = canvas_width - total_gap;
-            let row_h = (canvas_height - f_vert * 0.25) / (rows_needed as f32);
 
             // Determine max unit width in each column
             let mut max_col_unit_widths = Vec::with_capacity(cols);
@@ -376,9 +386,26 @@ impl CatalogLayoutSolver {
             if target_font > best_font_size || (target_font == best_font_size && cols < best_cols) {
                 best_font_size = target_font;
                 best_cols = cols;
-                best_row_height = row_h;
+
+                let actual_header_h = if has_header {
+                    Self::header_metrics(target_font, height_pt, theme).2
+                } else {
+                    0.0
+                };
+                let raw_row_h = ((canvas_height - actual_header_h - target_font * 0.25).max(1.0))
+                    / (rows_needed as f32);
+                best_row_height = raw_row_h.min(target_font * theme.line_height * 1.6);
+
                 best_col_width = available_for_cols / cols as f32;
-                best_col_widths = col_widths;
+
+                if line_widths.is_some() && cols > 1 {
+                    best_col_widths = max_col_unit_widths
+                        .iter()
+                        .map(|&w| w * target_font)
+                        .collect();
+                } else {
+                    best_col_widths = col_widths;
+                }
             }
         }
 
