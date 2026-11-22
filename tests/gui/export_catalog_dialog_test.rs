@@ -167,3 +167,41 @@ fn test_export_catalog_dialog_narrow_300x400_viewport() {
     harness.run();
     assert!(!harness.state().export_catalog_dialog.is_open);
 }
+
+#[test]
+fn test_export_catalog_toolbar_button_opens_dialog_full_app() {
+    use egui_kittest::kittest::Queryable;
+
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track One".to_string(),
+        artist: "Artist A".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+
+    assert!(!app.export_catalog_dialog.is_open);
+
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(960.0, 680.0))
+        .build_eframe(|_cc| app);
+
+    harness.run();
+
+    // Initial state: dialog closed
+    assert!(!harness.state().export_catalog_dialog.is_open);
+
+    // Click toolbar button
+    harness.get_by_label("📄 Export Catalog...").click();
+    harness.run();
+
+    // Dialog state is open
+    assert!(harness.state().export_catalog_dialog.is_open);
+
+    // Verify dialog modal controls render visibly
+    let export_btn = harness.get_by_label("Export...");
+    assert!(!export_btn.is_disabled());
+
+    let cancel_btn = harness.get_by_label("Cancel");
+    assert!(!cancel_btn.is_disabled());
+}

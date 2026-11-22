@@ -319,6 +319,7 @@ impl eframe::App for MusicBoxApp {
 
         // Modals / Floating Windows
         crate::ui::dsp_dialog::render_dsp_dialog(self, ctx);
+        crate::ui::export_catalog_dialog::render_export_catalog_dialog(self, ctx);
     }
 }
 
