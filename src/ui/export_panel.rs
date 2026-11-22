@@ -12,7 +12,9 @@ pub struct ExportPanelState {
     pub selected_device_id: Option<String>,
     pub subpath: String,
     pub reformat_enabled: bool,
+    pub show_export_confirm: bool,
     pub show_reformat_confirm: bool,
+    pub reformat_ack_checkbox: bool,
     pub is_exporting: bool,
     pub export_progress: f32,
     pub export_status: String,
@@ -25,7 +27,9 @@ impl Default for ExportPanelState {
             selected_device_id: None,
             subpath: "music".to_string(),
             reformat_enabled: false,
+            show_export_confirm: false,
             show_reformat_confirm: false,
+            reformat_ack_checkbox: false,
             is_exporting: false,
             export_progress: 0.0,
             export_status: String::new(),
@@ -89,11 +93,9 @@ pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             .add_enabled(export_enabled, egui::Button::new("💾 Export Playlist"))
             .clicked()
         {
-            if app.export_panel.reformat_enabled {
-                app.export_panel.show_reformat_confirm = true;
-            } else {
-                start_export(app);
-            }
+            app.export_panel.show_export_confirm = true;
+            app.export_panel.show_reformat_confirm = app.export_panel.reformat_enabled;
+            app.export_panel.reformat_ack_checkbox = false;
         }
 
         let eject_enabled =
@@ -113,28 +115,148 @@ pub fn render_export_panel(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             ui.label(&app.export_panel.export_status);
         });
     }
+}
 
-    // Modal Confirmation Dialog for Reformat
-    if app.export_panel.show_reformat_confirm {
-        egui::Window::new("⚠️ Warning: Destructive Action")
-            .collapsible(false)
-            .resizable(false)
-            .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
-            .show(ui.ctx(), |ui| {
-                ui.label("Reformatting will ERASE ALL DATA on the selected device!");
-                ui.label("Are you completely sure you want to proceed?");
-                ui.add_space(12.0);
-                ui.horizontal(|ui| {
-                    if ui.button("Yes, Reformat & Export").clicked() {
+pub fn render_export_confirm_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) {
+    if !app.export_panel.show_export_confirm {
+        return;
+    }
+
+    let is_reformat = app.export_panel.reformat_enabled;
+    let title = if is_reformat {
+        "⚠️ Warning: Destructive Action - Reformat Media"
+    } else {
+        "Confirm Export to Removable Media"
+    };
+
+    let parent_rect = ctx.input(|i| i.viewport().outer_rect).unwrap_or_else(|| {
+        egui::Rect::from_min_size(egui::pos2(100.0, 100.0), egui::vec2(960.0, 680.0))
+    });
+    let dialog_size = if is_reformat {
+        egui::vec2(360.0, 210.0)
+    } else {
+        egui::vec2(340.0, 118.0)
+    };
+    let pos = parent_rect.center() - dialog_size / 2.0;
+
+    let viewport_id = egui::ViewportId::from_hash_of("export_media_confirm_viewport");
+    ctx.show_viewport_immediate(
+        viewport_id,
+        egui::ViewportBuilder::default()
+            .with_title(title)
+            .with_inner_size(dialog_size)
+            .with_position(pos)
+            .with_resizable(false)
+            .with_maximize_button(false)
+            .with_minimize_button(false),
+        |ctx, _class| {
+            if ctx.input(|i| i.viewport().close_requested()) {
+                app.export_panel.show_export_confirm = false;
+                app.export_panel.show_reformat_confirm = false;
+            }
+            render_export_confirm_contents(app, ctx);
+            if !app.export_panel.show_export_confirm {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+        },
+    );
+}
+
+pub fn render_export_confirm_contents(app: &mut MusicBoxApp, ctx: &egui::Context) {
+    let (dev_name, mount_path) = match app.export_panel.selected_device_id.as_ref().and_then(|id| {
+        app.export_panel
+            .available_devices
+            .iter()
+            .find(|d| &d.id == id)
+    }) {
+        Some(d) => (
+            d.name.clone(),
+            d.mount_point
+                .as_ref()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        ),
+        None => ("Unknown Device".to_string(), "-".to_string()),
+    };
+    let track_count = app.project.tracks.len();
+    let subpath = app.export_panel.subpath.clone();
+    let is_reformat = app.export_panel.reformat_enabled;
+
+    egui::CentralPanel::default().show(ctx, |ui| {
+        ui.vertical(|ui| {
+            if is_reformat {
+                ui.colored_label(
+                    egui::Color32::RED,
+                    egui::RichText::new("⚠️ DESTRUCTIVE ACTION WARNING").strong(),
+                );
+                ui.add_space(2.0);
+                ui.colored_label(
+                    egui::Color32::RED,
+                    egui::RichText::new(format!(
+                        "ALL DATA ON {} ({}) WILL BE ERASED!",
+                        dev_name, mount_path
+                    ))
+                    .small(),
+                );
+                ui.add_space(4.0);
+            }
+
+            ui.group(|ui| {
+                ui.set_width(ui.available_width());
+                ui.label(format!("Target Device: {}", dev_name));
+                ui.label(format!("Mount Path: {}", mount_path));
+                ui.label(format!(
+                    "Tracks to Export: {}  |  Subpath: /{}",
+                    track_count, subpath
+                ));
+            });
+
+            ui.add_space(4.0);
+
+            if is_reformat {
+                ui.checkbox(
+                    &mut app.export_panel.reformat_ack_checkbox,
+                    egui::RichText::new("I understand all data on this drive will be erased")
+                        .color(egui::Color32::RED)
+                        .strong(),
+                );
+                ui.add_space(6.0);
+            }
+
+            ui.horizontal(|ui| {
+                if ui.button("Cancel").clicked() {
+                    app.export_panel.show_export_confirm = false;
+                    app.export_panel.show_reformat_confirm = false;
+                }
+
+                if is_reformat {
+                    let can_reformat = app.export_panel.reformat_ack_checkbox;
+                    let btn = ui.add_enabled(
+                        can_reformat,
+                        egui::Button::new(
+                            egui::RichText::new("Erase, Format & Export")
+                                .color(egui::Color32::WHITE),
+                        )
+                        .fill(if can_reformat {
+                            egui::Color32::from_rgb(180, 40, 40)
+                        } else {
+                            egui::Color32::DARK_GRAY
+                        }),
+                    );
+                    if btn.clicked() {
+                        app.export_panel.show_export_confirm = false;
                         app.export_panel.show_reformat_confirm = false;
                         start_export(app);
                     }
-                    if ui.button("Cancel").clicked() {
-                        app.export_panel.show_reformat_confirm = false;
+                } else {
+                    if ui.button("Confirm Export").clicked() {
+                        app.export_panel.show_export_confirm = false;
+                        start_export(app);
                     }
-                });
+                }
             });
-    }
+        });
+    });
 }
 
 pub fn scan_devices(app: &mut MusicBoxApp) {

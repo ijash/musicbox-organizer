@@ -44,8 +44,9 @@ pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             app.dsp_dialog.is_open = true;
         }
 
-        if ui.button("📄 Export Text/RTF...").clicked() {
-            export_text_dialog(app);
+        if ui.button("📄 Export Catalog...").clicked() {
+            app.export_catalog_dialog
+                .open_with_title(Some(&app.project.metadata.name));
         }
 
         if ui.button("📂 Open").clicked() {
@@ -109,7 +110,26 @@ fn remove_selected_tracks(app: &mut MusicBoxApp) {
     if app.selected_track_indices.is_empty() {
         return;
     }
+    crate::ui::playlist_table::commit_editing_cell(app);
+    app.editing_cell = None;
     app.session.push_undo(app.project.clone());
+
+    if let Some(playing_idx) = app.playing_track_idx {
+        if app.selected_track_indices.contains(&playing_idx) {
+            if let Some(player) = &mut app.preview_player {
+                player.stop();
+            }
+            app.playing_track_idx = None;
+        } else {
+            let removed_before = app
+                .selected_track_indices
+                .iter()
+                .filter(|&&idx| idx < playing_idx)
+                .count();
+            app.playing_track_idx = Some(playing_idx - removed_before);
+        }
+    }
+
     let mut new_tracks = Vec::new();
     for (i, track) in app.project.tracks.drain(..).enumerate() {
         if !app.selected_track_indices.contains(&i) {
@@ -142,6 +162,8 @@ fn move_selected_up(app: &mut MusicBoxApp) {
     if !can_move_up(app) {
         return;
     }
+    crate::ui::playlist_table::commit_editing_cell(app);
+    app.editing_cell = None;
     app.session.push_undo(app.project.clone());
     let selected: Vec<usize> = app.selected_track_indices.iter().copied().collect();
     for idx in selected {
@@ -152,6 +174,15 @@ fn move_selected_up(app: &mut MusicBoxApp) {
         new_selection.insert(idx - 1);
     }
     app.selected_track_indices = new_selection;
+
+    if let Some(playing_idx) = app.playing_track_idx {
+        app.playing_track_idx = app
+            .project
+            .tracks
+            .iter()
+            .position(|t| t.index == playing_idx as u32);
+    }
+
     reindex_tracks(&mut app.project.tracks);
     app.status_message = "Moved up".to_string();
 }
@@ -160,6 +191,8 @@ fn move_selected_down(app: &mut MusicBoxApp) {
     if !can_move_down(app) {
         return;
     }
+    crate::ui::playlist_table::commit_editing_cell(app);
+    app.editing_cell = None;
     app.session.push_undo(app.project.clone());
     let selected: Vec<usize> = app.selected_track_indices.iter().rev().copied().collect();
     for idx in selected {
@@ -170,6 +203,15 @@ fn move_selected_down(app: &mut MusicBoxApp) {
         new_selection.insert(idx + 1);
     }
     app.selected_track_indices = new_selection;
+
+    if let Some(playing_idx) = app.playing_track_idx {
+        app.playing_track_idx = app
+            .project
+            .tracks
+            .iter()
+            .position(|t| t.index == playing_idx as u32);
+    }
+
     reindex_tracks(&mut app.project.tracks);
     app.status_message = "Moved down".to_string();
 }
@@ -214,31 +256,6 @@ fn save_project(app: &mut MusicBoxApp) {
         }
         Err(e) => {
             app.status_message = format!("Save error: {}", e);
-        }
-    }
-}
-
-fn export_text_dialog(app: &mut MusicBoxApp) {
-    if let Some(folder) = rfd::FileDialog::new()
-        .set_directory(get_starting_dir())
-        .pick_folder()
-    {
-        let service = crate::services::ExportConfigService::new();
-        let selection = crate::models::ExportFormatSelection {
-            txt: true,
-            rtf: true,
-        };
-        match service.export_playlist(&folder, &selection, &app.project) {
-            Ok(files) => {
-                app.status_message = format!(
-                    "Exported {} text/RTF playlist file(s) to {}",
-                    files.len(),
-                    folder.display()
-                );
-            }
-            Err(e) => {
-                app.status_message = format!("Text export error: {}", e);
-            }
         }
     }
 }

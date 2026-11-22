@@ -80,3 +80,173 @@ fn test_app_new_startup_and_device_detection() {
     harness.run();
     assert!(harness.state().dark_mode);
 }
+
+#[test]
+fn test_toolbar_track_removal_and_move_sync_playing_index() {
+    use egui_kittest::kittest::Queryable;
+
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track 0".to_string(),
+        artist: "Artist 0".to_string(),
+        file_path: "/music/track0.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 1,
+        title: "Track 1".to_string(),
+        artist: "Artist 1".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 2,
+        title: "Track 2".to_string(),
+        artist: "Artist 2".to_string(),
+        file_path: "/music/track2.mp3".to_string(),
+    });
+
+    // Track 1 is currently playing
+    app.playing_track_idx = Some(1);
+
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+    harness.run();
+
+    // 1. Remove track 0 (above playing track) -> playing track moves from 1 to 0
+    harness.state_mut().selected_track_indices.insert(0);
+    harness.run();
+    harness.get_by_label("🗑 Remove").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks.len(), 2);
+    assert_eq!(harness.state().project.tracks[0].title, "Track 1");
+    assert_eq!(harness.state().playing_track_idx, Some(0));
+
+    // 2. Select track 0 (playing track) and move down -> moves to index 1, playing_track_idx follows to 1
+    harness.state_mut().selected_track_indices.clear();
+    harness.state_mut().selected_track_indices.insert(0);
+    harness.run();
+    harness.get_by_label("⬇ Down").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks[1].title, "Track 1");
+    assert_eq!(harness.state().playing_track_idx, Some(1));
+
+    // 3. Select track 1 (playing track) and move up -> moves back to index 0, playing_track_idx follows to 0
+    harness.get_by_label("⬆ Up").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks[0].title, "Track 1");
+    assert_eq!(harness.state().playing_track_idx, Some(0));
+
+    // 4. Select track 0 (playing track) and remove -> playback stopped, playing_track_idx cleared
+    harness.get_by_label("🗑 Remove").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks.len(), 1);
+    assert_eq!(harness.state().project.tracks[0].title, "Track 2");
+    assert_eq!(harness.state().playing_track_idx, None);
+}
+
+#[test]
+fn test_playlist_full_row_selection_and_inline_edit() {
+    use egui_kittest::kittest::Queryable;
+    use musicbox_organizer::ui::TableColumn;
+
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Initial Title".to_string(),
+        artist: "Initial Artist".to_string(),
+        file_path: "/music/track0.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 1,
+        title: "Second Title".to_string(),
+        artist: "Second Artist".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+    harness.run();
+
+    // 1. Single click on Title enters edit mode immediately and selects row
+    let title_cell = harness.get_by_label("Initial Title");
+    title_cell.click();
+    harness.run();
+
+    assert!(harness.state().selected_track_indices.contains(&0));
+    assert_eq!(harness.state().editing_cell, Some((0, TableColumn::Title)));
+    assert_eq!(harness.state().edit_buffer, "Initial Title");
+
+    // 2. Click outside (on row 1 '#' cell) commits edit and selects row 1
+    harness.state_mut().edit_buffer = "Edited Title".to_string();
+    let row1_num = harness.get_by_label("02");
+    row1_num.click();
+    harness.run();
+
+    assert_eq!(harness.state().editing_cell, None);
+    assert_eq!(harness.state().project.tracks[0].title, "Edited Title");
+    assert!(harness.state().selected_track_indices.contains(&1));
+
+    // 3. Single click on Artist of row 1 enters artist edit mode
+    let artist_cell = harness.get_by_label("Second Artist");
+    artist_cell.click();
+    harness.run();
+
+    assert_eq!(harness.state().editing_cell, Some((1, TableColumn::Artist)));
+    assert_eq!(harness.state().edit_buffer, "Second Artist");
+}
+
+#[test]
+fn test_move_up_down_commits_and_clears_active_editing_cell() {
+    use egui_kittest::kittest::Queryable;
+    use musicbox_organizer::ui::TableColumn;
+
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track Zero".to_string(),
+        artist: "Artist 0".to_string(),
+        file_path: "/music/track0.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 1,
+        title: "Track One".to_string(),
+        artist: "Artist 1".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+
+    // Select row 0 and start editing Title
+    app.selected_track_indices.insert(0);
+    app.editing_cell = Some((0, TableColumn::Title));
+    app.edit_buffer = "Track Zero Modified".to_string();
+
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+    harness.run();
+
+    // Move Down
+    harness.get_by_label("⬇ Down").click();
+    harness.run();
+
+    // Edit is committed to the track and editing_cell is cleared
+    assert_eq!(harness.state().editing_cell, None);
+    assert_eq!(
+        harness.state().project.tracks[1].title,
+        "Track Zero Modified"
+    );
+}

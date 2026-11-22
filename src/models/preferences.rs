@@ -1,3 +1,4 @@
+use crate::models::catalog_config::CatalogExportConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -25,10 +26,12 @@ impl ExportFormatSelection {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserPreferences {
     pub dark_mode: bool,
     pub formats: ExportFormatSelection,
+    #[serde(default)]
+    pub catalog_config: CatalogExportConfig,
 }
 
 impl Default for UserPreferences {
@@ -36,6 +39,7 @@ impl Default for UserPreferences {
         Self {
             dark_mode: true, // Dark by default per FR-001
             formats: ExportFormatSelection::default(),
+            catalog_config: CatalogExportConfig::default(),
         }
     }
 }

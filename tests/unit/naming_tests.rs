@@ -27,11 +27,11 @@ fn test_xxyy_to_track_index_round_trip() {
 fn test_format_export_filename() {
     assert_eq!(
         format_export_filename(0, "song.mp3").unwrap(),
-        "[AAAA-song.mp3]"
+        "AAAA-song.mp3"
     );
     assert_eq!(
         format_export_filename(1, "track01.mp3").unwrap(),
-        "[AAAB-track01.mp3]"
+        "AAAB-track01.mp3"
     );
 }
 

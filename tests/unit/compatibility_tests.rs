@@ -48,8 +48,8 @@ fn test_non_ascii_filename_detection_and_sanitization() {
 fn test_path_length_validation() {
     let service = CompatibilityService::new();
 
-    let short_name = "[AAAA-short.mp3]".to_string();
-    let long_name = format!("[AAAA-{}.mp3]", "a".repeat(260));
+    let short_name = "AAAA-short.mp3".to_string();
+    let long_name = format!("AAAA-{}.mp3", "a".repeat(260));
 
     let report = service.validate_filenames(&[short_name, long_name]);
     assert_eq!(report.length_violations.len(), 1);

@@ -1,3 +1,4 @@
+pub mod catalog_config;
 mod compatibility;
 pub mod device;
 pub mod export_job;
@@ -6,6 +7,10 @@ pub mod project;
 pub mod session_state;
 pub mod track_metadata;
 
+pub use catalog_config::{
+    CatalogExportConfig, CatalogFieldSelection, CatalogFormat, CatalogPagePreset, CatalogTheme,
+    ComputedCatalogLayout, ImageFitMode, LengthUnit, PhysicalDimensions,
+};
 pub use compatibility::{CompatibilityReport, DeviceProfile};
 pub use device::{Device, FileSystem};
 pub use export_job::{ExportJob, ExportStatus, Track};

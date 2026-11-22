@@ -1,0 +1,15 @@
+{
+  "name": "Dark Slate",
+  "bg_color": [30, 32, 34],
+  "font_color": [240, 242, 245],
+  "accent_color": [170, 180, 195],
+  "border_color": [65, 70, 75],
+  "bg_image": null,
+  "bg_opacity": 1.0,
+  "bg_fit": "Cover",
+  "font_family": "Roboto",
+  "font_size": 8.0,
+  "header_font_size": 11.0,
+  "line_height": 1.3,
+  "column_gap": 10.0
+}

@@ -72,12 +72,18 @@ impl ExportService {
             }
 
             let source = Path::new(&track.source_path);
-            let formatted_filename =
-                if track.xxyy_name.starts_with('[') && track.xxyy_name.ends_with(']') {
-                    track.xxyy_name.clone()
-                } else {
-                    format!("[{}-{}]", track.xxyy_name, track.filename)
-                };
+            let formatted_filename = if track.xxyy_name.ends_with(".mp3") {
+                track
+                    .xxyy_name
+                    .trim_matches(|c| c == '[' || c == ']')
+                    .to_string()
+            } else {
+                format!(
+                    "{}-{}",
+                    track.xxyy_name.trim_matches(|c| c == '[' || c == ']'),
+                    track.filename
+                )
+            };
             let dest_file = dest_path.join(&formatted_filename);
 
             // Copy file

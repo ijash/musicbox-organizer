@@ -22,14 +22,15 @@ pub fn render_audio_bar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             .as_ref()
             .map(|p| p.is_playing())
             .unwrap_or(false);
+        let is_paused = app
+            .preview_player
+            .as_ref()
+            .map(|p| p.is_paused())
+            .unwrap_or(false);
+        let is_different_track = target_idx != app.playing_track_idx;
 
-        let play_btn_enabled = target_idx.is_some()
-            && (!is_playing
-                || app
-                    .preview_player
-                    .as_ref()
-                    .map(|p| p.is_paused())
-                    .unwrap_or(false));
+        let play_btn_enabled =
+            target_idx.is_some() && (!is_playing || is_paused || is_different_track);
         if ui
             .add_enabled(play_btn_enabled, egui::Button::new("▶ Play"))
             .clicked()

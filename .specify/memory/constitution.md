@@ -1,10 +1,9 @@
 <!-- SYNC IMPACT REPORT
-Version: 1.7.0 → 1.8.0 (Minor amendment for strict branch isolation and Conventional Commits branch/merge governance)
+Version: 1.8.0 → 1.9.0 (Minor amendment for Removable Media destructive export confirmation gates and clean unbracketed XXYY filename prefix format)
 Modified Principles:
-- VI. Git-First Workflow & Conventional Commits (enforced mandatory dedicated branch off Development, Conventional branch naming <type>/<slug>, and explicit user merge approval constraint)
-Modified Sections:
-- Development Workflow (added Branch Isolation & Conventional Branch Naming rules)
-- Governance (updated Git Governance with strict branch creation, commit formatting, and explicit merge approval gates)
+- III. User-Centric Simplicity → III. User-Centric Simplicity & Destructive Safety (mandated dedicated separate confirmation dialog window before Removable Media Export, with high-visibility warning and second confirmation gate when Reformat Media is checked)
+- IX. Device Compatibility & Lexicographic Sorting → IX. Device Compatibility & Naming (updated mandatory export filename prefix from `[XXYY-filename.mp3]` to `XXYY-filename.mp3` without square brackets for primitive FAT32/USB/SD audio players)
+Modified Sections: None
 Added Sections: None
 Removed Sections: None
 Ratification: 2026-11-19
@@ -23,8 +22,8 @@ Zero bloat. Single self-contained executable with `eframe`/`egui`, minimal footp
 ### II. Cross-Platform Native
 Windows, macOS, and Linux supported equally from day one. Single pure-Rust cross-platform GUI (`eframe`/`egui` + `rfd` native file dialogs) compiled natively for Linux, Windows, and macOS. Platform-specific APIs preferred over abstraction layers only when required for native integration (e.g. removable media detection, native file dialogs) while keeping UI logic unified.
 
-### III. User-Centric Simplicity
-Playlist and ID3 tag editing must be intuitive for non-technical users. Drag-and-drop, bulk operations, undo/redo. No buried menus. Core workflows: discoverable in <30 seconds.
+### III. User-Centric Simplicity & Destructive Safety
+Playlist and ID3 tag editing must be intuitive for non-technical users. Drag-and-drop, bulk operations, undo/redo. No buried menus. Core workflows: discoverable in <30 seconds. **Destructive Safety Gates**: Any destructive or drive-level action requires explicit confirmation. A dedicated separate confirmation dialog window MUST be presented before executing Removable Media Export. Whenever "Reformat Media" is selected/checked, the dialog MUST display an explicit, high-visibility destructive warning and require a second confirmation gate to prevent accidental drive erasure.
 
 ### IV. Offline-First & Portable
 No network calls required. No installer. App runs from any folder. No temp files left behind. Users move the executable and continue working. Local file system is single source of truth.
@@ -41,8 +40,8 @@ Speed matters. Short iteration cycles, fast feedback. No premature optimization 
 ### VIII. DRY & KISS
 Don't Repeat Yourself: shared logic extracted into reusable functions/modules. Keep It Simple, Stupid: prefer straightforward solutions over clever ones. No abstraction layers without concrete justification. Code speaks for itself; comments only for non-obvious intent.
 
-### IX. Device Compatibility & Lexicographic Sorting
-Exported playlists MUST be compatible with primitive audio devices (portable speakers, car head units, microcontrollers, SD card readers) that use lexicographical (ASCII/alphabetical) sorting. File naming convention [XXYY-filename.mp3] is designed to sort correctly on devices using byte-order ASCII sort, not smart sorting. No unicode edge cases. Files on USB/SD card must play in sequence on any device without renumbering or custom sort algorithms.
+### IX. Device Compatibility & Naming
+Exported playlists MUST be compatible with primitive audio devices (portable speakers, car head units, microcontrollers, SD card readers) that use lexicographical (ASCII/alphabetical) sorting. Mandatory file naming convention is `XXYY-<slug>.mp3` (no square brackets, e.g., `AAAA-song.mp3`, `AAAB-song.mp3`), where `<slug>` prioritizes the track's ID3 Title (lowercased, spaces and unsafe characters converted to `_`, collapsed/trimmed, e.g., `"Musang Pandan"` → `AABA-musang_pandan.mp3`), falling back to the sanitized original filename stem if ID3 Title is empty, for clean sorting and reliable compatibility across primitive FAT32/USB/SD audio players using byte-order ASCII sort. No unicode edge cases. Files on USB/SD card must play in sequence on any device without renumbering or custom sort algorithms.
 
 ## Technical Constraints
 
@@ -74,5 +73,5 @@ Constitution is law. Violations caught in code review and PR testing gates. Amen
 
 **Git Governance**: All commits agent-created using Conventional Commits v1.0.0 format per principle VI. No manual commits allowed. Agent creates dedicated branches (`<type>/<kebab-case-slug>`) branched off `Development`. Direct commits to `Development` or `main` are prohibited. Commits include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer. Agent auto-commits on the dedicated work branch when features complete (pass tests + acceptance criteria) without requiring explicit instruction. Agents MUST NOT merge into `Development` or `main` without explicit user instruction. PRs reviewed before merge. No merging without passing CI tests.
 
-**Version**: 1.8.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-22
+**Version**: 1.9.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-22
 

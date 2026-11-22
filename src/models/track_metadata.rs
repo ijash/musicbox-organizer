@@ -48,6 +48,6 @@ impl OrganizerTrack {
     }
 
     pub fn formatted_filename(&self) -> String {
-        format!("[{}-{}]", self.xxyy_prefix, self.original_filename)
+        format!("{}-{}", self.xxyy_prefix, self.original_filename)
     }
 }

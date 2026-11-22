@@ -51,8 +51,28 @@ fn test_rename_with_xxyy_prefix() {
 
     assert_eq!(
         renamed.file_name().unwrap().to_string_lossy(),
-        "[AAAA-song.mp3]"
+        "AAAA-song.mp3"
     );
     assert!(renamed.exists());
     assert!(!test_file.exists());
+
+    // Rename again (stripping unbracketed prefix)
+    let renamed2 = service
+        .apply_xxyy_rename(&renamed, 1)
+        .expect("Failed to rename second time");
+    assert_eq!(
+        renamed2.file_name().unwrap().to_string_lossy(),
+        "AAAB-song.mp3"
+    );
+
+    // Test stripping legacy bracketed prefix [ZZZZ-song.mp3]
+    let legacy_file = dir.path().join("[ZZZZ-song.mp3]");
+    fs::copy(sample_src, &legacy_file).unwrap();
+    let renamed_legacy = service
+        .apply_xxyy_rename(&legacy_file, 2)
+        .expect("Failed to rename legacy");
+    assert_eq!(
+        renamed_legacy.file_name().unwrap().to_string_lossy(),
+        "AAAC-song.mp3"
+    );
 }

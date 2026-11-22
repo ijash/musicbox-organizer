@@ -81,7 +81,7 @@ fn test_export_successful_file_copy() {
     assert_eq!(job.status, ExportStatus::COMPLETED);
     assert_eq!(job.files_written, 1);
 
-    let expected_dest_file = temp_dest.path().join("[AAAA-song1.mp3]");
+    let expected_dest_file = temp_dest.path().join("AAAA-song1.mp3");
     assert!(expected_dest_file.exists());
 }
 

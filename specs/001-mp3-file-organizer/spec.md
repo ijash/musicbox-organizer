@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> **Deprecation Note (2026-11-22)**: Planned DOCX export has been superseded across the repository by Feature 011: Unified Printable Catalog Exporter (pure-Rust PDF export via `krilla` with smart multi-column autofit and custom physical print sizing).
+
 **Input**: User description: "Lightweight Rust desktop app that organizes MP3s using sequence-based naming convention [XXYY-filename.mp3], with ID3 tag editing, drag-drop sorting, audio preview, and export to txt/rtf/docx formats."
 
 ## User Scenarios & Testing *(mandatory)*

@@ -1,6 +1,7 @@
 use crate::models::{PlaylistMetadata, ProjectFile, SessionState};
 use crate::services::AudioPreviewPlayer;
 use crate::ui::dsp_dialog::DspDialogState;
+use crate::ui::export_catalog_dialog::ExportCatalogDialog;
 use crate::ui::export_panel::ExportPanelState;
 use crate::ui::{DspProgressMessage, ExportProgressMessage};
 use std::collections::BTreeSet;
@@ -25,6 +26,7 @@ pub struct MusicBoxApp {
     // Playlist Table Interaction
     pub selected_track_indices: BTreeSet<usize>,
     pub editing_cell: Option<(usize, TableColumn)>,
+    pub edit_buffer: String,
 
     // Audio Preview Player
     pub preview_player: Option<AudioPreviewPlayer>,
@@ -33,6 +35,7 @@ pub struct MusicBoxApp {
     // Sub-dialog & Panel States
     pub dsp_dialog: DspDialogState,
     pub export_panel: ExportPanelState,
+    pub export_catalog_dialog: ExportCatalogDialog,
 
     // Global Visuals & Status
     pub dark_mode: bool,
@@ -71,10 +74,12 @@ impl Default for MusicBoxApp {
             project_path: None,
             selected_track_indices: BTreeSet::new(),
             editing_cell: None,
+            edit_buffer: String::new(),
             preview_player: None,
             playing_track_idx: None,
             dsp_dialog: DspDialogState::default(),
             export_panel: ExportPanelState::default(),
+            export_catalog_dialog: ExportCatalogDialog::default(),
             dark_mode: true,
             status_message: "Ready".to_string(),
             dsp_rx: None,
@@ -155,7 +160,6 @@ impl MusicBoxApp {
         crate::ui::export_panel::render_export_panel(self, ui);
         ui.separator();
         crate::ui::footer::render_footer(self, ui);
-        crate::ui::dsp_dialog::render_dsp_dialog(self, ui.ctx());
     }
 
     pub fn poll_dsp_channel(&mut self) {
@@ -315,6 +319,8 @@ impl eframe::App for MusicBoxApp {
 
         // Modals / Floating Windows
         crate::ui::dsp_dialog::render_dsp_dialog(self, ctx);
+        crate::ui::export_catalog_dialog::render_export_catalog_dialog(self, ctx);
+        crate::ui::export_panel::render_export_confirm_dialog(self, ctx);
     }
 }
 
