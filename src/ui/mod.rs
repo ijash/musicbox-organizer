@@ -11,7 +11,7 @@ pub mod toolbar;
 pub mod warnings;
 
 pub use app::{MusicBoxApp, TableColumn, run_gui};
-pub use dsp_dialog::DspDialogState;
+pub use dsp_dialog::{DspDialogState, render_dsp_dialog, render_dsp_dialog_contents};
 pub use export_catalog_dialog::{
     ExportCatalogDialog, render_export_catalog_contents, render_export_catalog_dialog,
 };

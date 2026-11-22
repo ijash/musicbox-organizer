@@ -1,6 +1,7 @@
 use egui_kittest::Harness;
+use egui_kittest::kittest::Queryable;
 use musicbox_organizer::models::ProjectTrack;
-use musicbox_organizer::ui::{DspProgressMessage, MusicBoxApp};
+use musicbox_organizer::ui::{DspProgressMessage, MusicBoxApp, render_dsp_dialog_contents};
 use std::sync::mpsc;
 
 #[test]
@@ -130,4 +131,98 @@ fn test_dsp_progress_channel_messages() {
         harness.state().status_message,
         "DSP complete: 2 updated, 0 failed"
     );
+}
+
+#[test]
+fn test_dsp_dialog_cancel_button() {
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Test Track".to_string(),
+        artist: "Test Artist".to_string(),
+        file_path: "/music/test.mp3".to_string(),
+    });
+    app.dsp_dialog.is_open = true;
+
+    let mut harness = Harness::builder().build_state(
+        |ctx, state| {
+            render_dsp_dialog_contents(state, ctx);
+        },
+        app,
+    );
+
+    harness.run();
+    assert!(harness.state().dsp_dialog.is_open);
+
+    let cancel_btn = harness.get_by_label("Cancel");
+    assert!(!cancel_btn.is_disabled());
+    cancel_btn.click();
+    harness.run();
+
+    assert!(!harness.state().dsp_dialog.is_open);
+}
+
+#[test]
+fn test_dsp_dialog_toolbar_button_opens_and_cancel_closes_full_app() {
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track One".to_string(),
+        artist: "Artist A".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+
+    assert!(!app.dsp_dialog.is_open);
+
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(960.0, 680.0))
+        .build_eframe(|_cc| app);
+
+    harness.run();
+    assert!(!harness.state().dsp_dialog.is_open);
+
+    harness.get_by_label("⚙ Audio Tools...").click();
+    harness.step();
+    assert!(harness.state().dsp_dialog.is_open);
+
+    let cancel_btn = harness.get_by_label("Cancel");
+    assert!(!cancel_btn.is_disabled());
+    cancel_btn.click();
+    harness.step();
+    assert!(!harness.state().dsp_dialog.is_open);
+}
+
+#[test]
+fn test_audio_bar_direct_track_switching_while_playing() {
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track Zero".to_string(),
+        artist: "Artist 0".to_string(),
+        file_path: "/music/track0.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 1,
+        title: "Track One".to_string(),
+        artist: "Artist 1".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+
+    // Simulate playing track 0
+    app.playing_track_idx = Some(0);
+    // User selects track 1
+    app.selected_track_indices.insert(1);
+
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+
+    harness.run();
+
+    // The Play button must be enabled because target (1) != playing (0)
+    let play_btn = harness.get_by_label("▶ Play");
+    assert!(!play_btn.is_disabled());
 }

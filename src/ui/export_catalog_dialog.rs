@@ -119,6 +119,7 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
             if ctx.input(|i| i.viewport().close_requested()) {
                 app.export_catalog_dialog.close();
             }
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(dialog_size));
             render_export_catalog_contents(app, ctx);
             if !app.export_catalog_dialog.is_open {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);

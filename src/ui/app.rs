@@ -158,7 +158,6 @@ impl MusicBoxApp {
         crate::ui::export_panel::render_export_panel(self, ui);
         ui.separator();
         crate::ui::footer::render_footer(self, ui);
-        crate::ui::dsp_dialog::render_dsp_dialog(self, ui.ctx());
     }
 
     pub fn poll_dsp_channel(&mut self) {

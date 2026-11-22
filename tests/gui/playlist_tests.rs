@@ -80,3 +80,74 @@ fn test_app_new_startup_and_device_detection() {
     harness.run();
     assert!(harness.state().dark_mode);
 }
+
+#[test]
+fn test_toolbar_track_removal_and_move_sync_playing_index() {
+    use egui_kittest::kittest::Queryable;
+
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track 0".to_string(),
+        artist: "Artist 0".to_string(),
+        file_path: "/music/track0.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 1,
+        title: "Track 1".to_string(),
+        artist: "Artist 1".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 2,
+        title: "Track 2".to_string(),
+        artist: "Artist 2".to_string(),
+        file_path: "/music/track2.mp3".to_string(),
+    });
+
+    // Track 1 is currently playing
+    app.playing_track_idx = Some(1);
+
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+    harness.run();
+
+    // 1. Remove track 0 (above playing track) -> playing track moves from 1 to 0
+    harness.state_mut().selected_track_indices.insert(0);
+    harness.run();
+    harness.get_by_label("🗑 Remove").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks.len(), 2);
+    assert_eq!(harness.state().project.tracks[0].title, "Track 1");
+    assert_eq!(harness.state().playing_track_idx, Some(0));
+
+    // 2. Select track 0 (playing track) and move down -> moves to index 1, playing_track_idx follows to 1
+    harness.state_mut().selected_track_indices.clear();
+    harness.state_mut().selected_track_indices.insert(0);
+    harness.run();
+    harness.get_by_label("⬇ Down").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks[1].title, "Track 1");
+    assert_eq!(harness.state().playing_track_idx, Some(1));
+
+    // 3. Select track 1 (playing track) and move up -> moves back to index 0, playing_track_idx follows to 0
+    harness.get_by_label("⬆ Up").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks[0].title, "Track 1");
+    assert_eq!(harness.state().playing_track_idx, Some(0));
+
+    // 4. Select track 0 (playing track) and remove -> playback stopped, playing_track_idx cleared
+    harness.get_by_label("🗑 Remove").click();
+    harness.run();
+
+    assert_eq!(harness.state().project.tracks.len(), 1);
+    assert_eq!(harness.state().project.tracks[0].title, "Track 2");
+    assert_eq!(harness.state().playing_track_idx, None);
+}

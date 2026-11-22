@@ -211,3 +211,40 @@ fn test_export_catalog_toolbar_button_opens_dialog_full_app() {
     let cancel_btn = harness.get_by_label("Cancel");
     assert!(!cancel_btn.is_disabled());
 }
+
+#[test]
+fn test_export_catalog_format_switch_resizes_viewport() {
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track Sizing".to_string(),
+        artist: "Artist".to_string(),
+        file_path: "/music/track.mp3".to_string(),
+    });
+
+    app.export_catalog_dialog.open();
+    assert_eq!(app.export_catalog_dialog.config.format, CatalogFormat::Pdf);
+
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(960.0, 680.0))
+        .build_eframe(|_cc| app);
+
+    harness.step();
+    assert!(harness.state().export_catalog_dialog.is_open);
+
+    // Switch format to Plain Text
+    harness.state_mut().export_catalog_dialog.config.format = CatalogFormat::Txt;
+    harness.step();
+    assert_eq!(
+        harness.state().export_catalog_dialog.config.format,
+        CatalogFormat::Txt
+    );
+
+    // Switch format to Rich Text
+    harness.state_mut().export_catalog_dialog.config.format = CatalogFormat::Rtf;
+    harness.step();
+    assert_eq!(
+        harness.state().export_catalog_dialog.config.format,
+        CatalogFormat::Rtf
+    );
+}

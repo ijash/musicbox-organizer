@@ -68,3 +68,25 @@ fn test_device_rejects_zero_capacity() {
     );
     assert!(result.is_err());
 }
+
+#[test]
+fn test_windows_unsupported_format_and_eject_errors() {
+    #[cfg(any(target_os = "windows", test))]
+    {
+        use musicbox_organizer::platform::windows::WindowsDeviceManager;
+        use musicbox_organizer::services::DeviceManager;
+
+        let mgr = WindowsDeviceManager::new();
+        let format_err = mgr.format_device("D:", FileSystem::FAT32).unwrap_err();
+        assert_eq!(
+            format_err.to_string(),
+            "Device formatting is not yet supported on Windows"
+        );
+
+        let eject_err = mgr.eject_device("D:").unwrap_err();
+        assert_eq!(
+            eject_err.to_string(),
+            "Safe eject is not yet supported on Windows"
+        );
+    }
+}

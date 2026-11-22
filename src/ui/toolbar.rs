@@ -110,6 +110,23 @@ fn remove_selected_tracks(app: &mut MusicBoxApp) {
         return;
     }
     app.session.push_undo(app.project.clone());
+
+    if let Some(playing_idx) = app.playing_track_idx {
+        if app.selected_track_indices.contains(&playing_idx) {
+            if let Some(player) = &mut app.preview_player {
+                player.stop();
+            }
+            app.playing_track_idx = None;
+        } else {
+            let removed_before = app
+                .selected_track_indices
+                .iter()
+                .filter(|&&idx| idx < playing_idx)
+                .count();
+            app.playing_track_idx = Some(playing_idx - removed_before);
+        }
+    }
+
     let mut new_tracks = Vec::new();
     for (i, track) in app.project.tracks.drain(..).enumerate() {
         if !app.selected_track_indices.contains(&i) {
@@ -152,6 +169,15 @@ fn move_selected_up(app: &mut MusicBoxApp) {
         new_selection.insert(idx - 1);
     }
     app.selected_track_indices = new_selection;
+
+    if let Some(playing_idx) = app.playing_track_idx {
+        app.playing_track_idx = app
+            .project
+            .tracks
+            .iter()
+            .position(|t| t.index == playing_idx as u32);
+    }
+
     reindex_tracks(&mut app.project.tracks);
     app.status_message = "Moved up".to_string();
 }
@@ -170,6 +196,15 @@ fn move_selected_down(app: &mut MusicBoxApp) {
         new_selection.insert(idx + 1);
     }
     app.selected_track_indices = new_selection;
+
+    if let Some(playing_idx) = app.playing_track_idx {
+        app.playing_track_idx = app
+            .project
+            .tracks
+            .iter()
+            .position(|t| t.index == playing_idx as u32);
+    }
+
     reindex_tracks(&mut app.project.tracks);
     app.status_message = "Moved down".to_string();
 }
