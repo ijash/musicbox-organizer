@@ -83,10 +83,10 @@ description: "Task list for Feature 011: Unified Printable Catalog Exporter (PDF
 **Independent Test**: Open export dialog via headless `egui_kittest`, set size to 1.0 × 1.0 cm, verify the red warning appears and export remains clickable.
 
 ### Tests for User Story 3
-- [ ] T018 [P] [US3] Create headless GUI test with `egui_kittest` verifying live layout summary, 1.0 cm clamping, and red readability warning label display in `tests/gui/catalog_readability_warning_test.rs`
+- [X] T018 [P] [US3] Create headless GUI test with `egui_kittest` verifying live layout summary, 1.0 cm clamping, and red readability warning label display in `tests/gui/catalog_readability_warning_test.rs`
 
 ### Implementation for User Story 3
-- [ ] T019 [US3] Implement `ExportCatalogDialog` state and controller with live layout calculation, unit conversions, clamping to minimum 1.0 × 1.0 cm, and `< 5.0 pt` warning badge logic in `src/ui/export_catalog_dialog.rs`
+- [X] T019 [US3] Implement `ExportCatalogDialog` state and controller with live layout calculation, unit conversions, clamping to minimum 1.0 × 1.0 cm, and `< 5.0 pt` warning badge logic in `src/ui/export_catalog_dialog.rs`
 
 **Checkpoint**: User Story 3 complete. Live feedback and warnings functional.
 
@@ -99,11 +99,11 @@ description: "Task list for Feature 011: Unified Printable Catalog Exporter (PDF
 **Independent Test**: Export PDF using `warm_paper` and `dark_slate` themes; verify background colors and styling in generated documents.
 
 ### Tests for User Story 4
-- [ ] T020 [P] [US4] Create integration test verifying raster background image decoding (`image` crate), opacity scaling, and theme styling in PDF output in `tests/integration/pdf_theme_test.rs`
+- [X] T020 [P] [US4] Create integration test verifying raster background image decoding (`image` crate), opacity scaling, and theme styling in PDF output in `tests/integration/pdf_theme_test.rs`
 
 ### Implementation for User Story 4
-- [ ] T021 [US4] Add raster background image rendering (`bg_opacity`, `bg_fit` cover/contain via `image` crate) and theme color fills to `src/services/pdf_exporter.rs`
-- [ ] T022 [US4] Add theme selector dropdown to `src/ui/export_catalog_dialog.rs`
+- [X] T021 [US4] Add raster background image rendering (`bg_opacity`, `bg_fit` cover/contain via `image` crate) and theme color fills to `src/services/pdf_exporter.rs`
+- [X] T022 [US4] Add theme selector dropdown to `src/ui/export_catalog_dialog.rs`
 
 **Checkpoint**: User Story 4 complete. Custom themes and raster backgrounds operational.
 
@@ -113,12 +113,12 @@ description: "Task list for Feature 011: Unified Printable Catalog Exporter (PDF
 
 **Purpose**: Wire unified modal dialog into the application toolbar, update repository references from DOCX to PDF, and pass all quality gates.
 
-- [ ] T023 Replace existing text/RTF export buttons in `src/ui/toolbar.rs` with a single unified `Export Catalog...` button that opens `ExportCatalogDialog`
-- [ ] T024 Wire `ExportCatalogDialog` rendering into `src/ui/app.rs`, opening `rfd::FileDialog` in the current working directory (`std::env::current_dir()`)
-- [ ] T025 [P] Create headless GUI test via `egui_kittest` verifying unified dialog interaction (switching formats, toggles, preset changes, narrow 300×400px layout) in `tests/gui/export_catalog_dialog_test.rs`
-- [ ] T026 Update active DOCX references to PDF in `.specify/memory/constitution.md`, `README.md` (Roadmap & Features), and documentation
-- [ ] T027 Add brief deprecation note in past completed specs (`specs/001-mp3-file-organizer/`, `specs/002-playlist-export-config/`, `specs/008-audio-dsp-editing/`) that planned DOCX was superseded by Feature 011 PDF export
-- [ ] T028 Run full verification suite: `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check`, and verify release binary ceiling (`cargo build --release`, `< 20 MB`) on branch `feat/011-pdf-catalog-exporter`
+- [X] T023 Replace existing text/RTF export buttons in `src/ui/toolbar.rs` with a single unified `Export Catalog...` button that opens `ExportCatalogDialog`
+- [X] T024 Wire `ExportCatalogDialog` rendering into `src/ui/app.rs`, opening `rfd::FileDialog` in the current working directory (`std::env::current_dir()`)
+- [X] T025 [P] Create headless GUI test via `egui_kittest` verifying unified dialog interaction (switching formats, toggles, preset changes, narrow 300×400px layout) in `tests/gui/export_catalog_dialog_test.rs`
+- [X] T026 Update active DOCX references to PDF in `.specify/memory/constitution.md`, `README.md` (Roadmap & Features), and documentation
+- [X] T027 Add brief deprecation note in past completed specs (`specs/001-mp3-file-organizer/`, `specs/002-playlist-export-config/`, `specs/008-audio-dsp-editing/`) that planned DOCX was superseded by Feature 011 PDF export
+- [X] T028 Run full verification suite: `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo fmt --check`, and verify release binary ceiling (`cargo build --release`, `< 20 MB`) on branch `feat/011-pdf-catalog-exporter`
 
 ---
 

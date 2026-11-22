@@ -9,3 +9,6 @@ mod pdf_export_test;
 
 #[path = "integration/catalog_exporter_test.rs"]
 mod catalog_exporter_test;
+
+#[path = "integration/pdf_theme_test.rs"]
+mod pdf_theme_test;

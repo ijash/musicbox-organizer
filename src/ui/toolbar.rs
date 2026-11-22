@@ -44,8 +44,8 @@ pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
             app.dsp_dialog.is_open = true;
         }
 
-        if ui.button("📄 Export Text/RTF...").clicked() {
-            export_text_dialog(app);
+        if ui.button("📄 Export Catalog...").clicked() {
+            app.export_catalog_dialog.open();
         }
 
         if ui.button("📂 Open").clicked() {
@@ -214,31 +214,6 @@ fn save_project(app: &mut MusicBoxApp) {
         }
         Err(e) => {
             app.status_message = format!("Save error: {}", e);
-        }
-    }
-}
-
-fn export_text_dialog(app: &mut MusicBoxApp) {
-    if let Some(folder) = rfd::FileDialog::new()
-        .set_directory(get_starting_dir())
-        .pick_folder()
-    {
-        let service = crate::services::ExportConfigService::new();
-        let selection = crate::models::ExportFormatSelection {
-            txt: true,
-            rtf: true,
-        };
-        match service.export_playlist(&folder, &selection, &app.project) {
-            Ok(files) => {
-                app.status_message = format!(
-                    "Exported {} text/RTF playlist file(s) to {}",
-                    files.len(),
-                    folder.display()
-                );
-            }
-            Err(e) => {
-                app.status_message = format!("Text export error: {}", e);
-            }
         }
     }
 }

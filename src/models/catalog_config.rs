@@ -68,6 +68,10 @@ pub enum LengthUnit {
 }
 
 impl LengthUnit {
+    pub fn all() -> &'static [LengthUnit] {
+        &[Self::Cm, Self::Mm, Self::Inches]
+    }
+
     pub fn symbol(&self) -> &'static str {
         match self {
             Self::Cm => "cm",
@@ -107,6 +111,17 @@ pub enum CatalogPagePreset {
 }
 
 impl CatalogPagePreset {
+    pub fn all() -> &'static [CatalogPagePreset] {
+        &[
+            Self::Card10x10,
+            Self::CdCover12x12,
+            Self::A6,
+            Self::A5,
+            Self::A4,
+            Self::Custom,
+        ]
+    }
+
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Card10x10 => "10×10 cm Card",

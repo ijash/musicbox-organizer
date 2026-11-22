@@ -21,7 +21,7 @@ The application automatically assigns a 4-letter base-26 prefix (`[AAAA-filename
   - **Export Media**: Writes files with `[XXYY-filename.mp3]` naming directly to USB or SD cards.
 - **Device Detection**: Detects connected removable storage, capacity, free space, and filesystem type (FAT32/exFAT).
 - **Two-Step Reformat Confirmation**: Optional FAT32/exFAT format before export with an explicit confirmation dialog to prevent accidental data loss.
-- **Multi-Format Export**: Exports playlists to `playlist-text/` folder as `.txt` and `.rtf` (Rich Text Format).
+- **Unified Printable Catalog Exporter**: Exports print-ready PDF catalogs with smart multi-column autofit, physical sizing (10×10 cm card, 12×12 cm CD cover, A6, A5, A4, or custom down to 1×1 cm), embedded Roboto typography, cut guidelines, and JSON visual themes, alongside Plain Text (`.txt`) and Rich Text (`.rtf`) formats.
 - **Audio DSP Editing Suite**: Pure-Rust volume normalization (EBU R128 LUFS targeting, peak-safe true-peak ceiling) and silence trimming (~20 ms RMS window, 50 ms safety padding) with atomic disk writes and full ID3 tag preservation.
 - **Audio Preview**: In-app playback preview with Play, Pause, and Stop controls.
 - **Undo / Redo**: 10-step bounded history for edits and reordering.
@@ -72,6 +72,7 @@ The application provides a full CLI interface without opening a graphical window
 | `cargo run -- tag <file.mp3> [title] [artist]` | View or update ID3 tags directly |
 | `cargo run -- save [path]` | Save playlist project locally (`.txt`) |
 | `cargo run -- export` | Export playlist to connected USB/SD device |
+| `cargo run -- export-catalog [options]` | Export print-ready catalog (PDF, TXT, RTF) with presets, custom dimensions, and themes |
 | `cargo run -- export-text [dir]` | Export playlist `.txt` and `.rtf` to `playlist-text/` directory |
 | `cargo run -- check-compat [dir]` | Audit directory or media drive for ASCII sort and FAT32 compliance |
 
@@ -128,7 +129,7 @@ git push origin v0.3.0
 
 Planned enhancements for upcoming versions:
 
-- **v0.4.0**: DOCX printable catalog exporter.
+- **v0.4.0**: Unified Printable Catalog Exporter (PDF, TXT, RTF) with custom physical sizing, multi-column autofit, and themes (supersedes planned DOCX export).
 - **v0.4.0**: Custom export path templates (e.g., `/Artist/Album/`).
 
 ## Changelog

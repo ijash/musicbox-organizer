@@ -1,6 +1,7 @@
 pub mod app;
 pub mod audio_bar;
 pub mod dsp_dialog;
+pub mod export_catalog_dialog;
 pub mod export_dialog;
 pub mod export_panel;
 pub mod footer;
@@ -11,6 +12,7 @@ pub mod warnings;
 
 pub use app::{MusicBoxApp, TableColumn, run_gui};
 pub use dsp_dialog::DspDialogState;
+pub use export_catalog_dialog::ExportCatalogDialog;
 pub use export_dialog::ExportDialog;
 pub use export_panel::ExportPanelState;
 pub use warnings::ReformatWarningDialog;

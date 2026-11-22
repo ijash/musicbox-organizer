@@ -28,7 +28,7 @@ krilla = { version = "0.8.2", default-features = false, features = ["raster-imag
 eframe = { version = "0.31", default-features = false, features = ["default_fonts", "glow", "wayland", "x11"] }
 egui = "0.31"
 egui_extras = "0.31"
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 rfd = { version = "0.18", default-features = false, features = ["xdg-portal"] }
 
 # Platform-specific dependencies

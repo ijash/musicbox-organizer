@@ -3,9 +3,11 @@ use crate::services::CatalogLayoutSolver;
 use krilla::Data;
 use krilla::color::rgb::Color as RgbColor;
 use krilla::document::Document;
-use krilla::geom::{PathBuilder, Point, Rect};
+use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
+use krilla::image::Image;
+use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
-use krilla::paint::{Fill, Paint, Stroke};
+use krilla::paint::{Fill, FillRule, Paint, Stroke};
 use krilla::text::Font;
 use krilla::text::TextDirection;
 use std::error::Error;
@@ -85,6 +87,9 @@ impl PdfCatalogExporter {
             }
         }
         surface.set_fill(None);
+
+        // 1b. Draw Optional Raster Background Image
+        self.draw_background_image(&mut surface, width_pt, height_pt, theme);
 
         // 2. Draw Optional Cut Border / Crop Marks
         if config.cut_border {
@@ -258,6 +263,86 @@ impl PdfCatalogExporter {
             format!("{:02}. Track {}", index, index)
         } else {
             parts.join(" ")
+        }
+    }
+
+    fn draw_background_image(
+        &self,
+        surface: &mut krilla::surface::Surface,
+        width_pt: f32,
+        height_pt: f32,
+        theme: &CatalogTheme,
+    ) {
+        let Some(bg_image_path) = &theme.bg_image else {
+            return;
+        };
+
+        let Ok(bytes) = fs::read(Path::new(bg_image_path)) else {
+            return;
+        };
+
+        let Ok(dyn_img) = image::load_from_memory(&bytes) else {
+            return;
+        };
+
+        let rgba = dyn_img.to_rgba8();
+        let (iw, ih) = rgba.dimensions();
+        if iw == 0 || ih == 0 {
+            return;
+        }
+
+        let krilla_img = Image::from_rgba8(rgba.into_raw(), iw, ih);
+        let iw_f = iw as f32;
+        let ih_f = ih as f32;
+        let img_aspect = iw_f / ih_f;
+        let page_aspect = width_pt / height_pt;
+
+        let (draw_w, draw_h, offset_x, offset_y) = match theme.bg_fit {
+            crate::models::ImageFitMode::Cover => {
+                if img_aspect > page_aspect {
+                    let h = height_pt;
+                    let w = h * img_aspect;
+                    let x = (width_pt - w) / 2.0;
+                    (w, h, x, 0.0)
+                } else {
+                    let w = width_pt;
+                    let h = w / img_aspect;
+                    let y = (height_pt - h) / 2.0;
+                    (w, h, 0.0, y)
+                }
+            }
+            crate::models::ImageFitMode::Contain => {
+                if img_aspect > page_aspect {
+                    let w = width_pt;
+                    let h = w / img_aspect;
+                    let y = (height_pt - h) / 2.0;
+                    (w, h, 0.0, y)
+                } else {
+                    let h = height_pt;
+                    let w = h * img_aspect;
+                    let x = (width_pt - w) / 2.0;
+                    (w, h, x, 0.0)
+                }
+            }
+        };
+
+        let mut clip_path = PathBuilder::new();
+        if let Some(r) = Rect::from_xywh(0.0, 0.0, width_pt, height_pt) {
+            clip_path.push_rect(r);
+            if let Some(p) = clip_path.finish() {
+                surface.push_clip_path(&p, &FillRule::NonZero);
+                let opacity = theme.bg_opacity.clamp(0.0, 1.0);
+                if let Some(norm_opacity) = NormalizedF32::new(opacity) {
+                    surface.push_opacity(norm_opacity);
+                    surface.push_transform(&Transform::from_translate(offset_x, offset_y));
+                    if let Some(size) = Size::from_wh(draw_w, draw_h) {
+                        surface.draw_image(krilla_img, size);
+                    }
+                    surface.pop();
+                    surface.pop();
+                }
+                surface.pop();
+            }
         }
     }
 }

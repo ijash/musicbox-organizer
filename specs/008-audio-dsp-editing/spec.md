@@ -128,4 +128,4 @@ The `AudioProcessor` trait already defines the interface (`normalize_volume`, `t
 - Audio format conversion (WAV, FLAC, OGG → MP3)
 - Fade in/out effects
 - EQ or filter DSP
-- DOCX export (deferred to v2+)
+- DOCX export (superseded by Feature 011: Unified Printable Catalog Exporter PDF)

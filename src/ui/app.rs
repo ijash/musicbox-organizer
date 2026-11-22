@@ -1,6 +1,7 @@
 use crate::models::{PlaylistMetadata, ProjectFile, SessionState};
 use crate::services::AudioPreviewPlayer;
 use crate::ui::dsp_dialog::DspDialogState;
+use crate::ui::export_catalog_dialog::ExportCatalogDialog;
 use crate::ui::export_panel::ExportPanelState;
 use crate::ui::{DspProgressMessage, ExportProgressMessage};
 use std::collections::BTreeSet;
@@ -33,6 +34,7 @@ pub struct MusicBoxApp {
     // Sub-dialog & Panel States
     pub dsp_dialog: DspDialogState,
     pub export_panel: ExportPanelState,
+    pub export_catalog_dialog: ExportCatalogDialog,
 
     // Global Visuals & Status
     pub dark_mode: bool,
@@ -75,6 +77,7 @@ impl Default for MusicBoxApp {
             playing_track_idx: None,
             dsp_dialog: DspDialogState::default(),
             export_panel: ExportPanelState::default(),
+            export_catalog_dialog: ExportCatalogDialog::default(),
             dark_mode: true,
             status_message: "Ready".to_string(),
             dsp_rx: None,
@@ -156,6 +159,7 @@ impl MusicBoxApp {
         ui.separator();
         crate::ui::footer::render_footer(self, ui);
         crate::ui::dsp_dialog::render_dsp_dialog(self, ui.ctx());
+        crate::ui::export_catalog_dialog::render_export_catalog_dialog(self, ui.ctx());
     }
 
     pub fn poll_dsp_channel(&mut self) {

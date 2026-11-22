@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> **Deprecation Note (2026-11-22)**: Planned DOCX export has been superseded across the repository by Feature 011: Unified Printable Catalog Exporter (pure-Rust PDF export via `krilla` with smart multi-column autofit and custom physical print sizing).
+
 **Input**: User description: "Dark mode by default, clear-all export behavior with multiple format selection (txt/rtf/docx) stored in playlist-text directory, architecture support for future audio editing features (not implemented yet)."
 
 ## User Scenarios & Testing *(mandatory)*
