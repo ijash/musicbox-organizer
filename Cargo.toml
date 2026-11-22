@@ -1,6 +1,6 @@
 [package]
 name = "musicbox-organizer"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 description = "Simple MP3 playlist organizer with ID3 editing for portable audio devices."
 authors = ["ijash"]

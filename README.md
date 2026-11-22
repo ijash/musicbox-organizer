@@ -121,6 +121,17 @@ git push origin v1.0.0
 
 ## Changelog
 
+### v1.0.1 (2026-11-23)
+
+- **CLI Enhancements**: Added support for `--version` / `-v` flag in CLI (`musicbox --version`).
+- **Platform Stubs**: Replaced silent `Ok(())` no-ops on macOS `format_device` and `eject_device` with honest descriptive unsupported `Err` messages.
+- **Audio DSP Input Guard**: Explicitly reject non-MP3 files (`.flac`, `.wav`, etc.) in `process_track`, `trim_silence`, and `normalize_volume` with clear error messages.
+- **Metadata & Documentation**:
+  - Corrected repository license to `GPL-2.0-only` (GNU General Public License v2.0) matching `LICENSE`.
+  - Updated Rust MSRV to `rustc 1.92+` required by dependencies.
+  - Sanitized example filenames and paths.
+  - Marked legacy GTK3/Relm4 specifications 006 and 007 as `Superseded by Feature 010`.
+
 ### v1.0.0 (2026-11-23)
 
 - **Feature 011 (Unified Printable Catalog Exporter)**:
