@@ -5,7 +5,7 @@ edition = "2024"
 description = "Simple MP3 playlist organizer with ID3 editing for portable audio devices."
 authors = ["ijash"]
 repository = "https://github.com/ijash/musicbox-organizer"
-license = "TODO"
+license = "GPL-2.0-only"
 
 [dependencies]
 # Core audio handling

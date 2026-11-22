@@ -46,7 +46,7 @@ sha256sum -c SHA256SUMS.txt
 
 ### Prerequisites
 
-- **Rust**: 2024 edition (`rustc 1.85+`)
+- **Rust**: 2024 edition (`rustc 1.92+`)
 - **Linux**: `libasound2-dev`, `libdbus-1-dev`
 - **Windows / macOS**: Standard Rust toolchain (no external library dependencies)
 
@@ -179,4 +179,4 @@ git push origin v1.0.0
 
 ## License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+Distributed under the GNU General Public License v2.0 (GPL-2.0). See [LICENSE](LICENSE) for more information.
