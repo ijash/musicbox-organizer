@@ -12,7 +12,7 @@
 
 ### User Story 1 - Export Print-Ready Physical PDF Catalog with Smart Autofit (Priority: P1)
 
-A user has organized a playlist and wants to print a compact physical tracklist card (e.g., 10×10 cm card for a small music box, or 12×12 cm CD jewel case sleeve). The user opens the unified catalog export dialog, chooses PDF, selects physical dimensions and units (or picks a preset), and exports. The system automatically computes column count and scales font size so that the entire playlist fits within the exact physical sheet bounds without clipping or overflowing, rendering clean typography and optional trim border lines.
+A user has organized a playlist and wants to print a compact physical tracklist card (e.g., 10×10 cm card for a small music box, or 12×12 cm CD jewel case sleeve). The user opens the unified catalog export dialog (which renders in a content-driven auto-height OS child viewport with zero vertical scrollbars), chooses PDF, selects physical dimensions and units (or picks a preset), and exports. The layout solver measures exact OpenType glyph advance widths from the embedded Roboto font, couples header metrics between solver and renderer, and distributes horizontal space into inter-column gaps so the rightmost column flushes to the right margin with zero overlap or clipping.
 
 **Why this priority**: Core value of the feature. Solves physical printing and tracklist insertion for hardware music boxes and CD cases with exact real-world dimensions.
 
@@ -21,15 +21,15 @@ A user has organized a playlist and wants to print a compact physical tracklist 
 **Acceptance Scenarios**:
 
 1. **Given** an organized playlist of tracks, **When** the user clicks "Export Catalog...", selects PDF format, leaves default size 10×10 cm, and confirms export, **Then** a valid PDF file matching exact 10×10 cm dimensions is produced containing all tracks formatted into readable columns with page margins.
-2. **Given** a user selecting physical size units (`cm`, `mm`, `in`), **When** the user switches units, **Then** width, height, and margin numeric inputs immediately convert accurately preserving physical scale (`1 in = 72 pt`, `1 cm = 28.3465 pt`, `1 mm = 2.83465 pt`).
-3. **Given** a large playlist (e.g., 40 tracks) on a small physical dimension, **When** the layout engine computes the sheet, **Then** it automatically balances track columns (1, 2, 3, etc.) and adjusts font size to fit within sheet boundaries, cleanly truncating overlong titles with ellipsis (`...`).
-4. **Given** cut borders enabled, **When** the PDF is generated, **Then** outer crop/cut guidelines are rendered near margins to guide physical scissors trimming after 100% scale printing.
+2. **Given** a user selecting physical size units (`cm`, `mm`, `in`), **When** the user switches units, **Then** width, height, and margin numeric inputs immediately convert accurately preserving physical scale (`1 in = 72 pt`, `1 cm = 28.3465 pt`, `1 mm = 2.83465 pt`). Margin honors down to `0.00 cm` (with an internal safety inset applied only when cut border is drawn).
+3. **Given** a large playlist (e.g., 40 tracks) on a small physical dimension, **When** the layout engine computes the sheet, **Then** it measures exact glyph advance widths from the embedded `Roboto-Regular.ttf` font (`cmap`+`hmtx`), couples header metrics directly, balances track columns, and scales font size so all tracks fit with zero clipping, truncating only as an absolute last resort if font size < 1.0 pt.
+4. **Given** cut borders enabled, **When** the PDF is generated, **Then** outer dashed cut guidelines (`0.75 pt` width, `[4.0, 2.5]` dash pattern, `0.5 pt` edge inset) are rendered with high contrast against the theme background to guide physical trimming without overlapping text.
 
 ---
 
 ### User Story 2 - Unified Multi-Format Catalog Export with Field Toggles (Priority: P2)
 
-A user wants to export their playlist as plain text (`.txt`), rich text (`.rtf`), or printable document (`.pdf`) using a single, consolidated dialog. The user chooses which fields appear in the output (Track Number, Title, Artist, Export Filename, Header Title) and expects consistent field inclusion across whichever format is selected.
+A user wants to export their playlist as plain text (`.txt`), rich text (`.rtf`), or printable document (`.pdf`) using a single, consolidated dialog. The dialog runs in a content-driven auto-height OS child viewport that dynamically resizes without vertical scrollbars. The user chooses which fields appear in the output (Track Number, Title, Artist, Export Filename, Header Title) and can edit the header title text directly.
 
 **Why this priority**: Eliminates disparate export buttons and fragmented configurations; unifies catalog export into one predictable user experience across all supported formats.
 
@@ -37,9 +37,10 @@ A user wants to export their playlist as plain text (`.txt`), rich text (`.rtf`)
 
 **Acceptance Scenarios**:
 
-1. **Given** the main application window, **When** the user clicks "Export Catalog...", **Then** a single modal dialog opens displaying format options (PDF, Plain Text, Rich Text) and field toggle checkboxes.
-2. **Given** field toggles with defaults (`Track Number` ON, `Title` ON, `Artist` OFF, `Export Filename` OFF, `Header Title` OFF), **When** exporting to TXT or RTF or PDF, **Then** only the enabled fields are rendered in the resulting file.
-3. **Given** user preferences stored locally, **When** the user alters format selection or field toggles, **Then** their choices persist across application restarts.
+1. **Given** the main application window, **When** the user clicks "Export Catalog...", **Then** an auto-height OS child viewport opens displaying format options (PDF, Plain Text, Rich Text), field toggles, and dynamically resizes on format switches without vertical scrollbars.
+2. **Given** field toggles with defaults (`Track Number` ON, `Title` ON, `Artist` OFF, `Export Filename` OFF, `Header Title` OFF), **When** exporting to TXT or RTF or PDF, **Then** only the enabled fields are rendered in the resulting file. When `Export Filename` is enabled, filenames follow Constitution Principle IX (`XXYY-<sanitized_id3_title>.mp3`, no brackets, lowercase underscore slug).
+3. **Given** `Header Title` enabled, **When** the user checks the checkbox, **Then** an inline editable `Title Text` field appears, pre-populated with the playlist name or folder name (fallback `"Playlist Catalog"`), allowing custom heading text in the exported document.
+4. **Given** user preferences stored locally, **When** the user alters format selection or field toggles, **Then** their choices persist across application restarts.
 
 ---
 
@@ -89,15 +90,15 @@ A user wants a styled or branded physical tracklist card (e.g., dark theme, warm
 
 ### Functional Requirements
 
-- **FR-001**: System MUST provide a unified "Export Catalog..." action in the main interface that opens a single modal export dialog.
+- **FR-001**: System MUST provide a unified "Export Catalog..." action in the main interface that opens an auto-height OS child viewport dialog without vertical scrollbars.
 - **FR-002**: System MUST support exporting catalogs in three formats: PDF (`.pdf`), Plain Text (`.txt`), and Rich Text (`.rtf`).
-- **FR-003**: System MUST provide universal column/field toggles applicable to all formats: Track Number (default ON), Title (default ON), Artist (default OFF), Export Filename (default OFF), and Header Title (default OFF).
+- **FR-003**: System MUST provide universal column/field toggles applicable to all formats: Track Number (default ON), Title (default ON), Artist (default OFF), Export Filename (default OFF), and Header Title (default OFF). When Header Title is enabled, an editable title text input MUST be provided defaulting to the playlist name or folder name.
 - **FR-004**: System MUST allow users to select physical measurement units (`cm`, `mm`, `in`) for PDF export, converting values accurately to standard PDF points (`1 in = 72 pt`, `1 cm = 28.3465 pt`, `1 mm = 2.83465 pt`).
 - **FR-005**: System MUST provide physical dimension presets for PDF export: `10×10 cm Card` (default), `12×12 cm CD Cover`, `A6`, `A5`, `A4`, and `Custom`.
 - **FR-006**: System MUST allow custom width and height inputs for PDF export with an absolute minimum allowable size of 1.0 × 1.0 cm.
-- **FR-007**: System MUST allow configuring outer margins in the active unit with a default of 0.5 cm.
-- **FR-008**: System MUST provide an optional toggle to render thin outer cut/crop guidelines on the PDF.
-- **FR-009**: System MUST automatically compute optimal column count (1, 2, 3+) and scaled font size to fit the full playlist within the chosen physical sheet boundaries at 100% print scale.
+- **FR-007**: System MUST allow configuring outer margins in the active unit down to 0.00 cm, with an automatic internal safety inset applied only when cut border is drawn.
+- **FR-008**: System MUST provide an optional toggle to render dashed outer cut/crop guidelines (`0.75 pt`, `[4.0, 2.5]` dash pattern, `0.5 pt` edge inset) on the PDF.
+- **FR-009**: System MUST automatically compute optimal column count and scaled font size using exact glyph advance widths from embedded `Roboto-Regular.ttf` (`cmap`+`hmtx`), coupling header metrics directly, and distributing leftover width into inter-column gaps so the rightmost column flushes to the right margin with zero overlap or clipping.
 - **FR-010**: System MUST display a live layout summary indicating estimated columns, calculated font size, and physical sheet dimensions.
 - **FR-011**: System MUST display a clear visual readability warning whenever calculated font size falls below 5.0 pt, while still allowing the user to export.
 - **FR-012**: System MUST support selectable visual themes for PDF output, including an embedded fallback White Monochrome theme and clean starter themes.
@@ -106,6 +107,7 @@ A user wants a styled or branded physical tracklist card (e.g., dark theme, warm
 - **FR-015**: System MUST provide command-line catalog export capability supporting format, sizing, and theme options with sensible defaults.
 - **FR-016**: System MUST persist the user's export format, field toggles, unit, and theme preferences across sessions.
 - **FR-017**: All documentation, roadmap entries, and specifications across the repository MUST reflect PDF export as superseding previously planned DOCX export.
+- **FR-018**: Export filenames rendered in the catalog MUST follow Constitution Principle IX (`XXYY-<sanitized_id3_title>.mp3`, no square brackets, lowercase underscore slug, falling back to original filename stem).
 
 ### Key Entities *(include if feature involves data)*
 
