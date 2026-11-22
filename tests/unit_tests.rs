@@ -1,3 +1,9 @@
+#[path = "unit/catalog_config_test.rs"]
+mod catalog_config_test;
+
+#[path = "unit/catalog_layout_test.rs"]
+mod catalog_layout_test;
+
 #[path = "unit/compatibility_tests.rs"]
 mod compatibility_tests;
 

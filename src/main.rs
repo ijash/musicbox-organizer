@@ -23,6 +23,8 @@ fn print_help() {
     );
     println!("  musicbox export              - Export playlist to connected USB/SD device");
     println!("  musicbox export-text [dir]   - Export txt & rtf to playlist-text/ folder");
+    println!("  musicbox export-pdf [dir]    - Export printable PDF catalog (default 10x10cm)");
+    println!("  musicbox export-catalog [dir]- Export printable catalog (pdf, txt, or rtf)");
     println!("  musicbox check-compat <dir>  - Audit directory for primitive device compatibility");
     println!("\nWorkflows (Save vs Export):");
     println!(
@@ -164,6 +166,73 @@ fn main() {
                     }
                 }
                 Err(e) => eprintln!("Export failed: {}", e),
+            }
+        }
+        "export-pdf" | "export-catalog" => {
+            let target_dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
+            let target_path = Path::new(target_dir);
+            let mut out_file = target_path.join("playlist.pdf");
+
+            // Check if output flag is passed, e.g. -o <path>
+            for i in 2..args.len() {
+                if (args[i] == "-o" || args[i] == "--output") && i + 1 < args.len() {
+                    out_file = std::path::PathBuf::from(&args[i + 1]);
+                    break;
+                }
+            }
+
+            // Convert project tracks to organizer tracks
+            let organizer_tracks: Vec<musicbox_organizer::models::OrganizerTrack> = project
+                .tracks
+                .iter()
+                .map(|pt| {
+                    let path = target_path.join(&pt.file_path);
+                    let prefix =
+                        musicbox_organizer::services::naming::track_index_to_xxyy(pt.index)
+                            .unwrap_or_else(|_| "0101".to_string());
+                    let metadata = musicbox_organizer::models::TrackMetadata {
+                        track_number: Some(pt.index),
+                        title: pt.title.clone(),
+                        artist: pt.artist.clone(),
+                        album: String::new(),
+                        year: None,
+                        duration_secs: 0,
+                    };
+                    musicbox_organizer::models::OrganizerTrack::new(
+                        pt.index, path, metadata, prefix,
+                    )
+                })
+                .collect();
+
+            if organizer_tracks.is_empty() {
+                eprintln!("Error: Cannot export catalog for empty playlist.");
+                std::process::exit(2);
+            }
+
+            let mut config = musicbox_organizer::models::CatalogExportConfig::default();
+            config.fields.header_title = true;
+
+            let theme =
+                musicbox_organizer::services::CatalogThemeRegistry::get_theme("White Monochrome");
+            let exporter = musicbox_organizer::services::PdfCatalogExporter::new();
+
+            match exporter.export_pdf(
+                &out_file,
+                &organizer_tracks,
+                Some(&project.metadata.name),
+                &config,
+                &theme,
+            ) {
+                Ok(_) => {
+                    println!(
+                        "Exported PDF catalog successfully to: {}",
+                        out_file.display()
+                    );
+                }
+                Err(e) => {
+                    eprintln!("Failed to export PDF catalog: {}", e);
+                    std::process::exit(1);
+                }
             }
         }
         "check-compat" => {

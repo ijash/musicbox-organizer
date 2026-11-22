@@ -3,3 +3,9 @@ mod export_integration_tests;
 
 #[path = "integration/audio_editing_integration_tests.rs"]
 mod audio_editing_integration_tests;
+
+#[path = "integration/pdf_export_test.rs"]
+mod pdf_export_test;
+
+#[path = "integration/catalog_exporter_test.rs"]
+mod catalog_exporter_test;
