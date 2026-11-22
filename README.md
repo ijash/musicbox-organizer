@@ -132,7 +132,7 @@ git push origin v1.0.0
   - Auto-height OS child viewport with zero vertical scrollbars and editable custom header title text.
   - Selectable visual themes via embedded JSON definitions (White Monochrome, Dark Slate, Warm Paper) and support for raster background images.
 - **Naming & Device Compatibility (Constitution Principle IX)**:
-  - Transitioned from bracketed `[XXXX-file.mp3]` to clean `XXYY-<sanitized_id3_title>.mp3` format (e.g., `AABA-musang_pandan.mp3`).
+  - Transitioned from bracketed `[XXXX-file.mp3]` to clean `XXYY-<sanitized_id3_title>.mp3` format (e.g., `AABA-file_name.mp3`).
   - Prioritizes sanitized ID3 Title (lowercased, underscore-delimited), falling back to original filename stem if empty.
 - **Playlist Table & UI Polish**:
   - Full-row selection highlighting via `TableRow::set_selected`.

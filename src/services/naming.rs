@@ -201,10 +201,10 @@ mod tests {
     }
 
     #[test]
-    fn test_format_export_filename_from_title_musang_pandan() {
+    fn test_format_export_filename_from_title_file_name() {
         // Track 26 gives ABAA in XXYY scheme
-        let res = format_export_filename_from_title(26, "Musang Pandan", "song.mp3").unwrap();
-        assert_eq!(res, "ABAA-musang_pandan.mp3");
+        let res = format_export_filename_from_title(26, "File Name", "song.mp3").unwrap();
+        assert_eq!(res, "ABAA-file_name.mp3");
     }
 
     #[test]
