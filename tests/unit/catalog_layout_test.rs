@@ -122,14 +122,14 @@ fn test_layout_solver_21_realistic_long_titles_on_10x10cm() {
 
 #[test]
 fn test_roboto_width_estimation_and_solve_with_line_widths() {
-    use musicbox_organizer::services::estimate_roboto_line_unit_width;
+    use musicbox_organizer::services::measure_roboto_line_unit_width;
 
     let s1 = "11. Tikusan Sawah";
-    let w1 = estimate_roboto_line_unit_width(s1);
+    let w1 = measure_roboto_line_unit_width(s1);
     // Old uniform 0.58 width was 17 * 0.58 = 9.86
-    // New estimate should be ~7.2 - 8.0, eliminating ~25% wasted whitespace
-    assert!(w1 < 8.2);
-    assert!(w1 > 6.5);
+    // Exact Roboto advance with 1.01 guard is ~8.2 - 8.6
+    assert!(w1 < 9.0);
+    assert!(w1 > 7.0);
 
     let theme = CatalogTheme::default();
     let width_pt = LengthUnit::Cm.to_points(10.0);
@@ -139,7 +139,7 @@ fn test_roboto_width_estimation_and_solve_with_line_widths() {
     let titles = [s1, "01. Short", "02. Another Track With Moderate Length"];
     let line_widths: Vec<f32> = titles
         .iter()
-        .map(|s| estimate_roboto_line_unit_width(s))
+        .map(|s| measure_roboto_line_unit_width(s))
         .collect();
 
     let layout = CatalogLayoutSolver::solve_with_line_widths(
@@ -153,4 +153,97 @@ fn test_roboto_width_estimation_and_solve_with_line_widths() {
     );
     assert_eq!(layout.column_count, 1);
     assert!(layout.computed_font_size_pt >= 5.0);
+}
+
+#[test]
+fn test_layout_solver_21_titles_10x2cm_zero_overlap_and_zero_clipping() {
+    use musicbox_organizer::services::measure_roboto_line_unit_width;
+
+    let theme = CatalogTheme::default();
+    let width_pt = LengthUnit::Cm.to_points(10.0);
+    let height_pt = LengthUnit::Cm.to_points(2.0);
+    let margin_pt = LengthUnit::Cm.to_points(0.1);
+    let content_margin = margin_pt.max(1.5);
+    let canvas_width = width_pt - 2.0 * content_margin;
+
+    let titles = [
+        "01. Bohemian Rhapsody - Queen (AAAA-bohemian.mp3)",
+        "02. Hotel California - Eagles (AAAB-hotel.mp3)",
+        "03. Stairway to Heaven - Led Zeppelin (AAAC-stairway.mp3)",
+        "04. Smells Like Teen Spirit - Nirvana (AAAD-smells.mp3)",
+        "05. Sweet Child O' Mine - Guns N' Roses (AAAE-sweet.mp3)",
+        "06. Billie Jean - Michael Jackson (AAAF-billie.mp3)",
+        "07. Imagine - John Lennon (AAAG-imagine.mp3)",
+        "08. Like a Rolling Stone - Bob Dylan (AAAH-stone.mp3)",
+        "09. One - U2 (AAAI-one.mp3)",
+        "10. Comfortably Numb - Pink Floyd (AAAJ-comfortably.mp3)",
+        "11. Sympathy for the Devil - The Rolling Stones (AAAK-devil.mp3)",
+        "12. Purple Rain - Prince and The Revolution (AAAL-purple.mp3)",
+        "13. Good Vibrations - The Beach Boys (AAAM-vibrations.mp3)",
+        "14. Johnny B. Goode - Chuck Berry (AAAN-johnny.mp3)",
+        "15. Respect - Aretha Franklin (AAAO-respect.mp3)",
+        "16. What's Going On - Marvin Gaye (AAAP-whats.mp3)",
+        "17. Hey Jude - The Beatles (AAAQ-hey.mp3)",
+        "18. London Calling - The Clash (AAAR-london.mp3)",
+        "19. Superstition - Stevie Wonder (AAAS-superstition.mp3)",
+        "20. Born to Run - Bruce Springsteen (AAAT-born.mp3)",
+        "21. Bridge Over Troubled Water - Simon & Garfunkel (AAAU-bridge.mp3)",
+    ];
+
+    let line_widths: Vec<f32> = titles
+        .iter()
+        .map(|s| measure_roboto_line_unit_width(s))
+        .collect();
+
+    let layout = CatalogLayoutSolver::solve_with_line_widths(
+        width_pt,
+        height_pt,
+        content_margin,
+        titles.len(),
+        false,
+        &theme,
+        Some(&line_widths),
+    );
+
+    let cols = layout.column_count;
+    assert!(cols >= 1);
+    let rows_needed = titles.len().div_ceil(cols);
+    let sum_w: f32 = layout.column_widths.iter().sum();
+    let gap = if cols > 1 {
+        (canvas_width - sum_w) / (cols - 1) as f32
+    } else {
+        0.0
+    };
+
+    if cols > 1 {
+        assert!(
+            gap >= (layout.computed_font_size_pt * 1.1).max(3.5) - 0.001,
+            "Gap {:.2}pt is smaller than minimum required gap",
+            gap
+        );
+    }
+
+    assert!(
+        sum_w + (cols.saturating_sub(1) as f32 * gap) <= canvas_width + 0.01,
+        "Total layout width exceeds canvas width"
+    );
+
+    for c in 0..cols {
+        let start = c * rows_needed;
+        let end = ((c + 1) * rows_needed).min(titles.len());
+        if start < end {
+            let max_unit_w = line_widths[start..end]
+                .iter()
+                .copied()
+                .fold(0.0f32, f32::max);
+            let measured_max_line_width_pt = max_unit_w * layout.computed_font_size_pt;
+            assert!(
+                measured_max_line_width_pt <= layout.column_widths[c] + 0.01,
+                "Column {} measured text width {:.2}pt exceeds col_width {:.2}pt",
+                c,
+                measured_max_line_width_pt,
+                layout.column_widths[c]
+            );
+        }
+    }
 }

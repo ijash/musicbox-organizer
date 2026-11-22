@@ -63,7 +63,7 @@ impl PdfCatalogExporter {
             .collect();
         let line_widths: Vec<f32> = track_lines
             .iter()
-            .map(|l| crate::services::catalog_layout::estimate_roboto_line_unit_width(l))
+            .map(|l| crate::services::catalog_layout::measure_roboto_line_unit_width(l))
             .collect();
 
         let layout = CatalogLayoutSolver::solve_with_line_widths(
@@ -204,7 +204,13 @@ impl PdfCatalogExporter {
         let row_height = layout.row_height_pt;
 
         let tracks_per_col = tracks.len().div_ceil(cols);
-        let eff_column_gap = (font_size * 1.2).clamp(2.0, theme.column_gap);
+        let canvas_width = (width_pt - 2.0 * content_margin).max(10.0);
+        let eff_column_gap = if cols > 1 {
+            let sum_w: f32 = layout.column_widths.iter().sum();
+            ((canvas_width - sum_w) / (cols - 1) as f32).max((font_size * 1.1).max(3.5))
+        } else {
+            0.0
+        };
 
         let mut col_x = Vec::with_capacity(cols);
         let mut cur_x = content_margin;

@@ -1,20 +1,196 @@
 use crate::models::{CatalogTheme, ComputedCatalogLayout};
+use std::sync::LazyLock;
 
-/// Estimated unit width (at 1.0 pt font size) for a character in Roboto.
-pub fn roboto_char_unit_width(c: char) -> f32 {
-    match c {
-        ' ' => 0.25,
-        'i' | 'l' | 'I' | '1' | '.' | ',' | ':' | ';' | '!' | '|' | '\'' | 't' | 'f' | 'r'
-        | 'j' => 0.28,
-        'A'..='Z' | 'm' | 'w' => 0.62,
-        _ => 0.48,
+static ROBOTO_BYTES: &[u8] = include_bytes!("../../assets/fonts/Roboto-Regular.ttf");
+
+struct RobotoMetrics {
+    units_per_em: f32,
+    num_h_metrics: u16,
+    format4_offset: usize,
+    hmtx_offset: usize,
+    ascii_advances: [f32; 128],
+}
+
+impl RobotoMetrics {
+    fn init() -> Self {
+        let data = ROBOTO_BYTES;
+        let num_tables = u16::from_be_bytes([data[4], data[5]]) as usize;
+        let mut head_offset = 0;
+        let mut hhea_offset = 0;
+        let mut cmap_offset = 0;
+        let mut hmtx_offset = 0;
+
+        for i in 0..num_tables {
+            let base = 12 + i * 16;
+            if base + 16 > data.len() {
+                break;
+            }
+            let tag = &data[base..base + 4];
+            let offset = u32::from_be_bytes([
+                data[base + 8],
+                data[base + 9],
+                data[base + 10],
+                data[base + 11],
+            ]) as usize;
+            match tag {
+                b"head" => head_offset = offset,
+                b"hhea" => hhea_offset = offset,
+                b"cmap" => cmap_offset = offset,
+                b"hmtx" => hmtx_offset = offset,
+                _ => {}
+            }
+        }
+
+        let units_per_em = if head_offset + 20 <= data.len() {
+            u16::from_be_bytes([data[head_offset + 18], data[head_offset + 19]]) as f32
+        } else {
+            2048.0
+        };
+
+        let num_h_metrics = if hhea_offset + 36 <= data.len() {
+            u16::from_be_bytes([data[hhea_offset + 34], data[hhea_offset + 35]])
+        } else {
+            1
+        };
+
+        let mut format4_offset = 0;
+        if cmap_offset + 4 <= data.len() {
+            let num_subtables =
+                u16::from_be_bytes([data[cmap_offset + 2], data[cmap_offset + 3]]) as usize;
+            for i in 0..num_subtables {
+                let rec = cmap_offset + 4 + i * 8;
+                if rec + 8 > data.len() {
+                    break;
+                }
+                let sub_off = u32::from_be_bytes([
+                    data[rec + 4],
+                    data[rec + 5],
+                    data[rec + 6],
+                    data[rec + 7],
+                ]) as usize;
+                let fmt_off = cmap_offset + sub_off;
+                if fmt_off + 2 <= data.len()
+                    && u16::from_be_bytes([data[fmt_off], data[fmt_off + 1]]) == 4
+                {
+                    format4_offset = fmt_off;
+                    break;
+                }
+            }
+        }
+
+        let mut metrics = Self {
+            units_per_em,
+            num_h_metrics,
+            format4_offset,
+            hmtx_offset,
+            ascii_advances: [0.0; 128],
+        };
+
+        for i in 0..128u8 {
+            metrics.ascii_advances[i as usize] = metrics.lookup_advance(i as char);
+        }
+
+        metrics
+    }
+
+    fn lookup_advance(&self, c: char) -> f32 {
+        let cp = c as u32;
+        if cp > 0xFFFF || self.format4_offset == 0 || self.hmtx_offset == 0 {
+            return 0.5;
+        }
+        let data = ROBOTO_BYTES;
+        if self.format4_offset + 14 > data.len() {
+            return 0.5;
+        }
+
+        let seg_count = (u16::from_be_bytes([
+            data[self.format4_offset + 6],
+            data[self.format4_offset + 7],
+        ]) / 2) as usize;
+
+        let end_codes = self.format4_offset + 14;
+        let start_codes = end_codes + seg_count * 2 + 2;
+        let id_deltas = start_codes + seg_count * 2;
+        let id_range_offsets = id_deltas + seg_count * 2;
+
+        if id_range_offsets + seg_count * 2 > data.len() {
+            return 0.5;
+        }
+
+        let cp_u16 = cp as u16;
+        let mut glyph_id = 0u16;
+
+        for s in 0..seg_count {
+            let end_code =
+                u16::from_be_bytes([data[end_codes + s * 2], data[end_codes + s * 2 + 1]]);
+            if cp_u16 <= end_code {
+                let start_code =
+                    u16::from_be_bytes([data[start_codes + s * 2], data[start_codes + s * 2 + 1]]);
+                if cp_u16 >= start_code {
+                    let id_delta =
+                        i16::from_be_bytes([data[id_deltas + s * 2], data[id_deltas + s * 2 + 1]]);
+                    let ro = u16::from_be_bytes([
+                        data[id_range_offsets + s * 2],
+                        data[id_range_offsets + s * 2 + 1],
+                    ]) as usize;
+                    if ro == 0 {
+                        glyph_id = cp_u16.wrapping_add(id_delta as u16);
+                    } else {
+                        let ptr =
+                            id_range_offsets + s * 2 + ro + (cp_u16 - start_code) as usize * 2;
+                        if ptr + 2 <= data.len() {
+                            let g = u16::from_be_bytes([data[ptr], data[ptr + 1]]);
+                            if g != 0 {
+                                glyph_id = g.wrapping_add(id_delta as u16);
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        let adv_u16 = if (glyph_id as usize) < self.num_h_metrics as usize {
+            let off = self.hmtx_offset + glyph_id as usize * 4;
+            if off + 2 <= data.len() {
+                u16::from_be_bytes([data[off], data[off + 1]])
+            } else {
+                1024
+            }
+        } else {
+            let off = self.hmtx_offset + (self.num_h_metrics as usize - 1) * 4;
+            if off + 2 <= data.len() {
+                u16::from_be_bytes([data[off], data[off + 1]])
+            } else {
+                1024
+            }
+        };
+
+        adv_u16 as f32 / self.units_per_em
+    }
+
+    fn advance(&self, c: char) -> f32 {
+        let cp = c as usize;
+        if cp < 128 {
+            self.ascii_advances[cp]
+        } else {
+            self.lookup_advance(c)
+        }
     }
 }
 
-/// Estimated total unit width for a line of text in Roboto, including a 0.98 safety factor.
-pub fn estimate_roboto_line_unit_width(s: &str) -> f32 {
-    let raw_sum: f32 = s.chars().map(roboto_char_unit_width).sum();
-    raw_sum * 0.98
+static ROBOTO_METRICS: LazyLock<RobotoMetrics> = LazyLock::new(RobotoMetrics::init);
+
+/// Exact glyph advance width for a character in Roboto-Regular at 1.0 pt font size.
+pub fn measure_roboto_char_unit_width(c: char) -> f32 {
+    ROBOTO_METRICS.advance(c)
+}
+
+/// Exact total advance width in points (per 1.0 pt of font size) for a line of text,
+/// including a 1.01 rounding guard.
+pub fn measure_roboto_line_unit_width(text: &str) -> f32 {
+    let raw_sum: f32 = text.chars().map(measure_roboto_char_unit_width).sum();
+    raw_sum * 1.01
 }
 
 /// Pure layout solver for catalog pages.

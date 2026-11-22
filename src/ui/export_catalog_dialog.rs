@@ -357,7 +357,7 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                     .iter()
                     .enumerate()
                     .map(|(idx, track)| {
-                        crate::services::catalog_layout::estimate_roboto_line_unit_width(
+                        crate::services::catalog_layout::measure_roboto_line_unit_width(
                             &exporter.format_track_line(
                                 idx + 1,
                                 track,
