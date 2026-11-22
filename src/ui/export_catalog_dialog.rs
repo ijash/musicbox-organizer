@@ -58,16 +58,86 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         return;
     }
 
-    let mut is_open = app.export_catalog_dialog.is_open;
-    egui::Window::new("Export Catalog")
-        .open(&mut is_open)
-        .resizable(true)
-        .default_size(egui::vec2(340.0, 420.0))
-        .min_size(egui::vec2(280.0, 320.0))
-        .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
+    let viewport_id = egui::ViewportId::from_hash_of("export_catalog_viewport");
+    ctx.show_viewport_immediate(
+        viewport_id,
+        egui::ViewportBuilder::default()
+            .with_title("Export Catalog")
+            .with_inner_size([380.0, 520.0])
+            .with_min_inner_size([280.0, 320.0])
+            .with_resizable(true),
+        |ctx, _class| {
+            if ctx.input(|i| i.viewport().close_requested()) {
+                app.export_catalog_dialog.close();
+            }
+            render_export_catalog_contents(app, ctx);
+            if !app.export_catalog_dialog.is_open {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+        },
+    );
+}
+
+pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context) {
+    // 1. Pinned Bottom Panel: Live Layout Summary, Warning, Error & Action Buttons
+    egui::TopBottomPanel::bottom("export_catalog_bottom_panel")
+        .resizable(false)
         .show(ctx, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.heading("Export Catalog");
+            // Live Layout Summary & Warning (Only for PDF format)
+            if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
+                let track_count = app.project.tracks.len();
+                let layout = app.export_catalog_dialog.compute_layout(track_count);
+                ui.group(|ui| {
+                    ui.set_width(ui.available_width());
+                    ui.label("Live Layout Summary:");
+                    ui.label(format!(
+                        "Columns: {}  |  Font Size: {:.1} pt  |  Sheet: {:.1} × {:.1} cm",
+                        layout.column_count,
+                        layout.computed_font_size_pt,
+                        layout.physical_width_cm,
+                        layout.physical_height_cm
+                    ));
+
+                    if layout.readability_warning {
+                        ui.add_space(2.0);
+                        ui.colored_label(
+                            egui::Color32::RED,
+                            "⚠ Warning: Calculated font size is < 5.0 pt. Text may be illegible when printed.",
+                        );
+                    }
+                });
+            }
+
+            // Error message display
+            if let Some(err) = &app.export_catalog_dialog.error_message {
+                ui.add_space(2.0);
+                ui.colored_label(egui::Color32::RED, err);
+            }
+
+            ui.add_space(4.0);
+
+            // Action Buttons
+            ui.horizontal(|ui| {
+                let has_tracks = !app.project.tracks.is_empty();
+                let has_fields = app.export_catalog_dialog.config.fields.is_valid();
+                let can_export = has_tracks && has_fields;
+
+                let export_btn = ui.add_enabled(can_export, egui::Button::new("Export..."));
+                if export_btn.clicked() {
+                    trigger_catalog_export(app);
+                }
+
+                if ui.button("Cancel").clicked() {
+                    app.export_catalog_dialog.close();
+                }
+            });
+        });
+
+    // 2. Scrollable Central Panel: Configuration Form
+    egui::CentralPanel::default().show(ctx, |ui| {
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
                 ui.label(format!(
                     "Playlist: {} ({} tracks)",
                     app.project.metadata.name,
@@ -77,8 +147,9 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
 
                 // 1. Format Selection
                 ui.group(|ui| {
+                    ui.set_width(ui.available_width());
                     ui.label("Format:");
-                    ui.horizontal(|ui| {
+                    ui.horizontal_wrapped(|ui| {
                         ui.radio_value(
                             &mut app.export_catalog_dialog.config.format,
                             CatalogFormat::Pdf,
@@ -101,15 +172,13 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
 
                 // 2. Universal Field Toggles
                 ui.group(|ui| {
+                    ui.set_width(ui.available_width());
                     ui.label("Fields to Include:");
                     ui.checkbox(
                         &mut app.export_catalog_dialog.config.fields.track_number,
                         "Track Number (#)",
                     );
-                    ui.checkbox(
-                        &mut app.export_catalog_dialog.config.fields.title,
-                        "Title",
-                    );
+                    ui.checkbox(&mut app.export_catalog_dialog.config.fields.title, "Title");
                     ui.checkbox(
                         &mut app.export_catalog_dialog.config.fields.artist,
                         "Artist",
@@ -129,10 +198,12 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
                 // 3. PDF Page Sizing & Themes (Only for PDF format)
                 if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
                     ui.group(|ui| {
+                        ui.set_width(ui.available_width());
                         ui.label("Page Sizing & Layout:");
 
                         // Preset Dropdown
-                        let mut selected_preset = app.export_catalog_dialog.config.dimensions.preset;
+                        let mut selected_preset =
+                            app.export_catalog_dialog.config.dimensions.preset;
                         egui::ComboBox::from_label("Preset")
                             .selected_text(selected_preset.display_name())
                             .show_ui(ui, |ui| {
@@ -154,20 +225,26 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
                                     unit.from_points(LengthUnit::Cm.to_points(w_cm));
                                 app.export_catalog_dialog.config.dimensions.height =
                                     unit.from_points(LengthUnit::Cm.to_points(h_cm));
-                                app.export_catalog_dialog.config.dimensions.clamp_dimensions();
+                                app.export_catalog_dialog
+                                    .config
+                                    .dimensions
+                                    .clamp_dimensions();
                             }
                         }
 
                         // Unit Selector
                         let mut selected_unit = app.export_catalog_dialog.config.dimensions.unit;
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             ui.label("Unit:");
                             for unit in LengthUnit::all() {
                                 ui.radio_value(&mut selected_unit, *unit, unit.symbol());
                             }
                         });
                         if selected_unit != app.export_catalog_dialog.config.dimensions.unit {
-                            app.export_catalog_dialog.config.dimensions.set_unit(selected_unit);
+                            app.export_catalog_dialog
+                                .config
+                                .dimensions
+                                .set_unit(selected_unit);
                         }
 
                         // Width & Height numeric controls
@@ -175,7 +252,7 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
                         let prev_h = app.export_catalog_dialog.config.dimensions.height;
                         let unit_str = app.export_catalog_dialog.config.dimensions.unit.symbol();
 
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             ui.label("Width:");
                             ui.add(
                                 egui::DragValue::new(
@@ -194,16 +271,21 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
                             );
                         });
 
-                        if (app.export_catalog_dialog.config.dimensions.width - prev_w).abs() > 0.001
-                            || (app.export_catalog_dialog.config.dimensions.height - prev_h).abs() > 0.001
+                        if (app.export_catalog_dialog.config.dimensions.width - prev_w).abs()
+                            > 0.001
+                            || (app.export_catalog_dialog.config.dimensions.height - prev_h).abs()
+                                > 0.001
                         {
                             app.export_catalog_dialog.config.dimensions.preset =
                                 CatalogPagePreset::Custom;
                         }
-                        app.export_catalog_dialog.config.dimensions.clamp_dimensions();
+                        app.export_catalog_dialog
+                            .config
+                            .dimensions
+                            .clamp_dimensions();
 
                         // Margin control
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             ui.label("Margin:");
                             ui.add(
                                 egui::DragValue::new(
@@ -213,7 +295,10 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
                                 .suffix(format!(" {}", unit_str)),
                             );
                         });
-                        app.export_catalog_dialog.config.dimensions.clamp_dimensions();
+                        app.export_catalog_dialog
+                            .config
+                            .dimensions
+                            .clamp_dimensions();
 
                         // Cut guidelines toggle
                         ui.checkbox(
@@ -222,7 +307,8 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
                         );
 
                         // Theme selector (T022)
-                        let mut selected_theme = app.export_catalog_dialog.config.theme_name.clone();
+                        let mut selected_theme =
+                            app.export_catalog_dialog.config.theme_name.clone();
                         egui::ComboBox::from_label("Theme")
                             .selected_text(&selected_theme)
                             .show_ui(ui, |ui| {
@@ -238,62 +324,9 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
                             app.export_catalog_dialog.config.theme_name = selected_theme;
                         }
                     });
-
-                    ui.add_space(4.0);
-
-                    // 4. Live Layout Summary & Warning (T019)
-                    let track_count = app.project.tracks.len();
-                    let layout = app.export_catalog_dialog.compute_layout(track_count);
-                    ui.group(|ui| {
-                        ui.label("Live Layout Summary:");
-                        ui.label(format!(
-                            "Columns: {}  |  Font Size: {:.1} pt  |  Sheet: {:.1} × {:.1} cm",
-                            layout.column_count,
-                            layout.computed_font_size_pt,
-                            layout.physical_width_cm,
-                            layout.physical_height_cm
-                        ));
-
-                        if layout.readability_warning {
-                            ui.add_space(2.0);
-                            ui.colored_label(
-                                egui::Color32::RED,
-                                "⚠ Warning: Calculated font size is < 5.0 pt. Text may be illegible when printed.",
-                            );
-                        }
-                    });
                 }
-
-                // Error message display
-                if let Some(err) = &app.export_catalog_dialog.error_message {
-                    ui.add_space(4.0);
-                    ui.colored_label(egui::Color32::RED, err);
-                }
-
-                ui.add_space(10.0);
-
-                // Action Buttons
-                ui.horizontal(|ui| {
-                    let has_tracks = !app.project.tracks.is_empty();
-                    let has_fields = app.export_catalog_dialog.config.fields.is_valid();
-                    let can_export = has_tracks && has_fields;
-
-                    let export_btn =
-                        ui.add_enabled(can_export, egui::Button::new("Export..."));
-                    if export_btn.clicked() {
-                        trigger_catalog_export(app);
-                    }
-
-                    if ui.button("Cancel").clicked() {
-                        app.export_catalog_dialog.close();
-                    }
-                });
             });
-        });
-
-    if !is_open {
-        app.export_catalog_dialog.close();
-    }
+    });
 }
 
 pub fn convert_project_tracks(tracks: &[ProjectTrack]) -> Vec<OrganizerTrack> {

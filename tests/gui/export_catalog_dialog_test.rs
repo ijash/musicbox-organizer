@@ -1,6 +1,7 @@
 use egui_kittest::Harness;
+use egui_kittest::kittest::Queryable;
 use musicbox_organizer::models::{CatalogFormat, CatalogPagePreset, ProjectTrack};
-use musicbox_organizer::ui::MusicBoxApp;
+use musicbox_organizer::ui::{MusicBoxApp, render_export_catalog_contents};
 
 #[test]
 fn test_unified_export_dialog_format_and_field_toggles() {
@@ -16,9 +17,9 @@ fn test_unified_export_dialog_format_and_field_toggles() {
     app.export_catalog_dialog.open();
     assert!(app.export_catalog_dialog.is_open);
 
-    let mut harness = Harness::new_ui_state(
-        |ui, state| {
-            state.render_central_content(ui);
+    let mut harness = Harness::builder().build_state(
+        |ctx, state| {
+            render_export_catalog_contents(state, ctx);
         },
         app,
     );
@@ -136,7 +137,7 @@ fn test_unified_export_dialog_format_and_field_toggles() {
 }
 
 #[test]
-fn test_export_catalog_dialog_narrow_300x400_viewport() {
+fn test_export_catalog_dialog_narrow_pinned_buttons_280x320() {
     let mut app = MusicBoxApp::default();
     app.project.tracks.push(ProjectTrack {
         index: 0,
@@ -148,30 +149,35 @@ fn test_export_catalog_dialog_narrow_300x400_viewport() {
     app.export_catalog_dialog.open();
 
     let mut harness = Harness::builder()
-        .with_size(egui::vec2(300.0, 400.0))
-        .build_ui_state(
-            |ui, state: &mut MusicBoxApp| {
-                state.render_central_content(ui);
+        .with_size(egui::vec2(280.0, 320.0))
+        .build_state(
+            |ctx, state: &mut MusicBoxApp| {
+                render_export_catalog_contents(state, ctx);
             },
             app,
         );
 
-    // Run frame at 300x400 px narrow viewport
+    // Run frame at minimum 280x320 px narrow viewport
     harness.run();
 
     // Verify dialog remains open and active in narrow layout
     assert!(harness.state().export_catalog_dialog.is_open);
 
-    // Close dialog
-    harness.state_mut().export_catalog_dialog.close();
+    // Assert pinned bottom panel action buttons are present and not disabled
+    let export_btn = harness.get_by_label("Export...");
+    assert!(!export_btn.is_disabled());
+
+    let cancel_btn = harness.get_by_label("Cancel");
+    assert!(!cancel_btn.is_disabled());
+
+    // Click cancel button and verify dialog closes cleanly
+    cancel_btn.click();
     harness.run();
     assert!(!harness.state().export_catalog_dialog.is_open);
 }
 
 #[test]
 fn test_export_catalog_toolbar_button_opens_dialog_full_app() {
-    use egui_kittest::kittest::Queryable;
-
     let mut app = MusicBoxApp::default();
     app.project.tracks.push(ProjectTrack {
         index: 0,
