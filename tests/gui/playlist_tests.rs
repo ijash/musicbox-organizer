@@ -206,3 +206,47 @@ fn test_playlist_full_row_selection_and_inline_edit() {
     assert_eq!(harness.state().editing_cell, Some((1, TableColumn::Artist)));
     assert_eq!(harness.state().edit_buffer, "Second Artist");
 }
+
+#[test]
+fn test_move_up_down_commits_and_clears_active_editing_cell() {
+    use egui_kittest::kittest::Queryable;
+    use musicbox_organizer::ui::TableColumn;
+
+    let mut app = MusicBoxApp::default();
+    app.project.tracks.push(ProjectTrack {
+        index: 0,
+        title: "Track Zero".to_string(),
+        artist: "Artist 0".to_string(),
+        file_path: "/music/track0.mp3".to_string(),
+    });
+    app.project.tracks.push(ProjectTrack {
+        index: 1,
+        title: "Track One".to_string(),
+        artist: "Artist 1".to_string(),
+        file_path: "/music/track1.mp3".to_string(),
+    });
+
+    // Select row 0 and start editing Title
+    app.selected_track_indices.insert(0);
+    app.editing_cell = Some((0, TableColumn::Title));
+    app.edit_buffer = "Track Zero Modified".to_string();
+
+    let mut harness = Harness::new_ui_state(
+        |ui, state| {
+            state.render_central_content(ui);
+        },
+        app,
+    );
+    harness.run();
+
+    // Move Down
+    harness.get_by_label("⬇ Down").click();
+    harness.run();
+
+    // Edit is committed to the track and editing_cell is cleared
+    assert_eq!(harness.state().editing_cell, None);
+    assert_eq!(
+        harness.state().project.tracks[1].title,
+        "Track Zero Modified"
+    );
+}

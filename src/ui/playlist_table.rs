@@ -17,7 +17,7 @@ pub fn get_export_filename(track: &ProjectTrack) -> String {
     .unwrap_or_else(|_| format!("{:04}-{}", track.index + 1, original_filename))
 }
 
-fn commit_editing_cell(app: &mut MusicBoxApp) {
+pub fn commit_editing_cell(app: &mut MusicBoxApp) {
     if let Some((row_idx, col)) = app.editing_cell.take() {
         app.session.push_undo(app.project.clone());
         if let Some(track) = app.project.tracks.get_mut(row_idx) {
@@ -111,22 +111,34 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                         // Col 1: #
                         row.col(|ui| {
                             let row_label = format!("{:02}", row_idx + 1);
-                            let resp = ui.add_sized(
-                                ui.available_size(),
-                                egui::Label::new(row_label).sense(egui::Sense::click()),
+                            let label_resp = ui.add(
+                                egui::Label::new(row_label)
+                                    .sense(egui::Sense::click())
+                                    .truncate(),
                             );
-                            if resp.clicked() {
+                            let cell_resp = ui.interact(
+                                ui.max_rect(),
+                                ui.id().with(("cell", row_idx, 0)),
+                                egui::Sense::click(),
+                            );
+                            if label_resp.clicked() || cell_resp.clicked() {
                                 handle_row_selection(app, row_idx, is_selected, ui);
                             }
                         });
 
                         // Col 2: Export Filename
                         row.col(|ui| {
-                            let resp = ui.add_sized(
-                                ui.available_size(),
-                                egui::Label::new(&export_filename).sense(egui::Sense::click()),
+                            let label_resp = ui.add(
+                                egui::Label::new(&export_filename)
+                                    .sense(egui::Sense::click())
+                                    .truncate(),
                             );
-                            if resp.clicked() {
+                            let cell_resp = ui.interact(
+                                ui.max_rect(),
+                                ui.id().with(("cell", row_idx, 1)),
+                                egui::Sense::click(),
+                            );
+                            if label_resp.clicked() || cell_resp.clicked() {
                                 handle_row_selection(app, row_idx, is_selected, ui);
                             }
                         });
@@ -158,11 +170,17 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                                 } else {
                                     &current_title
                                 };
-                                let resp = ui.add_sized(
-                                    ui.available_size(),
-                                    egui::Label::new(display_title).sense(egui::Sense::click()),
+                                let label_resp = ui.add(
+                                    egui::Label::new(display_title)
+                                        .sense(egui::Sense::click())
+                                        .truncate(),
                                 );
-                                if resp.clicked() {
+                                let cell_resp = ui.interact(
+                                    ui.max_rect(),
+                                    ui.id().with(("cell", row_idx, 2)),
+                                    egui::Sense::click(),
+                                );
+                                if label_resp.clicked() || cell_resp.clicked() {
                                     commit_editing_cell(app);
                                     handle_row_selection(app, row_idx, is_selected, ui);
                                     app.editing_cell = Some((row_idx, TableColumn::Title));
@@ -198,11 +216,17 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                                 } else {
                                     &current_artist
                                 };
-                                let resp = ui.add_sized(
-                                    ui.available_size(),
-                                    egui::Label::new(display_artist).sense(egui::Sense::click()),
+                                let label_resp = ui.add(
+                                    egui::Label::new(display_artist)
+                                        .sense(egui::Sense::click())
+                                        .truncate(),
                                 );
-                                if resp.clicked() {
+                                let cell_resp = ui.interact(
+                                    ui.max_rect(),
+                                    ui.id().with(("cell", row_idx, 3)),
+                                    egui::Sense::click(),
+                                );
+                                if label_resp.clicked() || cell_resp.clicked() {
                                     commit_editing_cell(app);
                                     handle_row_selection(app, row_idx, is_selected, ui);
                                     app.editing_cell = Some((row_idx, TableColumn::Artist));
@@ -213,11 +237,17 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
 
                         // Col 5: Source File
                         row.col(|ui| {
-                            let resp = ui.add_sized(
-                                ui.available_size(),
-                                egui::Label::new(&file_path).sense(egui::Sense::click()),
+                            let label_resp = ui.add(
+                                egui::Label::new(&file_path)
+                                    .sense(egui::Sense::click())
+                                    .truncate(),
                             );
-                            if resp.clicked() {
+                            let cell_resp = ui.interact(
+                                ui.max_rect(),
+                                ui.id().with(("cell", row_idx, 4)),
+                                egui::Sense::click(),
+                            );
+                            if label_resp.clicked() || cell_resp.clicked() {
                                 handle_row_selection(app, row_idx, is_selected, ui);
                             }
                         });

@@ -45,7 +45,8 @@ pub fn render_toolbar(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
         }
 
         if ui.button("📄 Export Catalog...").clicked() {
-            app.export_catalog_dialog.open();
+            app.export_catalog_dialog
+                .open_with_title(Some(&app.project.metadata.name));
         }
 
         if ui.button("📂 Open").clicked() {
@@ -109,6 +110,8 @@ fn remove_selected_tracks(app: &mut MusicBoxApp) {
     if app.selected_track_indices.is_empty() {
         return;
     }
+    crate::ui::playlist_table::commit_editing_cell(app);
+    app.editing_cell = None;
     app.session.push_undo(app.project.clone());
 
     if let Some(playing_idx) = app.playing_track_idx {
@@ -159,6 +162,8 @@ fn move_selected_up(app: &mut MusicBoxApp) {
     if !can_move_up(app) {
         return;
     }
+    crate::ui::playlist_table::commit_editing_cell(app);
+    app.editing_cell = None;
     app.session.push_undo(app.project.clone());
     let selected: Vec<usize> = app.selected_track_indices.iter().copied().collect();
     for idx in selected {
@@ -186,6 +191,8 @@ fn move_selected_down(app: &mut MusicBoxApp) {
     if !can_move_down(app) {
         return;
     }
+    crate::ui::playlist_table::commit_editing_cell(app);
+    app.editing_cell = None;
     app.session.push_undo(app.project.clone());
     let selected: Vec<usize> = app.selected_track_indices.iter().rev().copied().collect();
     for idx in selected {

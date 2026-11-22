@@ -11,10 +11,10 @@ pub fn roboto_char_unit_width(c: char) -> f32 {
     }
 }
 
-/// Estimated total unit width for a line of text in Roboto, including a 1.04 safety factor.
+/// Estimated total unit width for a line of text in Roboto, including a 0.98 safety factor.
 pub fn estimate_roboto_line_unit_width(s: &str) -> f32 {
     let raw_sum: f32 = s.chars().map(roboto_char_unit_width).sum();
-    raw_sum * 1.04
+    raw_sum * 0.98
 }
 
 /// Pure layout solver for catalog pages.

@@ -14,6 +14,7 @@ pub struct ExportCatalogDialog {
     pub config: CatalogExportConfig,
     pub error_message: Option<String>,
     pub last_viewport_height: f32,
+    pub custom_header_title: String,
 }
 
 impl Default for ExportCatalogDialog {
@@ -29,12 +30,24 @@ impl ExportCatalogDialog {
             config: CatalogExportConfig::default(),
             error_message: None,
             last_viewport_height: 0.0,
+            custom_header_title: String::new(),
         }
     }
 
     pub fn open(&mut self) {
+        self.open_with_title(None);
+    }
+
+    pub fn open_with_title(&mut self, default_title: Option<&str>) {
         self.is_open = true;
         self.error_message = None;
+        let title_opt = default_title.map(|s| s.trim()).filter(|s| !s.is_empty());
+        let folder_fallback = std::env::current_dir()
+            .ok()
+            .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or_else(|| "Playlist Catalog".to_string());
+        self.custom_header_title = title_opt.map(|s| s.to_string()).unwrap_or(folder_fallback);
     }
 
     pub fn close(&mut self) {
@@ -188,6 +201,18 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                     &mut app.export_catalog_dialog.config.fields.header_title,
                     "Header Title",
                 );
+                if app.export_catalog_dialog.config.fields.header_title {
+                    ui.horizontal(|ui| {
+                        ui.label("Title Text:");
+                        ui.add(
+                            egui::TextEdit::singleline(
+                                &mut app.export_catalog_dialog.custom_header_title,
+                            )
+                            .desired_width(ui.available_width() - 8.0)
+                            .hint_text("Playlist Catalog"),
+                        );
+                    });
+                }
             });
 
             ui.add_space(4.0);
@@ -457,7 +482,14 @@ fn trigger_catalog_export(app: &mut MusicBoxApp) {
         let organizer_tracks = convert_project_tracks(&app.project.tracks);
         let service = CatalogExportService::new();
         let title = if app.export_catalog_dialog.config.fields.header_title {
-            Some(app.project.metadata.name.as_str())
+            let t = app.export_catalog_dialog.custom_header_title.trim();
+            if !t.is_empty() {
+                Some(t)
+            } else if !app.project.metadata.name.trim().is_empty() {
+                Some(app.project.metadata.name.as_str())
+            } else {
+                None
+            }
         } else {
             None
         };

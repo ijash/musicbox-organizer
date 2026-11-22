@@ -261,3 +261,46 @@ fn test_export_catalog_format_switch_resizes_viewport() {
     );
     assert!(harness.state().export_catalog_dialog.last_viewport_height < 320.0);
 }
+
+#[test]
+fn test_export_catalog_custom_header_title() {
+    let mut app = MusicBoxApp::default();
+    app.project.metadata.name = "My Awesome Playlist".to_string();
+    app.export_catalog_dialog.config.fields.header_title = true;
+    app.export_catalog_dialog
+        .open_with_title(Some(&app.project.metadata.name));
+
+    assert_eq!(
+        app.export_catalog_dialog.custom_header_title,
+        "My Awesome Playlist"
+    );
+
+    let mut harness = Harness::builder().build_state(
+        |ctx, state| {
+            render_export_catalog_contents(state, ctx);
+        },
+        app,
+    );
+
+    harness.run();
+    assert!(
+        harness
+            .state()
+            .export_catalog_dialog
+            .config
+            .fields
+            .header_title
+    );
+
+    // Change title text
+    harness
+        .state_mut()
+        .export_catalog_dialog
+        .custom_header_title = "Roadtrip 2026".to_string();
+    harness.run();
+
+    assert_eq!(
+        harness.state().export_catalog_dialog.custom_header_title,
+        "Roadtrip 2026"
+    );
+}
