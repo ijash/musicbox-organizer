@@ -1,10 +1,12 @@
 # Feature Specification: Modularize GTK UI Components (Tech Debt D3)
 
+> **Superseded by Feature 010 (Cross-Platform GUI)**: This specification describes the legacy Linux-only GTK3/Relm4 architecture, which has been completely superseded by Feature 010 (pure-Rust `eframe`/`egui` + `egui_kittest`). Retained for historical reference only.
+
 **Feature Branch**: `006-modularize-gtk-ui`
 
 **Created**: 2026-11-20
 
-**Status**: Draft
+**Status**: Superseded
 
 **Input**: User description: "tech debt d3."
 

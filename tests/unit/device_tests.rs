@@ -90,3 +90,24 @@ fn test_windows_unsupported_format_and_eject_errors() {
         );
     }
 }
+
+#[test]
+fn test_macos_unsupported_format_and_eject_errors() {
+    use musicbox_organizer::platform::macos::MacOSDeviceManager;
+    use musicbox_organizer::services::DeviceManager;
+
+    let mgr = MacOSDeviceManager::new();
+    let format_err = mgr
+        .format_device("/dev/disk2s1", FileSystem::FAT32)
+        .unwrap_err();
+    assert_eq!(
+        format_err.to_string(),
+        "Device formatting is not yet supported on macOS"
+    );
+
+    let eject_err = mgr.eject_device("/dev/disk2s1").unwrap_err();
+    assert_eq!(
+        eject_err.to_string(),
+        "Safe eject is not yet supported on macOS"
+    );
+}

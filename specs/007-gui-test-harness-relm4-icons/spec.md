@@ -1,10 +1,12 @@
 # Feature Specification: Automated GUI Test Harness and Standardized Relm4 Icons
 
+> **Superseded by Feature 010 (Cross-Platform GUI)**: This specification describes the legacy Linux-only GTK3/Relm4 architecture, which has been completely superseded by Feature 010 (pure-Rust `eframe`/`egui` + `egui_kittest`). Retained for historical reference only.
+
 **Feature Branch**: `007-gui-test-harness-relm4-icons`
 
 **Created**: 2026-11-20
 
-**Status**: Draft
+**Status**: Superseded
 
 **Input**: User description: "- buat spek script/harness untuk testing gui. pake `Relm4`, `xvfb` - buat icon2 terstandarisasi pakai https://github.com/Relm4/icons . dan wajib dimasukan ke binary untuk icon yang terpakai."
 
