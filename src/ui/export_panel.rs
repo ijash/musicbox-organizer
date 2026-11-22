@@ -122,7 +122,6 @@ pub fn render_export_confirm_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         return;
     }
 
-    let viewport_id = egui::ViewportId::from_hash_of("export_media_confirm_viewport");
     let is_reformat = app.export_panel.reformat_enabled;
     let title = if is_reformat {
         "⚠️ Warning: Destructive Action - Reformat Media"
@@ -130,13 +129,26 @@ pub fn render_export_confirm_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         "Confirm Export to Removable Media"
     };
 
+    let parent_rect = ctx.input(|i| i.viewport().outer_rect).unwrap_or_else(|| {
+        egui::Rect::from_min_size(egui::pos2(100.0, 100.0), egui::vec2(960.0, 680.0))
+    });
+    let dialog_size = if is_reformat {
+        egui::vec2(360.0, 260.0)
+    } else {
+        egui::vec2(340.0, 165.0)
+    };
+    let pos = parent_rect.center() - dialog_size / 2.0;
+
+    let viewport_id = egui::ViewportId::from_hash_of("export_media_confirm_viewport");
     ctx.show_viewport_immediate(
         viewport_id,
         egui::ViewportBuilder::default()
             .with_title(title)
-            .with_inner_size([420.0, if is_reformat { 340.0 } else { 260.0 }])
-            .with_min_inner_size([320.0, 220.0])
-            .with_resizable(true),
+            .with_inner_size(dialog_size)
+            .with_position(pos)
+            .with_resizable(false)
+            .with_maximize_button(false)
+            .with_minimize_button(false),
         |ctx, _class| {
             if ctx.input(|i| i.viewport().close_requested()) {
                 app.export_panel.show_export_confirm = false;
@@ -175,34 +187,34 @@ pub fn render_export_confirm_contents(app: &mut MusicBoxApp, ctx: &egui::Context
             if is_reformat {
                 ui.colored_label(
                     egui::Color32::RED,
-                    egui::RichText::new("⚠️ DESTRUCTIVE ACTION WARNING")
-                        .heading()
-                        .strong(),
+                    egui::RichText::new("⚠️ DESTRUCTIVE ACTION WARNING").strong(),
                 );
-                ui.add_space(4.0);
+                ui.add_space(2.0);
                 ui.colored_label(
                     egui::Color32::RED,
                     egui::RichText::new(format!(
-                        "ALL DATA ON {} ({}) WILL BE PERMANENTLY ERASED!",
+                        "ALL DATA ON {} ({}) WILL BE ERASED!",
                         dev_name, mount_path
                     ))
-                    .strong(),
+                    .small(),
                 );
-                ui.add_space(8.0);
+                ui.add_space(4.0);
             } else {
-                ui.heading("Confirm Export to Removable Media");
-                ui.add_space(8.0);
+                ui.strong("Confirm Export to Removable Media");
+                ui.add_space(4.0);
             }
 
             ui.group(|ui| {
                 ui.set_width(ui.available_width());
                 ui.label(format!("Target Device: {}", dev_name));
                 ui.label(format!("Mount Path: {}", mount_path));
-                ui.label(format!("Tracks to Export: {}", track_count));
-                ui.label(format!("Target Subpath: /{}", subpath));
+                ui.label(format!(
+                    "Tracks to Export: {}  |  Subpath: /{}",
+                    track_count, subpath
+                ));
             });
 
-            ui.add_space(8.0);
+            ui.add_space(4.0);
 
             if is_reformat {
                 ui.checkbox(
@@ -211,7 +223,7 @@ pub fn render_export_confirm_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                         .color(egui::Color32::RED)
                         .strong(),
                 );
-                ui.add_space(8.0);
+                ui.add_space(6.0);
             }
 
             ui.horizontal(|ui| {

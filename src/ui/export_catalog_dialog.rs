@@ -67,14 +67,22 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         return;
     }
 
+    let parent_rect = ctx.input(|i| i.viewport().outer_rect).unwrap_or_else(|| {
+        egui::Rect::from_min_size(egui::pos2(100.0, 100.0), egui::vec2(960.0, 680.0))
+    });
+    let dialog_size = egui::vec2(370.0, 595.0);
+    let pos = parent_rect.center() - dialog_size / 2.0;
+
     let viewport_id = egui::ViewportId::from_hash_of("export_catalog_viewport");
     ctx.show_viewport_immediate(
         viewport_id,
         egui::ViewportBuilder::default()
             .with_title("Export Catalog")
-            .with_inner_size([380.0, 560.0])
-            .with_min_inner_size([340.0, 440.0])
-            .with_resizable(true),
+            .with_inner_size(dialog_size)
+            .with_position(pos)
+            .with_resizable(false)
+            .with_maximize_button(false)
+            .with_minimize_button(false),
         |ctx, _class| {
             if ctx.input(|i| i.viewport().close_requested()) {
                 app.export_catalog_dialog.close();
@@ -96,25 +104,20 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
             // Live Layout Summary & Warning (Only for PDF format)
             if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
                 let track_count = app.project.tracks.len();
-                let line_lengths: Vec<usize> = app
-                    .project
-                    .tracks
+                let organizer_tracks = convert_project_tracks(&app.project.tracks);
+                let exporter = crate::services::PdfCatalogExporter::new();
+                let line_lengths: Vec<usize> = organizer_tracks
                     .iter()
-                    .map(|t| {
-                        let mut len = 0;
-                        if app.export_catalog_dialog.config.fields.track_number {
-                            len += 4;
-                        }
-                        if app.export_catalog_dialog.config.fields.title {
-                            len += t.title.chars().count().max(10);
-                        }
-                        if app.export_catalog_dialog.config.fields.artist && !t.artist.is_empty() {
-                            len += t.artist.chars().count() + 3;
-                        }
-                        if app.export_catalog_dialog.config.fields.export_filename {
-                            len += 18;
-                        }
-                        len
+                    .enumerate()
+                    .map(|(idx, track)| {
+                        exporter
+                            .format_track_line(
+                                idx + 1,
+                                track,
+                                &app.export_catalog_dialog.config.fields,
+                            )
+                            .chars()
+                            .count()
                     })
                     .collect();
                 let layout = app

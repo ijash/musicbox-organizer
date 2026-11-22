@@ -299,6 +299,7 @@ impl Default for CatalogExportConfig {
 pub struct ComputedCatalogLayout {
     pub column_count: usize,
     pub column_width_pt: f32,
+    pub column_widths: Vec<f32>,
     pub row_height_pt: f32,
     pub computed_font_size_pt: f32,
     pub total_pages: usize,

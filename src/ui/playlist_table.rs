@@ -26,45 +26,61 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
     let mut new_title_val = None;
     let mut new_artist_val = None;
 
+    let total_width = ui.available_width().max(600.0);
+    let w_num = 32.0;
+    let rem = (total_width - w_num - 24.0).max(400.0);
+    let w_export = (rem * 0.22).round();
+    let w_title = (rem * 0.28).round();
+    let w_artist = (rem * 0.12).round();
+    let w_source = (rem - w_export - w_title - w_artist).max(80.0);
+
     egui::ScrollArea::both()
         .auto_shrink([false, false])
         .show(ui, |ui| {
             let row_height = 24.0;
-            let available_width = ui.available_width();
             let num_tracks = app.project.tracks.len();
 
             // Render table header
             ui.horizontal(|ui| {
-                ui.add_sized(
-                    [40.0, row_height],
-                    egui::Label::new(egui::RichText::new("#").strong()),
-                );
                 ui.allocate_ui_with_layout(
-                    [180.0, row_height].into(),
+                    [w_num, row_height].into(),
                     egui::Layout::left_to_right(egui::Align::Center),
                     |ui| {
-                        ui.label(egui::RichText::new("Export Filename").strong());
+                        ui.add(egui::Label::new(egui::RichText::new("#").strong()).truncate());
                     },
                 );
                 ui.allocate_ui_with_layout(
-                    [220.0, row_height].into(),
+                    [w_export, row_height].into(),
                     egui::Layout::left_to_right(egui::Align::Center),
                     |ui| {
-                        ui.label(egui::RichText::new("Title").strong());
+                        ui.add(
+                            egui::Label::new(egui::RichText::new("Export Filename").strong())
+                                .truncate(),
+                        );
                     },
                 );
                 ui.allocate_ui_with_layout(
-                    [180.0, row_height].into(),
+                    [w_title, row_height].into(),
                     egui::Layout::left_to_right(egui::Align::Center),
                     |ui| {
-                        ui.label(egui::RichText::new("Artist").strong());
+                        ui.add(egui::Label::new(egui::RichText::new("Title").strong()).truncate());
                     },
                 );
                 ui.allocate_ui_with_layout(
-                    [(available_width - 640.0).max(100.0), row_height].into(),
+                    [w_artist, row_height].into(),
                     egui::Layout::left_to_right(egui::Align::Center),
                     |ui| {
-                        ui.label(egui::RichText::new("Source File").strong());
+                        ui.add(egui::Label::new(egui::RichText::new("Artist").strong()).truncate());
+                    },
+                );
+                ui.allocate_ui_with_layout(
+                    [w_source, row_height].into(),
+                    egui::Layout::left_to_right(egui::Align::Center),
+                    |ui| {
+                        ui.add(
+                            egui::Label::new(egui::RichText::new("Source File").strong())
+                                .truncate(),
+                        );
                     },
                 );
             });
@@ -78,10 +94,13 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                 ui.horizontal(|ui| {
                     // Track Number column
                     let row_label = format!("{:02}", row_idx + 1);
-                    let num_resp = ui.add_sized(
-                        [40.0, row_height],
-                        egui::SelectableLabel::new(is_selected, row_label),
-                    );
+                    let num_resp = ui
+                        .allocate_ui_with_layout(
+                            [w_num, row_height].into(),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| ui.selectable_label(is_selected, row_label),
+                        )
+                        .inner;
 
                     if num_resp.clicked() {
                         if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
@@ -106,25 +125,25 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                         }
                     }
 
-                    // Export Filename column (left-aligned)
+                    // Export Filename column (left-aligned, truncated)
                     ui.allocate_ui_with_layout(
-                        [180.0, row_height].into(),
+                        [w_export, row_height].into(),
                         egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
                             ui.add(egui::Label::new(&export_filename).truncate());
                         },
                     );
 
-                    // Inline-editable Title column (left-aligned)
+                    // Inline-editable Title column (left-aligned, truncated)
                     let is_editing_title = app.editing_cell == Some((row_idx, TableColumn::Title));
                     let mut current_title = track.title.clone();
                     ui.allocate_ui_with_layout(
-                        [220.0, row_height].into(),
+                        [w_title, row_height].into(),
                         egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
                             if is_editing_title {
                                 let text_edit = egui::TextEdit::singleline(&mut current_title)
-                                    .desired_width(220.0);
+                                    .desired_width(w_title);
                                 let text_resp = ui.add(text_edit);
                                 if text_resp.lost_focus() {
                                     app.editing_cell = None;
@@ -137,25 +156,40 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                                 } else {
                                     &current_title
                                 };
-                                let label_resp = ui.selectable_label(false, display_title);
+                                let label_resp = ui.add(
+                                    egui::Label::new(display_title)
+                                        .truncate()
+                                        .sense(egui::Sense::click()),
+                                );
                                 if label_resp.double_clicked() {
                                     app.editing_cell = Some((row_idx, TableColumn::Title));
+                                } else if label_resp.clicked() {
+                                    if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
+                                        if is_selected {
+                                            app.selected_track_indices.remove(&row_idx);
+                                        } else {
+                                            app.selected_track_indices.insert(row_idx);
+                                        }
+                                    } else {
+                                        app.selected_track_indices.clear();
+                                        app.selected_track_indices.insert(row_idx);
+                                    }
                                 }
                             }
                         },
                     );
 
-                    // Inline-editable Artist column (left-aligned)
+                    // Inline-editable Artist column (left-aligned, truncated)
                     let is_editing_artist =
                         app.editing_cell == Some((row_idx, TableColumn::Artist));
                     let mut current_artist = track.artist.clone();
                     ui.allocate_ui_with_layout(
-                        [180.0, row_height].into(),
+                        [w_artist, row_height].into(),
                         egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
                             if is_editing_artist {
                                 let text_edit = egui::TextEdit::singleline(&mut current_artist)
-                                    .desired_width(180.0);
+                                    .desired_width(w_artist);
                                 let text_resp = ui.add(text_edit);
                                 if text_resp.lost_focus() {
                                     app.editing_cell = None;
@@ -168,17 +202,32 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                                 } else {
                                     &current_artist
                                 };
-                                let label_resp = ui.selectable_label(false, display_artist);
+                                let label_resp = ui.add(
+                                    egui::Label::new(display_artist)
+                                        .truncate()
+                                        .sense(egui::Sense::click()),
+                                );
                                 if label_resp.double_clicked() {
                                     app.editing_cell = Some((row_idx, TableColumn::Artist));
+                                } else if label_resp.clicked() {
+                                    if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
+                                        if is_selected {
+                                            app.selected_track_indices.remove(&row_idx);
+                                        } else {
+                                            app.selected_track_indices.insert(row_idx);
+                                        }
+                                    } else {
+                                        app.selected_track_indices.clear();
+                                        app.selected_track_indices.insert(row_idx);
+                                    }
                                 }
                             }
                         },
                     );
 
-                    // Source File column (left-aligned)
+                    // Source File column (left-aligned, truncated)
                     ui.allocate_ui_with_layout(
-                        [(available_width - 640.0).max(100.0), row_height].into(),
+                        [w_source, row_height].into(),
                         egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
                             ui.add(egui::Label::new(&track.file_path).truncate());

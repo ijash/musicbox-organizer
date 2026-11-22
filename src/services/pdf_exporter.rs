@@ -178,11 +178,22 @@ impl PdfCatalogExporter {
 
         // 4. Draw Tracks in Columns
         let cols = layout.column_count;
-        let col_width = layout.column_width_pt;
         let row_height = layout.row_height_pt;
         let font_size = layout.computed_font_size_pt;
 
         let tracks_per_col = tracks.len().div_ceil(cols);
+
+        let mut col_x = Vec::with_capacity(cols);
+        let mut cur_x = margin_pt;
+        for c_idx in 0..cols {
+            col_x.push(cur_x);
+            let w = layout
+                .column_widths
+                .get(c_idx)
+                .copied()
+                .unwrap_or(layout.column_width_pt);
+            cur_x += w + theme.column_gap;
+        }
 
         for (idx, _track) in tracks.iter().enumerate() {
             let col_idx = idx.checked_div(tracks_per_col).unwrap_or(0);
@@ -192,7 +203,12 @@ impl PdfCatalogExporter {
                 0
             };
 
-            let x = margin_pt + (col_idx as f32) * (col_width + theme.column_gap);
+            let x = col_x.get(col_idx).copied().unwrap_or(margin_pt);
+            let col_width = layout
+                .column_widths
+                .get(col_idx)
+                .copied()
+                .unwrap_or(layout.column_width_pt);
             let y = current_y + (row_idx as f32) * row_height;
 
             let line = &track_lines[idx];
@@ -238,7 +254,7 @@ impl PdfCatalogExporter {
         Ok(())
     }
 
-    fn format_track_line(
+    pub fn format_track_line(
         &self,
         index: usize,
         track: &OrganizerTrack,

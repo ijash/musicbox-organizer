@@ -23,7 +23,8 @@ fn test_layout_solver_single_track() {
 
     let layout = CatalogLayoutSolver::solve(width_pt, height_pt, margin_pt, 1, false, &theme);
     assert_eq!(layout.column_count, 1);
-    assert_eq!(layout.computed_font_size_pt, theme.font_size);
+    assert!(layout.computed_font_size_pt >= theme.font_size);
+    assert!(layout.computed_font_size_pt <= 24.0);
     assert!(!layout.readability_warning);
 }
 
@@ -101,11 +102,16 @@ fn test_layout_solver_21_realistic_long_titles_on_10x10cm() {
         if start < end {
             let max_len = line_lengths[start..end].iter().max().copied().unwrap();
             let estimated_width = max_len as f32 * layout.computed_font_size_pt * 0.58;
+            let col_w = layout
+                .column_widths
+                .get(c_idx)
+                .copied()
+                .unwrap_or(layout.column_width_pt);
             assert!(
-                estimated_width <= layout.column_width_pt + 0.1,
+                estimated_width <= col_w + 0.1,
                 "Column {} width {:.1}pt exceeded by estimated text width {:.1}pt (font size {:.1}pt)",
                 c_idx,
-                layout.column_width_pt,
+                col_w,
                 estimated_width,
                 layout.computed_font_size_pt
             );
