@@ -124,10 +124,9 @@ fn test_layout_solver_21_realistic_long_titles_on_10x10cm() {
 fn test_roboto_width_estimation_and_solve_with_line_widths() {
     use musicbox_organizer::services::measure_roboto_line_unit_width;
 
-    let s1 = "11. Tikusan Sawah";
+    let s1 = "11. Morning Light";
     let w1 = measure_roboto_line_unit_width(s1);
-    // Old uniform 0.58 width was 17 * 0.58 = 9.86
-    // Exact Roboto advance with 1.01 guard is ~8.2 - 8.6
+    // Exact Roboto advance with 1.01 guard is ~7.5 - 8.2
     assert!(w1 < 9.0);
     assert!(w1 > 7.0);
 
