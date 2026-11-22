@@ -88,3 +88,32 @@ fn test_real_mp3_trait_normalize_and_trim_methods() {
     let file = fs::File::open(&test_mp3).expect("open output mp3");
     let _decoder = rodio::Decoder::new(BufReader::new(file)).expect("valid mp3");
 }
+
+#[test]
+fn test_dsp_rejects_non_mp3_files() {
+    let dir = tempdir().expect("create temp dir");
+    let test_flac = dir.path().join("song.flac");
+    fs::write(&test_flac, b"fake flac content").expect("write fake flac");
+
+    let processor = NativeAudioProcessor::new();
+    let err = processor
+        .process_track(&test_flac, true, -45.0, true, -14.0)
+        .unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "Only MP3 audio files are supported for DSP editing"
+    );
+
+    let trait_proc: Box<dyn AudioProcessor> = Box::new(processor);
+    let norm_err = trait_proc.normalize_volume(&test_flac, -14.0).unwrap_err();
+    assert_eq!(
+        norm_err.to_string(),
+        "Only MP3 audio files are supported for DSP editing"
+    );
+
+    let trim_err = trait_proc.trim_silence(&test_flac, -45.0).unwrap_err();
+    assert_eq!(
+        trim_err.to_string(),
+        "Only MP3 audio files are supported for DSP editing"
+    );
+}

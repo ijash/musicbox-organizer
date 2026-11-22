@@ -85,12 +85,14 @@ impl NativeAudioProcessor {
         }
 
         // Verify MP3 extension
-        if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
-            if !ext.eq_ignore_ascii_case("mp3") {
-                return Ok(false);
-            }
-        } else {
-            return Ok(false);
+        let is_mp3 = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case("mp3"))
+            .unwrap_or(false);
+
+        if !is_mp3 {
+            return Err("Only MP3 audio files are supported for DSP editing".into());
         }
 
         // 1. Read existing ID3 tags verbatim before reading/writing audio
