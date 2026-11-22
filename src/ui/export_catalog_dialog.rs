@@ -41,14 +41,23 @@ impl ExportCatalogDialog {
     }
 
     pub fn compute_layout(&self, track_count: usize) -> ComputedCatalogLayout {
+        self.compute_layout_with_lengths(track_count, None)
+    }
+
+    pub fn compute_layout_with_lengths(
+        &self,
+        track_count: usize,
+        line_lengths: Option<&[usize]>,
+    ) -> ComputedCatalogLayout {
         let theme = CatalogThemeRegistry::get_theme(&self.config.theme_name);
-        CatalogLayoutSolver::solve(
+        CatalogLayoutSolver::solve_with_line_lengths(
             self.config.dimensions.width_pt(),
             self.config.dimensions.height_pt(),
             self.config.dimensions.margin_pt(),
             track_count,
             self.config.fields.header_title,
             &theme,
+            line_lengths,
         )
     }
 }
@@ -63,8 +72,8 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         viewport_id,
         egui::ViewportBuilder::default()
             .with_title("Export Catalog")
-            .with_inner_size([380.0, 520.0])
-            .with_min_inner_size([280.0, 320.0])
+            .with_inner_size([380.0, 560.0])
+            .with_min_inner_size([340.0, 440.0])
             .with_resizable(true),
         |ctx, _class| {
             if ctx.input(|i| i.viewport().close_requested()) {
@@ -83,10 +92,34 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
     egui::TopBottomPanel::bottom("export_catalog_bottom_panel")
         .resizable(false)
         .show(ctx, |ui| {
+            ui.add_space(4.0);
             // Live Layout Summary & Warning (Only for PDF format)
             if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
                 let track_count = app.project.tracks.len();
-                let layout = app.export_catalog_dialog.compute_layout(track_count);
+                let line_lengths: Vec<usize> = app
+                    .project
+                    .tracks
+                    .iter()
+                    .map(|t| {
+                        let mut len = 0;
+                        if app.export_catalog_dialog.config.fields.track_number {
+                            len += 4;
+                        }
+                        if app.export_catalog_dialog.config.fields.title {
+                            len += t.title.chars().count().max(10);
+                        }
+                        if app.export_catalog_dialog.config.fields.artist && !t.artist.is_empty() {
+                            len += t.artist.chars().count() + 3;
+                        }
+                        if app.export_catalog_dialog.config.fields.export_filename {
+                            len += 18;
+                        }
+                        len
+                    })
+                    .collect();
+                let layout = app
+                    .export_catalog_dialog
+                    .compute_layout_with_lengths(track_count, Some(&line_lengths));
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.label("Live Layout Summary:");
@@ -114,7 +147,7 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                 ui.colored_label(egui::Color32::RED, err);
             }
 
-            ui.add_space(4.0);
+            ui.add_space(6.0);
 
             // Action Buttons
             ui.horizontal(|ui| {
@@ -131,6 +164,7 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                     app.export_catalog_dialog.close();
                 }
             });
+            ui.add_space(4.0);
         });
 
     // 2. Scrollable Central Panel: Configuration Form
@@ -185,7 +219,7 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                     );
                     ui.checkbox(
                         &mut app.export_catalog_dialog.config.fields.export_filename,
-                        "Export Filename ([XXYY-filename.mp3])",
+                        "Export Filename (XXYY-filename.mp3)",
                     );
                     ui.checkbox(
                         &mut app.export_catalog_dialog.config.fields.header_title,

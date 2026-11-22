@@ -64,8 +64,8 @@ fn test_unified_catalog_exporter_txt_rtf_pdf() {
     assert!(txt_path.exists());
     let txt_content = fs::read_to_string(&txt_path).expect("read txt");
     assert!(txt_content.contains("=== My Text Catalog ==="));
-    assert!(txt_content.contains("01. First Track - Artist One ([0101-track1.mp3])"));
-    assert!(txt_content.contains("02. Second Track - Artist Two ([0102-track2.mp3])"));
+    assert!(txt_content.contains("01. First Track - Artist One (0101-track1.mp3)"));
+    assert!(txt_content.contains("02. Second Track - Artist Two (0102-track2.mp3)"));
 
     // 2. Rich Text Export
     let rtf_path = dir.path().join("catalog.rtf");

@@ -72,11 +72,11 @@ pub fn xxyy_to_track_index(xxyy: &str) -> Result<u32, String> {
     Ok(index)
 }
 
-/// Formats filename with XXYY prefix convention: [XXYY-filename.mp3]
-/// cite: spec.md FR-008
+/// Formats filename with XXYY prefix convention: XXYY-filename.mp3
+/// cite: Constitution v1.9.0 Principle IX
 pub fn format_export_filename(track_index: u32, original_filename: &str) -> Result<String, String> {
     let xxyy = track_index_to_xxyy(track_index)?;
-    Ok(format!("[{}-{}]", xxyy, original_filename))
+    Ok(format!("{}-{}", xxyy, original_filename))
 }
 
 #[cfg(test)]

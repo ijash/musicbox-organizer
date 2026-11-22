@@ -55,13 +55,21 @@ impl PdfCatalogExporter {
         let margin_pt = config.dimensions.margin_pt();
 
         let has_header = config.fields.header_title;
-        let layout = CatalogLayoutSolver::solve(
+        let track_lines: Vec<String> = tracks
+            .iter()
+            .enumerate()
+            .map(|(idx, track)| self.format_track_line(idx + 1, track, &config.fields))
+            .collect();
+        let line_lengths: Vec<usize> = track_lines.iter().map(|l| l.chars().count()).collect();
+
+        let layout = CatalogLayoutSolver::solve_with_line_lengths(
             width_pt,
             height_pt,
             margin_pt,
             tracks.len(),
             has_header,
             theme,
+            Some(&line_lengths),
         );
 
         let mut doc = Document::new();
@@ -176,7 +184,7 @@ impl PdfCatalogExporter {
 
         let tracks_per_col = tracks.len().div_ceil(cols);
 
-        for (idx, track) in tracks.iter().enumerate() {
+        for (idx, _track) in tracks.iter().enumerate() {
             let col_idx = idx.checked_div(tracks_per_col).unwrap_or(0);
             let row_idx = if tracks_per_col > 0 {
                 idx % tracks_per_col
@@ -187,9 +195,9 @@ impl PdfCatalogExporter {
             let x = margin_pt + (col_idx as f32) * (col_width + theme.column_gap);
             let y = current_y + (row_idx as f32) * row_height;
 
-            let line = self.format_track_line(idx + 1, track, &config.fields);
-            let approx_char_limit = ((col_width / (font_size * 0.52)) as usize).max(4);
-            let truncated_line = if line.chars().count() > approx_char_limit {
+            let line = &track_lines[idx];
+            let approx_char_limit = ((col_width / (font_size * 0.58)) as usize).max(4);
+            let text_to_draw = if font_size < 1.0 && line.chars().count() > approx_char_limit {
                 let mut s: String = line
                     .chars()
                     .take(approx_char_limit.saturating_sub(2))
@@ -197,14 +205,14 @@ impl PdfCatalogExporter {
                 s.push_str("..");
                 s
             } else {
-                line
+                line.clone()
             };
 
             surface.draw_text(
                 Point::from_xy(x, y + font_size),
                 ROBOTO_REGULAR.clone(),
                 font_size,
-                &truncated_line,
+                &text_to_draw,
                 false,
                 TextDirection::Auto,
             );

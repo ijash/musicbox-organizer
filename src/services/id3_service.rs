@@ -92,16 +92,33 @@ impl Id3Service {
             .ok_or_else(|| format!("Invalid path: {}", path.display()))?
             .to_string_lossy();
 
-        // Strip existing [XXYY-] prefix if present so we don't nest prefixes
-        let clean_filename = if filename.starts_with('[')
-            && filename.len() > 6
-            && filename.chars().nth(5) == Some('-')
-        {
-            if let Some(end_bracket) = filename.find(']') {
-                &filename[end_bracket + 1..]
+        // Strip existing [XXXX-] or XXXX- prefix if present so we don't nest prefixes
+        let clean_filename = if filename.starts_with('[') {
+            if filename.ends_with(']') {
+                let inner = &filename[1..filename.len() - 1];
+                if inner.len() >= 5
+                    && inner.as_bytes()[..4].iter().all(|b| b.is_ascii_uppercase())
+                    && inner.as_bytes()[4] == b'-'
+                {
+                    &inner[5..]
+                } else if let Some(dash) = inner.find('-') {
+                    &inner[dash + 1..]
+                } else {
+                    inner
+                }
+            } else if let Some(end_bracket) = filename.find(']') {
+                let rest = &filename[end_bracket + 1..];
+                rest.trim_start_matches('-')
             } else {
                 &filename
             }
+        } else if filename.len() >= 5
+            && filename.as_bytes()[..4]
+                .iter()
+                .all(|b| b.is_ascii_uppercase())
+            && filename.as_bytes()[4] == b'-'
+        {
+            &filename[5..]
         } else {
             &filename
         };

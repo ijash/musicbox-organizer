@@ -14,6 +14,27 @@ impl CatalogLayoutSolver {
         has_header: bool,
         theme: &CatalogTheme,
     ) -> ComputedCatalogLayout {
+        Self::solve_with_line_lengths(
+            width_pt,
+            height_pt,
+            margin_pt,
+            track_count,
+            has_header,
+            theme,
+            None,
+        )
+    }
+
+    /// Solves the optimal column count and font size to fit all tracks both vertically and horizontally.
+    pub fn solve_with_line_lengths(
+        width_pt: f32,
+        height_pt: f32,
+        margin_pt: f32,
+        track_count: usize,
+        has_header: bool,
+        theme: &CatalogTheme,
+        line_lengths: Option<&[usize]>,
+    ) -> ComputedCatalogLayout {
         let physical_width_cm = width_pt / 28.346_457;
         let physical_height_cm = height_pt / 28.346_457;
 
@@ -43,7 +64,7 @@ impl CatalogLayoutSolver {
 
         // Evaluate candidate column counts 1..=5
         let mut best_cols = 1;
-        let mut best_font_size = 3.0f32;
+        let mut best_font_size = 1.0f32;
         let mut best_row_height = 4.0f32;
         let mut best_col_width = canvas_width;
 
@@ -57,6 +78,9 @@ impl CatalogLayoutSolver {
             5
         };
 
+        // Conservative Roboto character width factor
+        const CHAR_WIDTH_FACTOR: f32 = 0.58;
+
         for cols in 1..=max_candidates {
             let total_gap = (cols - 1) as f32 * theme.column_gap;
             if canvas_width <= total_gap + 30.0 {
@@ -69,7 +93,27 @@ impl CatalogLayoutSolver {
 
             let rows_needed = track_count.div_ceil(cols);
             let row_h = canvas_height / (rows_needed as f32);
-            let target_font = (row_h / theme.line_height).min(theme.font_size);
+            let f_vert = row_h / theme.line_height;
+
+            let f_horiz = if let Some(lengths) = line_lengths {
+                let mut min_col_f = f32::MAX;
+                for c_idx in 0..cols {
+                    let start = c_idx * rows_needed;
+                    let end = ((c_idx + 1) * rows_needed).min(lengths.len());
+                    if start < end {
+                        let max_chars = lengths[start..end].iter().max().copied().unwrap_or(1);
+                        let col_f = col_width / (max_chars as f32 * CHAR_WIDTH_FACTOR).max(1.0);
+                        if col_f < min_col_f {
+                            min_col_f = col_f;
+                        }
+                    }
+                }
+                min_col_f
+            } else {
+                col_width / (30.0 * CHAR_WIDTH_FACTOR)
+            };
+
+            let target_font = f_vert.min(f_horiz).min(theme.font_size);
 
             if target_font > best_font_size || (target_font == best_font_size && cols < best_cols) {
                 best_font_size = target_font;
@@ -79,8 +123,8 @@ impl CatalogLayoutSolver {
             }
         }
 
-        // Floor font size at 2.5 pt to avoid complete zero/negative sizing
-        let computed_font_size_pt = best_font_size.max(2.5);
+        // Floor font size at 1.0 pt
+        let computed_font_size_pt = best_font_size.max(1.0);
         let readability_warning = computed_font_size_pt < 5.0;
 
         ComputedCatalogLayout {

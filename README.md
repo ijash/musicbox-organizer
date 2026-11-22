@@ -10,7 +10,7 @@ Lightweight, portable desktop MP3 playlist manager and ID3 tag editor designed f
 
 MusicBox Organizer is built specifically to solve playlist sorting issues on primitive audio hardware (car head units, portable USB/SD players, microcontrollers, and portable speakers). These devices sort files strictly using raw ASCII byte order rather than smart numerical or metadata sorting.
 
-The application automatically assigns a 4-letter base-26 prefix (`[AAAA-filename.mp3]` through `[ZZZZ-filename.mp3]`), guaranteeing exact sequential playback on any target player.
+The application automatically assigns a 4-letter base-26 prefix (`AAAA-filename.mp3` through `ZZZZ-filename.mp3`), guaranteeing exact sequential playback on any target player.
 
 ## Features
 
@@ -18,7 +18,7 @@ The application automatically assigns a 4-letter base-26 prefix (`[AAAA-filename
 - **Inline ID3 Editing**: Double-click to edit Title and Artist directly in the table.
 - **Save vs Export Separation**:
   - **Save Project (`.txt`)**: Persists playlist structure locally for future editing without modifying media.
-  - **Export Media**: Writes files with `[XXYY-filename.mp3]` naming directly to USB or SD cards.
+  - **Export Media**: Writes files with `XXYY-filename.mp3` naming directly to USB or SD cards.
 - **Device Detection**: Detects connected removable storage, capacity, free space, and filesystem type (FAT32/exFAT).
 - **Two-Step Reformat Confirmation**: Optional FAT32/exFAT format before export with an explicit confirmation dialog to prevent accidental data loss.
 - **Unified Printable Catalog Exporter**: Exports print-ready PDF catalogs with smart multi-column autofit, physical sizing (10×10 cm card, 12×12 cm CD cover, A6, A5, A4, or custom down to 1×1 cm), embedded Roboto typography, cut guidelines, and JSON visual themes, alongside Plain Text (`.txt`) and Rich Text (`.rtf`) formats.

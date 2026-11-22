@@ -58,7 +58,16 @@ impl CompatibilityService {
         let mut seen_prefixes = std::collections::HashSet::new();
         let mut has_prefix_collision = false;
         for name in &sorted_copy {
-            if name.len() > 5
+            if name.len() >= 5
+                && name.as_bytes()[..4].iter().all(|b| b.is_ascii_uppercase())
+                && name.as_bytes()[4] == b'-'
+            {
+                let prefix = &name[..4];
+                if !seen_prefixes.insert(prefix) {
+                    has_prefix_collision = true;
+                    break;
+                }
+            } else if name.len() > 5
                 && name.starts_with('[')
                 && let Some(hyphen) = name.find('-')
             {
@@ -83,9 +92,11 @@ impl CompatibilityService {
                 length_violations.push(name.clone());
             }
 
-            // Pattern check [XXYY-...]
-            let has_valid_prefix =
-                name.starts_with('[') && name.len() > 6 && name.chars().nth(5) == Some('-');
+            // Pattern check XXYY-... (Constitution v1.9.0) or legacy [XXYY-...]
+            let has_valid_prefix = (name.len() >= 5
+                && name.as_bytes()[..4].iter().all(|b| b.is_ascii_uppercase())
+                && name.as_bytes()[4] == b'-')
+                || (name.starts_with('[') && name.len() > 6 && name.chars().nth(5) == Some('-'));
             let has_valid_ext = name.ends_with(".mp3") || name.ends_with(".mp3]");
             if !has_valid_prefix || !has_valid_ext {
                 format_violations.push(name.clone());

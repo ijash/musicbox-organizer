@@ -199,7 +199,7 @@ fn test_export_catalog_toolbar_button_opens_dialog_full_app() {
 
     // Click toolbar button
     harness.get_by_label("📄 Export Catalog...").click();
-    harness.run();
+    harness.step();
 
     // Dialog state is open
     assert!(harness.state().export_catalog_dialog.is_open);

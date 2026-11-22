@@ -31,7 +31,7 @@ fn print_help() {
         "  - 'Save Project' persists project metadata (.txt) locally in current directory for editing."
     );
     println!(
-        "  - 'Export Playlist' writes audio files with [XXYY-filename.mp3] naming to removable media."
+        "  - 'Export Playlist' writes audio files with XXYY-filename.mp3 naming to removable media."
     );
 }
 

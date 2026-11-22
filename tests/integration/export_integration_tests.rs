@@ -106,8 +106,8 @@ fn test_end_to_end_export_workflow() {
     assert_eq!(job.status, ExportStatus::COMPLETED);
     assert_eq!(job.files_written, 2);
 
-    let file1 = dest_dir.path().join("[AAAA-first.mp3]");
-    let file2 = dest_dir.path().join("[AAAB-second.mp3]");
+    let file1 = dest_dir.path().join("AAAA-first.mp3");
+    let file2 = dest_dir.path().join("AAAB-second.mp3");
     assert!(file1.exists());
     assert!(file2.exists());
 }
@@ -147,7 +147,7 @@ fn test_reformat_and_export_workflow() {
     // Orphaned file was cleaned by reformat
     assert!(!orphan.exists());
     // Exported file exists
-    assert!(dest_dir.path().join("[AAAA-fresh.mp3]").exists());
+    assert!(dest_dir.path().join("AAAA-fresh.mp3").exists());
 }
 
 #[test]

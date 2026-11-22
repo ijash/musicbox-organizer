@@ -16,7 +16,9 @@ pub use export_catalog_dialog::{
     ExportCatalogDialog, render_export_catalog_contents, render_export_catalog_dialog,
 };
 pub use export_dialog::ExportDialog;
-pub use export_panel::ExportPanelState;
+pub use export_panel::{
+    ExportPanelState, render_export_confirm_contents, render_export_confirm_dialog,
+};
 pub use warnings::ReformatWarningDialog;
 
 #[derive(Debug, Clone)]
