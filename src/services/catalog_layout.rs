@@ -1,5 +1,22 @@
 use crate::models::{CatalogTheme, ComputedCatalogLayout};
 
+/// Estimated unit width (at 1.0 pt font size) for a character in Roboto.
+pub fn roboto_char_unit_width(c: char) -> f32 {
+    match c {
+        ' ' => 0.25,
+        'i' | 'l' | 'I' | '1' | '.' | ',' | ':' | ';' | '!' | '|' | '\'' | 't' | 'f' | 'r'
+        | 'j' => 0.28,
+        'A'..='Z' | 'm' | 'w' => 0.62,
+        _ => 0.48,
+    }
+}
+
+/// Estimated total unit width for a line of text in Roboto, including a 1.04 safety factor.
+pub fn estimate_roboto_line_unit_width(s: &str) -> f32 {
+    let raw_sum: f32 = s.chars().map(roboto_char_unit_width).sum();
+    raw_sum * 1.04
+}
+
 /// Pure layout solver for catalog pages.
 /// cite: data-model.md ComputedCatalogLayout, research.md §4
 pub struct CatalogLayoutSolver;
@@ -14,7 +31,7 @@ impl CatalogLayoutSolver {
         has_header: bool,
         theme: &CatalogTheme,
     ) -> ComputedCatalogLayout {
-        Self::solve_with_line_lengths(
+        Self::solve_with_line_widths(
             width_pt,
             height_pt,
             margin_pt,
@@ -25,7 +42,7 @@ impl CatalogLayoutSolver {
         )
     }
 
-    /// Solves the optimal column count and font size to fit all tracks both vertically and horizontally.
+    /// Solves the optimal column count and font size given character lengths, converting them to estimated unit widths.
     pub fn solve_with_line_lengths(
         width_pt: f32,
         height_pt: f32,
@@ -34,6 +51,30 @@ impl CatalogLayoutSolver {
         has_header: bool,
         theme: &CatalogTheme,
         line_lengths: Option<&[usize]>,
+    ) -> ComputedCatalogLayout {
+        let widths: Option<Vec<f32>> =
+            line_lengths.map(|lens| lens.iter().map(|&l| (l as f32) * 0.58).collect());
+        Self::solve_with_line_widths(
+            width_pt,
+            height_pt,
+            margin_pt,
+            track_count,
+            has_header,
+            theme,
+            widths.as_deref(),
+        )
+    }
+
+    /// Solves the optimal column count and font size to fit all tracks both vertically and horizontally
+    /// using measured Roboto unit widths per line.
+    pub fn solve_with_line_widths(
+        width_pt: f32,
+        height_pt: f32,
+        margin_pt: f32,
+        track_count: usize,
+        has_header: bool,
+        theme: &CatalogTheme,
+        line_widths: Option<&[f32]>,
     ) -> ComputedCatalogLayout {
         let physical_width_cm = width_pt / 28.346_457;
         let physical_height_cm = height_pt / 28.346_457;
@@ -80,8 +121,6 @@ impl CatalogLayoutSolver {
             5
         };
 
-        // Conservative Roboto character width factor
-        const CHAR_WIDTH_FACTOR: f32 = 0.58;
         // Maximum allowed autofit font size
         const MAX_AUTOFIT_FONT_SIZE: f32 = 24.0;
 
@@ -92,33 +131,39 @@ impl CatalogLayoutSolver {
             }
             let available_for_cols = canvas_width - total_gap;
             let rows_needed = track_count.div_ceil(cols);
-            let row_h = canvas_height / (rows_needed as f32);
-            let f_vert = row_h / theme.line_height;
 
-            // Determine max chars in each column
-            let mut max_col_chars = Vec::with_capacity(cols);
-            if let Some(lengths) = line_lengths {
+            // Reserve font_size * 0.25 bottom descender space so last row never touches bottom edge
+            let f_vert = (canvas_height / (rows_needed as f32 * theme.line_height + 0.25)).max(1.0);
+            let row_h = (canvas_height - f_vert * 0.25) / (rows_needed as f32);
+
+            // Determine max unit width in each column
+            let mut max_col_unit_widths = Vec::with_capacity(cols);
+            if let Some(widths) = line_widths {
                 for c_idx in 0..cols {
                     let start = c_idx * rows_needed;
-                    let end = ((c_idx + 1) * rows_needed).min(lengths.len());
-                    let max_c = if start < end {
-                        lengths[start..end].iter().max().copied().unwrap_or(1)
+                    let end = ((c_idx + 1) * rows_needed).min(widths.len());
+                    let max_w = if start < end {
+                        widths[start..end]
+                            .iter()
+                            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+                            .copied()
+                            .unwrap_or(15.0)
                     } else {
-                        1
+                        15.0
                     };
-                    max_col_chars.push(max_c.max(1));
+                    max_col_unit_widths.push(max_w.max(1.0));
                 }
             } else {
-                max_col_chars = vec![30; cols];
+                max_col_unit_widths = vec![15.0; cols];
             }
 
-            let sum_chars: usize = max_col_chars.iter().sum();
-            let total_chars = sum_chars.max(1) as f32;
+            let sum_widths: f32 = max_col_unit_widths.iter().sum();
+            let total_w = sum_widths.max(1.0);
 
-            // Weight column widths proportionally to max_chars_in_that_column
-            let mut col_widths: Vec<f32> = max_col_chars
+            // Weight column widths proportionally to max_unit_width in each column
+            let mut col_widths: Vec<f32> = max_col_unit_widths
                 .iter()
-                .map(|&c| (c as f32 / total_chars) * available_for_cols)
+                .map(|&w| (w / total_w) * available_for_cols)
                 .collect();
 
             // Enforce minimum column width of 25.0 pt to prevent pathological collapse
@@ -132,7 +177,6 @@ impl CatalogLayoutSolver {
             if adjusted {
                 let current_sum: f32 = col_widths.iter().sum();
                 if current_sum > available_for_cols {
-                    // Cannot fit with minimum width requirement
                     continue;
                 }
                 let ratio = available_for_cols / current_sum;
@@ -141,10 +185,10 @@ impl CatalogLayoutSolver {
                 }
             }
 
-            // Horizontal font limit for each column
+            // Horizontal font limit for each column: font_size <= col_width / unit_width
             let mut min_horiz_f = f32::MAX;
-            for (c_idx, &chars) in max_col_chars.iter().enumerate() {
-                let col_f = col_widths[c_idx] / (chars as f32 * CHAR_WIDTH_FACTOR).max(1.0);
+            for (c_idx, &unit_w) in max_col_unit_widths.iter().enumerate() {
+                let col_f = col_widths[c_idx] / unit_w.max(0.1);
                 if col_f < min_horiz_f {
                     min_horiz_f = col_f;
                 }

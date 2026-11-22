@@ -13,6 +13,7 @@ pub struct ExportCatalogDialog {
     pub is_open: bool,
     pub config: CatalogExportConfig,
     pub error_message: Option<String>,
+    pub last_viewport_height: f32,
 }
 
 impl Default for ExportCatalogDialog {
@@ -27,6 +28,7 @@ impl ExportCatalogDialog {
             is_open: false,
             config: CatalogExportConfig::default(),
             error_message: None,
+            last_viewport_height: 0.0,
         }
     }
 
@@ -50,14 +52,41 @@ impl ExportCatalogDialog {
         line_lengths: Option<&[usize]>,
     ) -> ComputedCatalogLayout {
         let theme = CatalogThemeRegistry::get_theme(&self.config.theme_name);
+        let content_margin = self
+            .config
+            .dimensions
+            .margin_pt()
+            .max(if self.config.cut_border { 4.5 } else { 2.0 });
         CatalogLayoutSolver::solve_with_line_lengths(
             self.config.dimensions.width_pt(),
             self.config.dimensions.height_pt(),
-            self.config.dimensions.margin_pt(),
+            content_margin,
             track_count,
             self.config.fields.header_title,
             &theme,
             line_lengths,
+        )
+    }
+
+    pub fn compute_layout_with_widths(
+        &self,
+        track_count: usize,
+        line_widths: Option<&[f32]>,
+    ) -> ComputedCatalogLayout {
+        let theme = CatalogThemeRegistry::get_theme(&self.config.theme_name);
+        let content_margin = self
+            .config
+            .dimensions
+            .margin_pt()
+            .max(if self.config.cut_border { 4.5 } else { 2.0 });
+        CatalogLayoutSolver::solve_with_line_widths(
+            self.config.dimensions.width_pt(),
+            self.config.dimensions.height_pt(),
+            content_margin,
+            track_count,
+            self.config.fields.header_title,
+            &theme,
+            line_widths,
         )
     }
 }
@@ -67,38 +96,14 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         return;
     }
 
-    let is_pdf = app.export_catalog_dialog.config.format == CatalogFormat::Pdf;
-    let has_warning_or_error = if is_pdf {
-        let track_count = app.project.tracks.len();
-        let organizer_tracks = convert_project_tracks(&app.project.tracks);
-        let exporter = crate::services::PdfCatalogExporter::new();
-        let line_lengths: Vec<usize> = organizer_tracks
-            .iter()
-            .enumerate()
-            .map(|(idx, track)| {
-                exporter
-                    .format_track_line(idx + 1, track, &app.export_catalog_dialog.config.fields)
-                    .chars()
-                    .count()
-            })
-            .collect();
-        let layout = app
-            .export_catalog_dialog
-            .compute_layout_with_lengths(track_count, Some(&line_lengths));
-        layout.readability_warning || app.export_catalog_dialog.error_message.is_some()
+    let initial_height = if app.export_catalog_dialog.last_viewport_height > 100.0 {
+        app.export_catalog_dialog.last_viewport_height
+    } else if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
+        520.0
     } else {
-        app.export_catalog_dialog.error_message.is_some()
+        290.0
     };
-
-    let dialog_size = if is_pdf {
-        if has_warning_or_error {
-            egui::vec2(360.0, 515.0)
-        } else {
-            egui::vec2(360.0, 485.0)
-        }
-    } else {
-        egui::vec2(360.0, 285.0)
-    };
+    let dialog_size = egui::vec2(360.0, initial_height);
 
     let parent_rect = ctx.input(|i| i.viewport().outer_rect).unwrap_or_else(|| {
         egui::Rect::from_min_size(egui::pos2(100.0, 100.0), egui::vec2(960.0, 680.0))
@@ -119,7 +124,6 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
             if ctx.input(|i| i.viewport().close_requested()) {
                 app.export_catalog_dialog.close();
             }
-            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(dialog_size));
             render_export_catalog_contents(app, ctx);
             if !app.export_catalog_dialog.is_open {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -130,265 +134,269 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
 
 pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context) {
     egui::CentralPanel::default().show(ctx, |ui| {
-        egui::ScrollArea::vertical()
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-                ui.label(format!(
-                    "Playlist: {} ({} tracks)",
-                    app.project.metadata.name,
-                    app.project.tracks.len()
-                ));
-                ui.add_space(6.0);
+        let content_res = ui.vertical(|ui| {
+            ui.label(format!(
+                "Playlist: {} ({} tracks)",
+                app.project.metadata.name,
+                app.project.tracks.len()
+            ));
+            ui.add_space(6.0);
 
-                // 1. Format Selection
-                ui.group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.label("Format:");
-                    ui.horizontal_wrapped(|ui| {
-                        ui.radio_value(
-                            &mut app.export_catalog_dialog.config.format,
-                            CatalogFormat::Pdf,
-                            "PDF",
-                        );
-                        ui.radio_value(
-                            &mut app.export_catalog_dialog.config.format,
-                            CatalogFormat::Txt,
-                            "Plain Text",
-                        );
-                        ui.radio_value(
-                            &mut app.export_catalog_dialog.config.format,
-                            CatalogFormat::Rtf,
-                            "Rich Text",
-                        );
-                    });
-                });
-
-                ui.add_space(4.0);
-
-                // 2. Universal Field Toggles
-                ui.group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.label("Fields to Include:");
-                    ui.checkbox(
-                        &mut app.export_catalog_dialog.config.fields.track_number,
-                        "Track Number (#)",
+            // 1. Format Selection
+            ui.group(|ui| {
+                ui.set_width(ui.available_width());
+                ui.label("Format:");
+                ui.horizontal_wrapped(|ui| {
+                    ui.radio_value(
+                        &mut app.export_catalog_dialog.config.format,
+                        CatalogFormat::Pdf,
+                        "PDF",
                     );
-                    ui.checkbox(&mut app.export_catalog_dialog.config.fields.title, "Title");
-                    ui.checkbox(
-                        &mut app.export_catalog_dialog.config.fields.artist,
-                        "Artist",
+                    ui.radio_value(
+                        &mut app.export_catalog_dialog.config.format,
+                        CatalogFormat::Txt,
+                        "Plain Text",
                     );
-                    ui.checkbox(
-                        &mut app.export_catalog_dialog.config.fields.export_filename,
-                        "Export Filename (XXYY-filename.mp3)",
-                    );
-                    ui.checkbox(
-                        &mut app.export_catalog_dialog.config.fields.header_title,
-                        "Header Title",
+                    ui.radio_value(
+                        &mut app.export_catalog_dialog.config.format,
+                        CatalogFormat::Rtf,
+                        "Rich Text",
                     );
                 });
+            });
 
-                ui.add_space(4.0);
+            ui.add_space(4.0);
 
-                // 3. PDF Page Sizing & Themes (Only for PDF format)
-                if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
-                    ui.group(|ui| {
-                        ui.set_width(ui.available_width());
-                        ui.label("Page Sizing & Layout:");
+            // 2. Universal Field Toggles
+            ui.group(|ui| {
+                ui.set_width(ui.available_width());
+                ui.label("Fields to Include:");
+                ui.checkbox(
+                    &mut app.export_catalog_dialog.config.fields.track_number,
+                    "Track Number (#)",
+                );
+                ui.checkbox(&mut app.export_catalog_dialog.config.fields.title, "Title");
+                ui.checkbox(
+                    &mut app.export_catalog_dialog.config.fields.artist,
+                    "Artist",
+                );
+                ui.checkbox(
+                    &mut app.export_catalog_dialog.config.fields.export_filename,
+                    "Export Filename (XXYY-filename.mp3)",
+                );
+                ui.checkbox(
+                    &mut app.export_catalog_dialog.config.fields.header_title,
+                    "Header Title",
+                );
+            });
 
-                        // Preset Dropdown
-                        let mut selected_preset =
-                            app.export_catalog_dialog.config.dimensions.preset;
-                        egui::ComboBox::from_label("Preset")
-                            .selected_text(selected_preset.display_name())
-                            .show_ui(ui, |ui| {
-                                for preset in CatalogPagePreset::all() {
-                                    ui.selectable_value(
-                                        &mut selected_preset,
-                                        *preset,
-                                        preset.display_name(),
-                                    );
-                                }
-                            });
+            ui.add_space(4.0);
 
-                        if selected_preset != app.export_catalog_dialog.config.dimensions.preset {
-                            app.export_catalog_dialog.config.dimensions.preset = selected_preset;
-                            if selected_preset != CatalogPagePreset::Custom {
-                                let (w_cm, h_cm) = selected_preset.dimensions_cm();
-                                let unit = app.export_catalog_dialog.config.dimensions.unit;
-                                app.export_catalog_dialog.config.dimensions.width =
-                                    unit.from_points(LengthUnit::Cm.to_points(w_cm));
-                                app.export_catalog_dialog.config.dimensions.height =
-                                    unit.from_points(LengthUnit::Cm.to_points(h_cm));
-                                app.export_catalog_dialog
-                                    .config
-                                    .dimensions
-                                    .clamp_dimensions();
-                            }
-                        }
+            // 3. PDF Page Sizing & Themes (Only for PDF format)
+            if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
+                ui.group(|ui| {
+                    ui.set_width(ui.available_width());
+                    ui.label("Page Sizing & Layout:");
 
-                        // Unit Selector
-                        let mut selected_unit = app.export_catalog_dialog.config.dimensions.unit;
-                        ui.horizontal_wrapped(|ui| {
-                            ui.label("Unit:");
-                            for unit in LengthUnit::all() {
-                                ui.radio_value(&mut selected_unit, *unit, unit.symbol());
+                    // Preset Dropdown
+                    let mut selected_preset =
+                        app.export_catalog_dialog.config.dimensions.preset;
+                    egui::ComboBox::from_label("Preset")
+                        .selected_text(selected_preset.display_name())
+                        .show_ui(ui, |ui| {
+                            for preset in CatalogPagePreset::all() {
+                                ui.selectable_value(
+                                    &mut selected_preset,
+                                    *preset,
+                                    preset.display_name(),
+                                );
                             }
                         });
-                        if selected_unit != app.export_catalog_dialog.config.dimensions.unit {
+
+                    if selected_preset != app.export_catalog_dialog.config.dimensions.preset {
+                        app.export_catalog_dialog.config.dimensions.preset = selected_preset;
+                        if selected_preset != CatalogPagePreset::Custom {
+                            let (w_cm, h_cm) = selected_preset.dimensions_cm();
+                            let unit = app.export_catalog_dialog.config.dimensions.unit;
+                            app.export_catalog_dialog.config.dimensions.width =
+                                unit.from_points(LengthUnit::Cm.to_points(w_cm));
+                            app.export_catalog_dialog.config.dimensions.height =
+                                unit.from_points(LengthUnit::Cm.to_points(h_cm));
                             app.export_catalog_dialog
                                 .config
                                 .dimensions
-                                .set_unit(selected_unit);
+                                .clamp_dimensions();
                         }
-
-                        // Width & Height numeric controls
-                        let prev_w = app.export_catalog_dialog.config.dimensions.width;
-                        let prev_h = app.export_catalog_dialog.config.dimensions.height;
-                        let unit_str = app.export_catalog_dialog.config.dimensions.unit.symbol();
-
-                        ui.horizontal_wrapped(|ui| {
-                            ui.label("Width:");
-                            ui.add(
-                                egui::DragValue::new(
-                                    &mut app.export_catalog_dialog.config.dimensions.width,
-                                )
-                                .speed(0.1)
-                                .suffix(format!(" {}", unit_str)),
-                            );
-                            ui.label("Height:");
-                            ui.add(
-                                egui::DragValue::new(
-                                    &mut app.export_catalog_dialog.config.dimensions.height,
-                                )
-                                .speed(0.1)
-                                .suffix(format!(" {}", unit_str)),
-                            );
-                        });
-
-                        if (app.export_catalog_dialog.config.dimensions.width - prev_w).abs()
-                            > 0.001
-                            || (app.export_catalog_dialog.config.dimensions.height - prev_h).abs()
-                                > 0.001
-                        {
-                            app.export_catalog_dialog.config.dimensions.preset =
-                                CatalogPagePreset::Custom;
-                        }
-                        app.export_catalog_dialog
-                            .config
-                            .dimensions
-                            .clamp_dimensions();
-
-                        // Margin control
-                        ui.horizontal_wrapped(|ui| {
-                            ui.label("Margin:");
-                            ui.add(
-                                egui::DragValue::new(
-                                    &mut app.export_catalog_dialog.config.dimensions.margin,
-                                )
-                                .speed(0.05)
-                                .suffix(format!(" {}", unit_str)),
-                            );
-                        });
-                        app.export_catalog_dialog
-                            .config
-                            .dimensions
-                            .clamp_dimensions();
-
-                        // Cut guidelines toggle
-                        ui.checkbox(
-                            &mut app.export_catalog_dialog.config.cut_border,
-                            "Cut Guidelines / Border",
-                        );
-
-                        // Theme selector (T022)
-                        let mut selected_theme =
-                            app.export_catalog_dialog.config.theme_name.clone();
-                        egui::ComboBox::from_label("Theme")
-                            .selected_text(&selected_theme)
-                            .show_ui(ui, |ui| {
-                                for theme_name in CatalogThemeRegistry::available_themes() {
-                                    ui.selectable_value(
-                                        &mut selected_theme,
-                                        theme_name.to_string(),
-                                        theme_name,
-                                    );
-                                }
-                            });
-                        if selected_theme != app.export_catalog_dialog.config.theme_name {
-                            app.export_catalog_dialog.config.theme_name = selected_theme;
-                        }
-                    });
-
-                    ui.add_space(4.0);
-
-                    // 4. Live Layout Summary & Warning (T019)
-                    let track_count = app.project.tracks.len();
-                    let organizer_tracks = convert_project_tracks(&app.project.tracks);
-                    let exporter = crate::services::PdfCatalogExporter::new();
-                    let line_lengths: Vec<usize> = organizer_tracks
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, track)| {
-                            exporter
-                                .format_track_line(
-                                    idx + 1,
-                                    track,
-                                    &app.export_catalog_dialog.config.fields,
-                                )
-                                .chars()
-                                .count()
-                        })
-                        .collect();
-                    let layout = app
-                        .export_catalog_dialog
-                        .compute_layout_with_lengths(track_count, Some(&line_lengths));
-                    ui.group(|ui| {
-                        ui.set_width(ui.available_width());
-                        ui.label("Live Layout Summary:");
-                        ui.label(format!(
-                            "Columns: {}  |  Font Size: {:.1} pt  |  Sheet: {:.1} × {:.1} cm",
-                            layout.column_count,
-                            layout.computed_font_size_pt,
-                            layout.physical_width_cm,
-                            layout.physical_height_cm
-                        ));
-
-                        if layout.readability_warning {
-                            ui.add_space(2.0);
-                            ui.colored_label(
-                                egui::Color32::RED,
-                                "⚠ Warning: Calculated font size is < 5.0 pt. Text may be illegible when printed.",
-                            );
-                        }
-                    });
-                }
-
-                // Error message display
-                if let Some(err) = &app.export_catalog_dialog.error_message {
-                    ui.add_space(4.0);
-                    ui.colored_label(egui::Color32::RED, err);
-                }
-
-                ui.add_space(6.0);
-
-                // Action Buttons
-                ui.horizontal(|ui| {
-                    let has_tracks = !app.project.tracks.is_empty();
-                    let has_fields = app.export_catalog_dialog.config.fields.is_valid();
-                    let can_export = has_tracks && has_fields;
-
-                    let export_btn = ui.add_enabled(can_export, egui::Button::new("Export..."));
-                    if export_btn.clicked() {
-                        trigger_catalog_export(app);
                     }
 
-                    if ui.button("Cancel").clicked() {
-                        app.export_catalog_dialog.close();
+                    // Unit Selector
+                    let mut selected_unit = app.export_catalog_dialog.config.dimensions.unit;
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label("Unit:");
+                        for unit in LengthUnit::all() {
+                            ui.radio_value(&mut selected_unit, *unit, unit.symbol());
+                        }
+                    });
+                    if selected_unit != app.export_catalog_dialog.config.dimensions.unit {
+                        app.export_catalog_dialog
+                            .config
+                            .dimensions
+                            .set_unit(selected_unit);
+                    }
+
+                    // Width & Height numeric controls
+                    let prev_w = app.export_catalog_dialog.config.dimensions.width;
+                    let prev_h = app.export_catalog_dialog.config.dimensions.height;
+                    let unit_str = app.export_catalog_dialog.config.dimensions.unit.symbol();
+
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label("Width:");
+                        ui.add(
+                            egui::DragValue::new(
+                                &mut app.export_catalog_dialog.config.dimensions.width,
+                            )
+                            .speed(0.1)
+                            .suffix(format!(" {}", unit_str)),
+                        );
+                        ui.label("Height:");
+                        ui.add(
+                            egui::DragValue::new(
+                                &mut app.export_catalog_dialog.config.dimensions.height,
+                            )
+                            .speed(0.1)
+                            .suffix(format!(" {}", unit_str)),
+                        );
+                    });
+
+                    if (app.export_catalog_dialog.config.dimensions.width - prev_w).abs()
+                        > 0.001
+                        || (app.export_catalog_dialog.config.dimensions.height - prev_h).abs()
+                            > 0.001
+                    {
+                        app.export_catalog_dialog.config.dimensions.preset =
+                            CatalogPagePreset::Custom;
+                    }
+                    app.export_catalog_dialog
+                        .config
+                        .dimensions
+                        .clamp_dimensions();
+
+                    // Margin control
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label("Margin:");
+                        ui.add(
+                            egui::DragValue::new(
+                                &mut app.export_catalog_dialog.config.dimensions.margin,
+                            )
+                            .speed(0.05)
+                            .suffix(format!(" {}", unit_str)),
+                        );
+                    });
+                    app.export_catalog_dialog
+                        .config
+                        .dimensions
+                        .clamp_dimensions();
+
+                    // Cut guidelines toggle
+                    ui.checkbox(
+                        &mut app.export_catalog_dialog.config.cut_border,
+                        "Cut Guidelines / Border",
+                    );
+
+                    // Theme selector (T022)
+                    let mut selected_theme =
+                        app.export_catalog_dialog.config.theme_name.clone();
+                    egui::ComboBox::from_label("Theme")
+                        .selected_text(&selected_theme)
+                        .show_ui(ui, |ui| {
+                            for theme_name in CatalogThemeRegistry::available_themes() {
+                                ui.selectable_value(
+                                    &mut selected_theme,
+                                    theme_name.to_string(),
+                                    theme_name,
+                                );
+                            }
+                        });
+                    if selected_theme != app.export_catalog_dialog.config.theme_name {
+                        app.export_catalog_dialog.config.theme_name = selected_theme;
                     }
                 });
+
                 ui.add_space(4.0);
+
+                // 4. Live Layout Summary & Warning (T019)
+                let track_count = app.project.tracks.len();
+                let organizer_tracks = convert_project_tracks(&app.project.tracks);
+                let exporter = crate::services::PdfCatalogExporter::new();
+                let line_widths: Vec<f32> = organizer_tracks
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, track)| {
+                        crate::services::catalog_layout::estimate_roboto_line_unit_width(
+                            &exporter.format_track_line(
+                                idx + 1,
+                                track,
+                                &app.export_catalog_dialog.config.fields,
+                            ),
+                        )
+                    })
+                    .collect();
+                let layout = app
+                    .export_catalog_dialog
+                    .compute_layout_with_widths(track_count, Some(&line_widths));
+                ui.group(|ui| {
+                    ui.set_width(ui.available_width());
+                    ui.label("Live Layout Summary:");
+                    ui.label(format!(
+                        "Columns: {}  |  Font Size: {:.1} pt  |  Sheet: {:.1} × {:.1} cm",
+                        layout.column_count,
+                        layout.computed_font_size_pt,
+                        layout.physical_width_cm,
+                        layout.physical_height_cm
+                    ));
+
+                    if layout.readability_warning {
+                        ui.add_space(2.0);
+                        ui.colored_label(
+                            egui::Color32::RED,
+                            "⚠ Warning: Calculated font size is < 5.0 pt. Text may be illegible when printed.",
+                        );
+                    }
+                });
+            }
+
+            // Error message display
+            if let Some(err) = &app.export_catalog_dialog.error_message {
+                ui.add_space(4.0);
+                ui.colored_label(egui::Color32::RED, err);
+            }
+
+            ui.add_space(6.0);
+
+            // Action Buttons
+            ui.horizontal(|ui| {
+                let has_tracks = !app.project.tracks.is_empty();
+                let has_fields = app.export_catalog_dialog.config.fields.is_valid();
+                let can_export = has_tracks && has_fields;
+
+                let export_btn = ui.add_enabled(can_export, egui::Button::new("Export..."));
+                if export_btn.clicked() {
+                    trigger_catalog_export(app);
+                }
+
+                if ui.button("Cancel").clicked() {
+                    app.export_catalog_dialog.close();
+                }
             });
+            ui.add_space(4.0);
+        });
+
+        let content_h = content_res.response.rect.height();
+        let target_h = (content_h + 18.0).ceil().max(200.0);
+        if (app.export_catalog_dialog.last_viewport_height - target_h).abs() > 2.0 {
+            app.export_catalog_dialog.last_viewport_height = target_h;
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::vec2(360.0, target_h)));
+        }
     });
 }
 

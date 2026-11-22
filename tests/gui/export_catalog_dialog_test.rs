@@ -231,6 +231,12 @@ fn test_export_catalog_format_switch_resizes_viewport() {
 
     harness.step();
     assert!(harness.state().export_catalog_dialog.is_open);
+    let pdf_height = harness.state().export_catalog_dialog.last_viewport_height;
+    assert!(
+        pdf_height > 400.0,
+        "PDF height should be > 400px, was {}",
+        pdf_height
+    );
 
     // Switch format to Plain Text
     harness.state_mut().export_catalog_dialog.config.format = CatalogFormat::Txt;
@@ -238,6 +244,12 @@ fn test_export_catalog_format_switch_resizes_viewport() {
     assert_eq!(
         harness.state().export_catalog_dialog.config.format,
         CatalogFormat::Txt
+    );
+    let txt_height = harness.state().export_catalog_dialog.last_viewport_height;
+    assert!(
+        txt_height < 320.0,
+        "Plain Text height should shrink below 320px, was {}",
+        txt_height
     );
 
     // Switch format to Rich Text
@@ -247,4 +259,5 @@ fn test_export_catalog_format_switch_resizes_viewport() {
         harness.state().export_catalog_dialog.config.format,
         CatalogFormat::Rtf
     );
+    assert!(harness.state().export_catalog_dialog.last_viewport_height < 320.0);
 }

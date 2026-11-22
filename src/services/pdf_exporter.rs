@@ -53,6 +53,7 @@ impl PdfCatalogExporter {
         let width_pt = config.dimensions.width_pt();
         let height_pt = config.dimensions.height_pt();
         let margin_pt = config.dimensions.margin_pt();
+        let content_margin = margin_pt.max(if config.cut_border { 4.5 } else { 2.0 });
 
         let has_header = config.fields.header_title;
         let track_lines: Vec<String> = tracks
@@ -60,16 +61,19 @@ impl PdfCatalogExporter {
             .enumerate()
             .map(|(idx, track)| self.format_track_line(idx + 1, track, &config.fields))
             .collect();
-        let line_lengths: Vec<usize> = track_lines.iter().map(|l| l.chars().count()).collect();
+        let line_widths: Vec<f32> = track_lines
+            .iter()
+            .map(|l| crate::services::catalog_layout::estimate_roboto_line_unit_width(l))
+            .collect();
 
-        let layout = CatalogLayoutSolver::solve_with_line_lengths(
+        let layout = CatalogLayoutSolver::solve_with_line_widths(
             width_pt,
             height_pt,
-            margin_pt,
+            content_margin,
             tracks.len(),
             has_header,
             theme,
-            Some(&line_lengths),
+            Some(&line_widths),
         );
 
         let mut doc = Document::new();
@@ -114,7 +118,7 @@ impl PdfCatalogExporter {
             surface.set_stroke(Some(border_stroke));
 
             let mut border_path = PathBuilder::new();
-            let b_inset = (margin_pt / 2.0).max(2.0);
+            let b_inset = 0.5;
             if let Some(r) =
                 Rect::from_ltrb(b_inset, b_inset, width_pt - b_inset, height_pt - b_inset)
             {
@@ -127,7 +131,7 @@ impl PdfCatalogExporter {
         }
 
         // 3. Draw Header Title if enabled
-        let mut current_y = margin_pt;
+        let mut current_y = content_margin;
         let font_rgb = RgbColor::new(
             theme.font_color[0],
             theme.font_color[1],
@@ -143,7 +147,7 @@ impl PdfCatalogExporter {
             let header_text = playlist_title.unwrap_or("Playlist Catalog");
             let header_font_size = theme.header_font_size;
             surface.draw_text(
-                Point::from_xy(margin_pt, current_y + header_font_size),
+                Point::from_xy(content_margin, current_y + header_font_size * 0.82),
                 ROBOTO_BOLD.clone(),
                 header_font_size,
                 header_text,
@@ -166,8 +170,8 @@ impl PdfCatalogExporter {
             surface.set_stroke(Some(div_stroke));
 
             let mut div_path = PathBuilder::new();
-            div_path.move_to(margin_pt, current_y);
-            div_path.line_to(width_pt - margin_pt, current_y);
+            div_path.move_to(content_margin, current_y);
+            div_path.line_to(width_pt - content_margin, current_y);
             if let Some(path) = div_path.finish() {
                 surface.draw_path(&path);
             }
@@ -184,7 +188,7 @@ impl PdfCatalogExporter {
         let tracks_per_col = tracks.len().div_ceil(cols);
 
         let mut col_x = Vec::with_capacity(cols);
-        let mut cur_x = margin_pt;
+        let mut cur_x = content_margin;
         for c_idx in 0..cols {
             col_x.push(cur_x);
             let w = layout
@@ -203,7 +207,7 @@ impl PdfCatalogExporter {
                 0
             };
 
-            let x = col_x.get(col_idx).copied().unwrap_or(margin_pt);
+            let x = col_x.get(col_idx).copied().unwrap_or(content_margin);
             let col_width = layout
                 .column_widths
                 .get(col_idx)
@@ -212,8 +216,9 @@ impl PdfCatalogExporter {
             let y = current_y + (row_idx as f32) * row_height;
 
             let line = &track_lines[idx];
-            let approx_char_limit = ((col_width / (font_size * 0.58)) as usize).max(4);
-            let text_to_draw = if font_size < 1.0 && line.chars().count() > approx_char_limit {
+            let line_unit_w = line_widths[idx];
+            let text_to_draw = if font_size < 1.0 && (line_unit_w * font_size) > col_width {
+                let approx_char_limit = ((col_width / (font_size * 0.48)) as usize).max(4);
                 let mut s: String = line
                     .chars()
                     .take(approx_char_limit.saturating_sub(2))
@@ -225,7 +230,7 @@ impl PdfCatalogExporter {
             };
 
             surface.draw_text(
-                Point::from_xy(x, y + font_size),
+                Point::from_xy(x, y + font_size * 0.82),
                 ROBOTO_REGULAR.clone(),
                 font_size,
                 &text_to_draw,

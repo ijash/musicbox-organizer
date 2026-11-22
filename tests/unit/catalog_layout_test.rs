@@ -119,3 +119,38 @@ fn test_layout_solver_21_realistic_long_titles_on_10x10cm() {
     }
     assert!(layout.computed_font_size_pt >= 1.0);
 }
+
+#[test]
+fn test_roboto_width_estimation_and_solve_with_line_widths() {
+    use musicbox_organizer::services::estimate_roboto_line_unit_width;
+
+    let s1 = "11. Tikusan Sawah";
+    let w1 = estimate_roboto_line_unit_width(s1);
+    // Old uniform 0.58 width was 17 * 0.58 = 9.86
+    // New estimate should be ~7.2 - 8.0, eliminating ~25% wasted whitespace
+    assert!(w1 < 8.2);
+    assert!(w1 > 6.5);
+
+    let theme = CatalogTheme::default();
+    let width_pt = LengthUnit::Cm.to_points(10.0);
+    let height_pt = LengthUnit::Cm.to_points(10.0);
+    let margin_pt = LengthUnit::Cm.to_points(0.5);
+
+    let titles = [s1, "01. Short", "02. Another Track With Moderate Length"];
+    let line_widths: Vec<f32> = titles
+        .iter()
+        .map(|s| estimate_roboto_line_unit_width(s))
+        .collect();
+
+    let layout = CatalogLayoutSolver::solve_with_line_widths(
+        width_pt,
+        height_pt,
+        margin_pt,
+        titles.len(),
+        false,
+        &theme,
+        Some(&line_widths),
+    );
+    assert_eq!(layout.column_count, 1);
+    assert!(layout.computed_font_size_pt >= 5.0);
+}

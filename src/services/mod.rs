@@ -20,7 +20,9 @@ pub use audio_editing::{
 };
 pub use audio_player::AudioPreviewPlayer;
 pub use catalog_exporter::CatalogExportService;
-pub use catalog_layout::CatalogLayoutSolver;
+pub use catalog_layout::{
+    CatalogLayoutSolver, estimate_roboto_line_unit_width, roboto_char_unit_width,
+};
 pub use catalog_theme::CatalogThemeRegistry;
 pub use compatibility::CompatibilityService;
 pub use device_manager::{DeviceManager, create_device_manager};
