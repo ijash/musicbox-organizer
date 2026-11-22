@@ -133,9 +133,9 @@ pub fn render_export_confirm_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         egui::Rect::from_min_size(egui::pos2(100.0, 100.0), egui::vec2(960.0, 680.0))
     });
     let dialog_size = if is_reformat {
-        egui::vec2(360.0, 260.0)
+        egui::vec2(360.0, 210.0)
     } else {
-        egui::vec2(340.0, 165.0)
+        egui::vec2(340.0, 118.0)
     };
     let pos = parent_rect.center() - dialog_size / 2.0;
 
@@ -198,9 +198,6 @@ pub fn render_export_confirm_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                     ))
                     .small(),
                 );
-                ui.add_space(4.0);
-            } else {
-                ui.strong("Confirm Export to Removable Media");
                 ui.add_space(4.0);
             }
 

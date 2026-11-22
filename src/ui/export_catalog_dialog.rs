@@ -67,10 +67,42 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
         return;
     }
 
+    let is_pdf = app.export_catalog_dialog.config.format == CatalogFormat::Pdf;
+    let has_warning_or_error = if is_pdf {
+        let track_count = app.project.tracks.len();
+        let organizer_tracks = convert_project_tracks(&app.project.tracks);
+        let exporter = crate::services::PdfCatalogExporter::new();
+        let line_lengths: Vec<usize> = organizer_tracks
+            .iter()
+            .enumerate()
+            .map(|(idx, track)| {
+                exporter
+                    .format_track_line(idx + 1, track, &app.export_catalog_dialog.config.fields)
+                    .chars()
+                    .count()
+            })
+            .collect();
+        let layout = app
+            .export_catalog_dialog
+            .compute_layout_with_lengths(track_count, Some(&line_lengths));
+        layout.readability_warning || app.export_catalog_dialog.error_message.is_some()
+    } else {
+        app.export_catalog_dialog.error_message.is_some()
+    };
+
+    let dialog_size = if is_pdf {
+        if has_warning_or_error {
+            egui::vec2(360.0, 515.0)
+        } else {
+            egui::vec2(360.0, 485.0)
+        }
+    } else {
+        egui::vec2(360.0, 285.0)
+    };
+
     let parent_rect = ctx.input(|i| i.viewport().outer_rect).unwrap_or_else(|| {
         egui::Rect::from_min_size(egui::pos2(100.0, 100.0), egui::vec2(960.0, 680.0))
     });
-    let dialog_size = egui::vec2(370.0, 595.0);
     let pos = parent_rect.center() - dialog_size / 2.0;
 
     let viewport_id = egui::ViewportId::from_hash_of("export_catalog_viewport");
@@ -96,81 +128,6 @@ pub fn render_export_catalog_dialog(app: &mut MusicBoxApp, ctx: &egui::Context) 
 }
 
 pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context) {
-    // 1. Pinned Bottom Panel: Live Layout Summary, Warning, Error & Action Buttons
-    egui::TopBottomPanel::bottom("export_catalog_bottom_panel")
-        .resizable(false)
-        .show(ctx, |ui| {
-            ui.add_space(4.0);
-            // Live Layout Summary & Warning (Only for PDF format)
-            if app.export_catalog_dialog.config.format == CatalogFormat::Pdf {
-                let track_count = app.project.tracks.len();
-                let organizer_tracks = convert_project_tracks(&app.project.tracks);
-                let exporter = crate::services::PdfCatalogExporter::new();
-                let line_lengths: Vec<usize> = organizer_tracks
-                    .iter()
-                    .enumerate()
-                    .map(|(idx, track)| {
-                        exporter
-                            .format_track_line(
-                                idx + 1,
-                                track,
-                                &app.export_catalog_dialog.config.fields,
-                            )
-                            .chars()
-                            .count()
-                    })
-                    .collect();
-                let layout = app
-                    .export_catalog_dialog
-                    .compute_layout_with_lengths(track_count, Some(&line_lengths));
-                ui.group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.label("Live Layout Summary:");
-                    ui.label(format!(
-                        "Columns: {}  |  Font Size: {:.1} pt  |  Sheet: {:.1} × {:.1} cm",
-                        layout.column_count,
-                        layout.computed_font_size_pt,
-                        layout.physical_width_cm,
-                        layout.physical_height_cm
-                    ));
-
-                    if layout.readability_warning {
-                        ui.add_space(2.0);
-                        ui.colored_label(
-                            egui::Color32::RED,
-                            "⚠ Warning: Calculated font size is < 5.0 pt. Text may be illegible when printed.",
-                        );
-                    }
-                });
-            }
-
-            // Error message display
-            if let Some(err) = &app.export_catalog_dialog.error_message {
-                ui.add_space(2.0);
-                ui.colored_label(egui::Color32::RED, err);
-            }
-
-            ui.add_space(6.0);
-
-            // Action Buttons
-            ui.horizontal(|ui| {
-                let has_tracks = !app.project.tracks.is_empty();
-                let has_fields = app.export_catalog_dialog.config.fields.is_valid();
-                let can_export = has_tracks && has_fields;
-
-                let export_btn = ui.add_enabled(can_export, egui::Button::new("Export..."));
-                if export_btn.clicked() {
-                    trigger_catalog_export(app);
-                }
-
-                if ui.button("Cancel").clicked() {
-                    app.export_catalog_dialog.close();
-                }
-            });
-            ui.add_space(4.0);
-        });
-
-    // 2. Scrollable Central Panel: Configuration Form
     egui::CentralPanel::default().show(ctx, |ui| {
         egui::ScrollArea::vertical()
             .auto_shrink([false, false])
@@ -361,7 +318,75 @@ pub fn render_export_catalog_contents(app: &mut MusicBoxApp, ctx: &egui::Context
                             app.export_catalog_dialog.config.theme_name = selected_theme;
                         }
                     });
+
+                    ui.add_space(4.0);
+
+                    // 4. Live Layout Summary & Warning (T019)
+                    let track_count = app.project.tracks.len();
+                    let organizer_tracks = convert_project_tracks(&app.project.tracks);
+                    let exporter = crate::services::PdfCatalogExporter::new();
+                    let line_lengths: Vec<usize> = organizer_tracks
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, track)| {
+                            exporter
+                                .format_track_line(
+                                    idx + 1,
+                                    track,
+                                    &app.export_catalog_dialog.config.fields,
+                                )
+                                .chars()
+                                .count()
+                        })
+                        .collect();
+                    let layout = app
+                        .export_catalog_dialog
+                        .compute_layout_with_lengths(track_count, Some(&line_lengths));
+                    ui.group(|ui| {
+                        ui.set_width(ui.available_width());
+                        ui.label("Live Layout Summary:");
+                        ui.label(format!(
+                            "Columns: {}  |  Font Size: {:.1} pt  |  Sheet: {:.1} × {:.1} cm",
+                            layout.column_count,
+                            layout.computed_font_size_pt,
+                            layout.physical_width_cm,
+                            layout.physical_height_cm
+                        ));
+
+                        if layout.readability_warning {
+                            ui.add_space(2.0);
+                            ui.colored_label(
+                                egui::Color32::RED,
+                                "⚠ Warning: Calculated font size is < 5.0 pt. Text may be illegible when printed.",
+                            );
+                        }
+                    });
                 }
+
+                // Error message display
+                if let Some(err) = &app.export_catalog_dialog.error_message {
+                    ui.add_space(4.0);
+                    ui.colored_label(egui::Color32::RED, err);
+                }
+
+                ui.add_space(6.0);
+
+                // Action Buttons
+                ui.horizontal(|ui| {
+                    let has_tracks = !app.project.tracks.is_empty();
+                    let has_fields = app.export_catalog_dialog.config.fields.is_valid();
+                    let can_export = has_tracks && has_fields;
+
+                    let export_btn = ui.add_enabled(can_export, egui::Button::new("Export..."));
+                    if export_btn.clicked() {
+                        trigger_catalog_export(app);
+                    }
+
+                    if ui.button("Cancel").clicked() {
+                        app.export_catalog_dialog.close();
+                    }
+                });
+                ui.add_space(4.0);
             });
     });
 }

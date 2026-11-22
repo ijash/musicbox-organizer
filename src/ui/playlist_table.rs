@@ -1,5 +1,6 @@
 use crate::models::ProjectTrack;
 use crate::ui::app::{MusicBoxApp, TableColumn};
+use egui_extras::{Column, TableBuilder};
 use std::path::Path;
 
 pub fn get_export_filename(track: &ProjectTrack) -> String {
@@ -26,83 +27,47 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
     let mut new_title_val = None;
     let mut new_artist_val = None;
 
-    let total_width = ui.available_width().max(600.0);
-    let w_num = 32.0;
-    let rem = (total_width - w_num - 24.0).max(400.0);
-    let w_export = (rem * 0.22).round();
-    let w_title = (rem * 0.28).round();
-    let w_artist = (rem * 0.12).round();
-    let w_source = (rem - w_export - w_title - w_artist).max(80.0);
+    let num_tracks = app.project.tracks.len();
 
-    egui::ScrollArea::both()
-        .auto_shrink([false, false])
-        .show(ui, |ui| {
-            let row_height = 24.0;
-            let num_tracks = app.project.tracks.len();
-
-            // Render table header
-            ui.horizontal(|ui| {
-                ui.allocate_ui_with_layout(
-                    [w_num, row_height].into(),
-                    egui::Layout::left_to_right(egui::Align::Center),
-                    |ui| {
-                        ui.add(egui::Label::new(egui::RichText::new("#").strong()).truncate());
-                    },
-                );
-                ui.allocate_ui_with_layout(
-                    [w_export, row_height].into(),
-                    egui::Layout::left_to_right(egui::Align::Center),
-                    |ui| {
-                        ui.add(
-                            egui::Label::new(egui::RichText::new("Export Filename").strong())
-                                .truncate(),
-                        );
-                    },
-                );
-                ui.allocate_ui_with_layout(
-                    [w_title, row_height].into(),
-                    egui::Layout::left_to_right(egui::Align::Center),
-                    |ui| {
-                        ui.add(egui::Label::new(egui::RichText::new("Title").strong()).truncate());
-                    },
-                );
-                ui.allocate_ui_with_layout(
-                    [w_artist, row_height].into(),
-                    egui::Layout::left_to_right(egui::Align::Center),
-                    |ui| {
-                        ui.add(egui::Label::new(egui::RichText::new("Artist").strong()).truncate());
-                    },
-                );
-                ui.allocate_ui_with_layout(
-                    [w_source, row_height].into(),
-                    egui::Layout::left_to_right(egui::Align::Center),
-                    |ui| {
-                        ui.add(
-                            egui::Label::new(egui::RichText::new("Source File").strong())
-                                .truncate(),
-                        );
-                    },
-                );
+    TableBuilder::new(ui)
+        .striped(true)
+        .resizable(true)
+        .vscroll(true)
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .column(Column::exact(32.0))
+        .column(Column::initial(190.0).at_least(100.0).clip(true))
+        .column(Column::initial(180.0).at_least(100.0).clip(true))
+        .column(Column::initial(95.0).at_least(60.0).clip(true))
+        .column(Column::remainder().at_least(120.0).clip(true))
+        .header(22.0, |mut header| {
+            header.col(|ui| {
+                ui.strong("#");
             });
-            ui.separator();
-
-            for row_idx in 0..num_tracks {
+            header.col(|ui| {
+                ui.strong("Export Filename");
+            });
+            header.col(|ui| {
+                ui.strong("Title");
+            });
+            header.col(|ui| {
+                ui.strong("Artist");
+            });
+            header.col(|ui| {
+                ui.strong("Source File");
+            });
+        })
+        .body(|body| {
+            body.rows(22.0, num_tracks, |mut row| {
+                let row_idx = row.index();
                 let is_selected = app.selected_track_indices.contains(&row_idx);
                 let track = &app.project.tracks[row_idx];
                 let export_filename = get_export_filename(track);
 
-                ui.horizontal(|ui| {
-                    // Track Number column
+                // Col 1: #
+                row.col(|ui| {
                     let row_label = format!("{:02}", row_idx + 1);
-                    let num_resp = ui
-                        .allocate_ui_with_layout(
-                            [w_num, row_height].into(),
-                            egui::Layout::left_to_right(egui::Align::Center),
-                            |ui| ui.selectable_label(is_selected, row_label),
-                        )
-                        .inner;
-
-                    if num_resp.clicked() {
+                    let resp = ui.selectable_label(is_selected, row_label);
+                    if resp.clicked() {
                         if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
                             if is_selected {
                                 app.selected_track_indices.remove(&row_idx);
@@ -124,117 +89,92 @@ pub fn render_playlist_table(app: &mut MusicBoxApp, ui: &mut egui::Ui) {
                             app.selected_track_indices.insert(row_idx);
                         }
                     }
-
-                    // Export Filename column (left-aligned, truncated)
-                    ui.allocate_ui_with_layout(
-                        [w_export, row_height].into(),
-                        egui::Layout::left_to_right(egui::Align::Center),
-                        |ui| {
-                            ui.add(egui::Label::new(&export_filename).truncate());
-                        },
-                    );
-
-                    // Inline-editable Title column (left-aligned, truncated)
-                    let is_editing_title = app.editing_cell == Some((row_idx, TableColumn::Title));
-                    let mut current_title = track.title.clone();
-                    ui.allocate_ui_with_layout(
-                        [w_title, row_height].into(),
-                        egui::Layout::left_to_right(egui::Align::Center),
-                        |ui| {
-                            if is_editing_title {
-                                let text_edit = egui::TextEdit::singleline(&mut current_title)
-                                    .desired_width(w_title);
-                                let text_resp = ui.add(text_edit);
-                                if text_resp.lost_focus() {
-                                    app.editing_cell = None;
-                                    metadata_modified_idx = Some(row_idx);
-                                    new_title_val = Some(current_title);
-                                }
-                            } else {
-                                let display_title = if current_title.is_empty() {
-                                    "-"
-                                } else {
-                                    &current_title
-                                };
-                                let label_resp = ui.add(
-                                    egui::Label::new(display_title)
-                                        .truncate()
-                                        .sense(egui::Sense::click()),
-                                );
-                                if label_resp.double_clicked() {
-                                    app.editing_cell = Some((row_idx, TableColumn::Title));
-                                } else if label_resp.clicked() {
-                                    if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
-                                        if is_selected {
-                                            app.selected_track_indices.remove(&row_idx);
-                                        } else {
-                                            app.selected_track_indices.insert(row_idx);
-                                        }
-                                    } else {
-                                        app.selected_track_indices.clear();
-                                        app.selected_track_indices.insert(row_idx);
-                                    }
-                                }
-                            }
-                        },
-                    );
-
-                    // Inline-editable Artist column (left-aligned, truncated)
-                    let is_editing_artist =
-                        app.editing_cell == Some((row_idx, TableColumn::Artist));
-                    let mut current_artist = track.artist.clone();
-                    ui.allocate_ui_with_layout(
-                        [w_artist, row_height].into(),
-                        egui::Layout::left_to_right(egui::Align::Center),
-                        |ui| {
-                            if is_editing_artist {
-                                let text_edit = egui::TextEdit::singleline(&mut current_artist)
-                                    .desired_width(w_artist);
-                                let text_resp = ui.add(text_edit);
-                                if text_resp.lost_focus() {
-                                    app.editing_cell = None;
-                                    metadata_modified_idx = Some(row_idx);
-                                    new_artist_val = Some(current_artist);
-                                }
-                            } else {
-                                let display_artist = if current_artist.is_empty() {
-                                    "-"
-                                } else {
-                                    &current_artist
-                                };
-                                let label_resp = ui.add(
-                                    egui::Label::new(display_artist)
-                                        .truncate()
-                                        .sense(egui::Sense::click()),
-                                );
-                                if label_resp.double_clicked() {
-                                    app.editing_cell = Some((row_idx, TableColumn::Artist));
-                                } else if label_resp.clicked() {
-                                    if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
-                                        if is_selected {
-                                            app.selected_track_indices.remove(&row_idx);
-                                        } else {
-                                            app.selected_track_indices.insert(row_idx);
-                                        }
-                                    } else {
-                                        app.selected_track_indices.clear();
-                                        app.selected_track_indices.insert(row_idx);
-                                    }
-                                }
-                            }
-                        },
-                    );
-
-                    // Source File column (left-aligned, truncated)
-                    ui.allocate_ui_with_layout(
-                        [w_source, row_height].into(),
-                        egui::Layout::left_to_right(egui::Align::Center),
-                        |ui| {
-                            ui.add(egui::Label::new(&track.file_path).truncate());
-                        },
-                    );
                 });
-            }
+
+                // Col 2: Export Filename
+                row.col(|ui| {
+                    ui.label(&export_filename);
+                });
+
+                // Col 3: Title
+                let is_editing_title = app.editing_cell == Some((row_idx, TableColumn::Title));
+                let mut current_title = track.title.clone();
+                row.col(|ui| {
+                    if is_editing_title {
+                        let text_edit = egui::TextEdit::singleline(&mut current_title);
+                        let text_resp = ui.add(text_edit);
+                        if text_resp.lost_focus() {
+                            app.editing_cell = None;
+                            metadata_modified_idx = Some(row_idx);
+                            new_title_val = Some(current_title);
+                        }
+                    } else {
+                        let display_title = if current_title.is_empty() {
+                            "-"
+                        } else {
+                            &current_title
+                        };
+                        let label_resp =
+                            ui.add(egui::Label::new(display_title).sense(egui::Sense::click()));
+                        if label_resp.double_clicked() {
+                            app.editing_cell = Some((row_idx, TableColumn::Title));
+                        } else if label_resp.clicked() {
+                            if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
+                                if is_selected {
+                                    app.selected_track_indices.remove(&row_idx);
+                                } else {
+                                    app.selected_track_indices.insert(row_idx);
+                                }
+                            } else {
+                                app.selected_track_indices.clear();
+                                app.selected_track_indices.insert(row_idx);
+                            }
+                        }
+                    }
+                });
+
+                // Col 4: Artist
+                let is_editing_artist = app.editing_cell == Some((row_idx, TableColumn::Artist));
+                let mut current_artist = track.artist.clone();
+                row.col(|ui| {
+                    if is_editing_artist {
+                        let text_edit = egui::TextEdit::singleline(&mut current_artist);
+                        let text_resp = ui.add(text_edit);
+                        if text_resp.lost_focus() {
+                            app.editing_cell = None;
+                            metadata_modified_idx = Some(row_idx);
+                            new_artist_val = Some(current_artist);
+                        }
+                    } else {
+                        let display_artist = if current_artist.is_empty() {
+                            "-"
+                        } else {
+                            &current_artist
+                        };
+                        let label_resp =
+                            ui.add(egui::Label::new(display_artist).sense(egui::Sense::click()));
+                        if label_resp.double_clicked() {
+                            app.editing_cell = Some((row_idx, TableColumn::Artist));
+                        } else if label_resp.clicked() {
+                            if ui.input(|i| i.modifiers.ctrl || i.modifiers.command) {
+                                if is_selected {
+                                    app.selected_track_indices.remove(&row_idx);
+                                } else {
+                                    app.selected_track_indices.insert(row_idx);
+                                }
+                            } else {
+                                app.selected_track_indices.clear();
+                                app.selected_track_indices.insert(row_idx);
+                            }
+                        }
+                    }
+                });
+
+                // Col 5: Source File
+                row.col(|ui| {
+                    ui.label(&track.file_path);
+                });
+            });
         });
 
     // Apply any inline metadata edit changes
