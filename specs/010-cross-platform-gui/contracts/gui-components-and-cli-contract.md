@@ -105,5 +105,5 @@ fn test_gui_headless_playlist_interactions() {
 ```
 Invariants:
 - Test suite MUST run headlessly across Linux, Windows, and macOS without display servers.
-- Tests MUST NOT modify original files in `mp3-sample/`; always use `tempfile::tempdir()`.
+- Tests MUST NOT modify original files in `assets/mp3-sample/`; always use `tempfile::tempdir()`.
 - Zero compiler or clippy warnings under `cargo test`.

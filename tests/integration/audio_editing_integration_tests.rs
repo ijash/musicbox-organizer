@@ -8,7 +8,7 @@ use tempfile::tempdir;
 
 #[test]
 fn test_real_mp3_normalization_and_trim_integration() {
-    let sample_source = Path::new("mp3-sample/sample-3s.mp3");
+    let sample_source = Path::new("assets/mp3-sample/sample-3s.mp3");
     if !sample_source.exists() {
         eprintln!(
             "Skipping integration test: sample file missing at {}",
@@ -67,7 +67,7 @@ fn test_real_mp3_normalization_and_trim_integration() {
 
 #[test]
 fn test_real_mp3_trait_normalize_and_trim_methods() {
-    let sample_source = Path::new("mp3-sample/sample-3s.mp3");
+    let sample_source = Path::new("assets/mp3-sample/sample-3s.mp3");
     if !sample_source.exists() {
         return;
     }

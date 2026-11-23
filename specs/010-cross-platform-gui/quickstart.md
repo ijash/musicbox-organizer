@@ -71,10 +71,10 @@ Verify that all existing command-line interfaces continue to execute seamlessly:
 ./target/release/musicbox status
 
 # Test directory scan
-./target/release/musicbox scan mp3-sample
+./target/release/musicbox scan assets/mp3-sample
 
 # Test primitive device compatibility check
-./target/release/musicbox check-compat mp3-sample
+./target/release/musicbox check-compat assets/mp3-sample
 ```
 
 **Expected Outcome**:
@@ -95,7 +95,7 @@ Launch the desktop interface to manually inspect visuals, themes, and audio play
 **Manual Verification Steps**:
 1. **Window Display**: Window opens immediately with title "MusicBox Organizer".
 2. **Theme Toggle**: Click `🌙 Dark` / `☀ Light` in header; observe immediate theme switch with crisp contrast on all buttons and text.
-3. **Add Tracks**: Click `➕ Add MP3` or `📁 Scan Folder...`; native file picker opens; select files in `mp3-sample/`.
+3. **Add Tracks**: Click `➕ Add MP3` or `📁 Scan Folder...`; native file picker opens; select files in `assets/mp3-sample/`.
 4. **Inline Edit**: Double-click or click into "Title" or "Artist" cell; edit text; verify table updates immediately.
 5. **Reorder & Undo**: Select a row; click `⬇ Down`; track swaps position; click `⮌ Undo`; track reverts position.
 6. **Audio Preview**: Select a track; click `▶ Play`; verify preview status label updates and audio plays; click `⏹ Stop`.

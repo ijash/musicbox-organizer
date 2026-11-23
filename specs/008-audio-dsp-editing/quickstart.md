@@ -15,7 +15,7 @@ Expected: Fast headless unit tests pass verifying:
 ```bash
 cargo test --test integration_tests
 ```
-Expected: Tests using copies of `mp3-sample/` in `tempfile::tempdir()` verify:
+Expected: Tests using copies of `assets/mp3-sample/` in `tempfile::tempdir()` verify:
 - Output is a valid playable MP3 file.
 - All ID3 tags (artist, title, album, APIC artwork) preserved verbatim.
 - Zero leftover temporary files in directory.

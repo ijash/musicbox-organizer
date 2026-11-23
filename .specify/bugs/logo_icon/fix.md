@@ -19,7 +19,7 @@ Embedded the 128px PNG application logo directly into the compiled binary via `i
 
 ```rust
 // Embedded logo bytes:
-const APP_LOGO_PNG: &[u8] = include_bytes!("../../img/logo/png/logo_mbo_128.png");
+const APP_LOGO_PNG: &[u8] = include_bytes!("../../assets/img/logo/png/logo_mbo_128.png");
 
 // 1. Set window icon / favicon:
 if let Ok(pixbuf) = gtk::gdk_pixbuf::Pixbuf::from_read(Cursor::new(APP_LOGO_PNG)) {

@@ -51,7 +51,7 @@
 **Goal**: Chain trimming and normalization in correct acoustic order (trim first, normalize second) with batch error isolation and zero orphaned temp files.
 
 - [X] T009 [US3] Implement `process_track` pipeline (decode via `rodio::Decoder`, trim, normalize, encode via `mp3lame-encoder`, atomic write) in `src/services/audio_editing.rs`
-- [X] T010 [US3] Add integration tests in `tests/integration_tests.rs` using copies of `mp3-sample/` in `tempfile::tempdir()` verifying playable output, ID3 tag retention, and clean temp directories
+- [X] T010 [US3] Add integration tests in `tests/integration_tests.rs` using copies of `assets/mp3-sample/` in `tempfile::tempdir()` verifying playable output, ID3 tag retention, and clean temp directories
 
 ---
 

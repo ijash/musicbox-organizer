@@ -35,7 +35,7 @@
 
 **Goal**: Non-recursively scan directory for `.mp3` files and load them into playlist.
 
-**Independent Test**: Load `mp3-sample/` folder; verify only `sample-3s.mp3` and `sample-5s.mp3` are listed.
+**Independent Test**: Load `assets/mp3-sample/` folder; verify only `sample-3s.mp3` and `sample-5s.mp3` are listed.
 
 - [X] T006 [P] [US1] Unit test for AudioScanner in `tests/unit/scanner_tests.rs`
 - [X] T007 [US1] Implement DirectoryScanner in `src/services/scanner.rs` per contracts/id3-scanner-contract.md
@@ -47,7 +47,7 @@
 
 **Goal**: Read and write ID3 tags (Title, Artist, Album, Track number) and apply `[XXYY-filename.mp3]` renaming.
 
-**Independent Test**: Read ID3 from `mp3-sample/sample-3s.mp3`, edit title, write back to file, and verify ID3 tags update.
+**Independent Test**: Read ID3 from `assets/mp3-sample/sample-3s.mp3`, edit title, write back to file, and verify ID3 tags update.
 
 - [X] T009 [P] [US2] Unit test for ID3 read/write in `tests/unit/id3_tests.rs`
 - [X] T010 [US2] Implement Id3Service in `src/services/id3_service.rs` per TagEditor contract
@@ -70,7 +70,7 @@
 
 **Goal**: Audio preview player with Play, Pause, Stop, and Seek.
 
-**Independent Test**: Load `mp3-sample/sample-3s.mp3`, trigger play, verify playback starts, trigger pause/stop.
+**Independent Test**: Load `assets/mp3-sample/sample-3s.mp3`, trigger play, verify playback starts, trigger pause/stop.
 
 - [X] T014 [P] [US4] Implement AudioPreviewPlayer in `src/services/audio_player.rs` using `rodio`
 - [X] T015 [US4] Connect audio preview playback controls to UI/CLI runner
@@ -109,4 +109,4 @@
 - [X] T023 [US5] Add Undo / Redo buttons and shortcuts to GTK3 window in `src/ui/gtk_ui.rs`
 - [X] T024 Add `musicbox scan [dir]` and `musicbox tag` CLI subcommands in `src/main.rs`
 - [X] T025 [US7] Add Dark/Light mode theme toggle in GTK3 header bar and persist preference in `src/ui/gtk_ui.rs`
-- [X] T026 Run end-to-end integration test with sample files in `mp3-sample/`
+- [X] T026 Run end-to-end integration test with sample files in `assets/mp3-sample/`

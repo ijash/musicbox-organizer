@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/logo/png/logo_mbo_256.png" alt="MusicBox Organizer Logo" width="128" height="128" />
+  <img src="assets/img/logo/png/logo_mbo_256.png" alt="MusicBox Organizer Logo" width="128" height="128" />
 </p>
 
 # MusicBox Organizer
@@ -186,7 +186,7 @@ git push origin v1.0.0
 - Multi-format playlist exporter (`.txt`, `.rtf`) to `playlist-text/` folder with clear-all behavior.
 - Primitive device compatibility audit CLI (`check-compat`).
 - GTK3 native desktop GUI with independent dark/light themes.
-- Application icon branding assets added under `img/logo/`.
+- Application icon branding assets added under `assets/img/logo/`.
 
 ## License
 

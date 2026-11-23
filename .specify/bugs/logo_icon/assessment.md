@@ -20,13 +20,13 @@
 
 1. Run `cargo run` (or launch the standalone executable from a different directory or desktop launcher).
 2. Observe window title bar/taskbar: icon remains generic application icon instead of the custom MusicBox icon.
-3. Observe header: header image is missing if current working directory doesn't match relative `img/` search path, or icon failed pixbuf loading.
+3. Observe header: header image is missing if current working directory doesn't match relative `assets/img/` search path, or icon failed pixbuf loading.
 4. Top-right header contains a `GitHub ↗` button that takes up toolbar space instead of being a subtle bottom footer link.
 
 ## Suspected Code Paths
 
-- `src/ui/gtk_ui.rs:140-155` — Window icon uses relative path `"img/logo/..."` which fails if current working directory is not the repository root, or when the `.ico` file is attempted on Linux X11/Wayland without GdkPixbuf loader for ico. Embedded bytes via `include_bytes!` should be used so the binary carries its own icons self-contained without filesystem dependencies.
-- `src/ui/gtk_ui.rs:165-175` — Header logo image also relies on relative path `"img/logo/png/logo_mbo_128.png"`. Using `include_bytes!` ensures the logo displays 100% reliably regardless of execution working directory.
+- `src/ui/gtk_ui.rs:140-155` — Window icon uses relative path `"assets/img/logo/..."` which fails if current working directory is not the repository root, or when the `.ico` file is attempted on Linux X11/Wayland without GdkPixbuf loader for ico. Embedded bytes via `include_bytes!` should be used so the binary carries its own icons self-contained without filesystem dependencies.
+- `src/ui/gtk_ui.rs:165-175` — Header logo image also relies on relative path `"assets/img/logo/png/logo_mbo_128.png"`. Using `include_bytes!` ensures the logo displays 100% reliably regardless of execution working directory.
 - `src/ui/gtk_ui.rs:185-215` — `github_btn` (`Button::with_label("GitHub ↗")`) is packed into `header_box.pack_end(...)`.
 - `src/ui/gtk_ui.rs:370-390` — Bottom of `root_box` lacks a footer bar for hyperlinks.
 
@@ -35,8 +35,8 @@
 **Confidence: High**
 
 1. **Icon / Favicon Failure**:
-   - `window.set_icon_from_file("img/logo/...")` depends strictly on runtime current working directory (`std::env::current_dir()`). If launched from desktop application launchers, terminal subfolders, or installed paths, relative path resolution fails. Furthermore, `.ico` format support varies on Linux GdkPixbuf loaders compared to standard PNG.
-   - Solution: Compile the PNG logo into the binary using `include_bytes!("../../../img/logo/png/logo_mbo_128.png")` via `gdk_pixbuf::Pixbuf::from_read(std::io::Cursor::new(...))` and `window.set_icon(Some(&pixbuf))`. This guarantees the icon and favicon exist unconditionally in memory.
+   - `window.set_icon_from_file("assets/img/logo/...")` depends strictly on runtime current working directory (`std::env::current_dir()`). If launched from desktop application launchers, terminal subfolders, or installed paths, relative path resolution fails. Furthermore, `.ico` format support varies on Linux GdkPixbuf loaders compared to standard PNG.
+   - Solution: Compile the PNG logo into the binary using `include_bytes!("../../../assets/img/logo/png/logo_mbo_128.png")` via `gdk_pixbuf::Pixbuf::from_read(std::io::Cursor::new(...))` and `window.set_icon(Some(&pixbuf))`. This guarantees the icon and favicon exist unconditionally in memory.
 2. **GitHub Link Placement & Format**:
    - The user requested removing the top-right button entirely and replacing it with a text hyperlink at the bottom of the application window (e.g. `<a href="...">GitHub Repository</a>` or a subtle bottom footer text label).
 
@@ -44,7 +44,7 @@
 
 **Preferred**:
 1. In `src/ui/gtk_ui.rs`:
-   - Embed `img/logo/png/logo_mbo_128.png` at compile time using `include_bytes!` so that window icon (`window.set_icon(...)`) and header logo (`Image::from_pixbuf(...)`) load reliably with zero filesystem path dependency.
+   - Embed `assets/img/logo/png/logo_mbo_128.png` at compile time using `include_bytes!` so that window icon (`window.set_icon(...)`) and header logo (`Image::from_pixbuf(...)`) load reliably with zero filesystem path dependency.
    - Remove `github_btn` from the top `header_box`.
    - Add a subtle bottom footer `HBox` at the end of `root_box` below the export frame containing an interactive link label (e.g., `<a href="https://github.com/ijash/musicbox-organizer">MusicBox Organizer on GitHub</a>` using GTK markup `use_markup = true`).
    - Clean up top header spacing so `project_label`, `undo_btn`, `redo_btn`, and `theme_btn` sit cleanly without clutter.

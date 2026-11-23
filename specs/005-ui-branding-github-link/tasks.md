@@ -16,7 +16,7 @@
 
 **Independent Test**: Run `cargo run -- gui`, verify taskbar icon displays MusicBox logo, and check 26px logo rendered beside title.
 
-- [X] T001 [US1] Set GTK application window icon from `img/logo/png/logo_mbo_128.png` with fallback in `src/ui/gtk_ui.rs` (FR-001)
+- [X] T001 [US1] Set GTK application window icon from `assets/img/logo/png/logo_mbo_128.png` with fallback in `src/ui/gtk_ui.rs` (FR-001)
 - [X] T002 [US1] Add compact 26px logo image widget to top `header_box` beside `project_label` with fallback in `src/ui/gtk_ui.rs` (FR-002, FR-005)
 
 ---
