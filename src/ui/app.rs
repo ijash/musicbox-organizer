@@ -49,7 +49,7 @@ pub struct MusicBoxApp {
     pub logo_texture: Option<egui::TextureHandle>,
 }
 
-pub const LOGO_PNG_BYTES: &[u8] = include_bytes!("../../img/logo/png/logo_mbo_128.png");
+pub const LOGO_PNG_BYTES: &[u8] = include_bytes!("../../assets/img/logo/png/logo_mbo_128.png");
 
 pub fn load_app_icon() -> Option<egui::IconData> {
     let img = image::load_from_memory(LOGO_PNG_BYTES).ok()?.to_rgba8();

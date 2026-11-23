@@ -6,7 +6,7 @@ use tempfile::tempdir;
 #[test]
 fn test_read_and_write_id3_tags() {
     let dir = tempdir().unwrap();
-    let sample_src = Path::new("mp3-sample/sample-3s.mp3");
+    let sample_src = Path::new("assets/mp3-sample/sample-3s.mp3");
     let test_file = dir.path().join("test.mp3");
 
     fs::copy(sample_src, &test_file).expect("Failed to copy sample mp3");
@@ -40,7 +40,7 @@ fn test_read_and_write_id3_tags() {
 #[test]
 fn test_rename_with_xxyy_prefix() {
     let dir = tempdir().unwrap();
-    let sample_src = Path::new("mp3-sample/sample-3s.mp3");
+    let sample_src = Path::new("assets/mp3-sample/sample-3s.mp3");
     let test_file = dir.path().join("song.mp3");
     fs::copy(sample_src, &test_file).unwrap();
 

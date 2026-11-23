@@ -134,11 +134,11 @@ User or packager launches the application and identifies it visually through ded
 
 **Why this priority**: Polish and desktop integration. A dedicated visual identity completes the portable native app experience.
 
-**Independent Test**: Can be tested by checking presence of logo assets in `img/logo/` across standard resolutions (128px, 256px, 512px, and ICO).
+**Independent Test**: Can be tested by checking presence of logo assets in `assets/img/logo/` across standard resolutions (128px, 256px, 512px, and ICO).
 
 **Acceptance Scenarios**:
 
-1. **Given** repository assets, **When** examining `img/logo/`, **Then** icon files exist in `.ico` format (`favicon.ico`) and `.png` format (`logo_mbo_128.png`, `logo_mbo_256.png`, `logo_mbo_512.png`, `logo_mbo_main.png`)
+1. **Given** repository assets, **When** examining `assets/img/logo/`, **Then** icon files exist in `.ico` format (`favicon.ico`) and `.png` format (`logo_mbo_128.png`, `logo_mbo_256.png`, `logo_mbo_512.png`, `logo_mbo_main.png`)
 2. **Given** project documentation (`README.md`), **When** viewed by a user, **Then** the official 256px logo renders in the header
 
 ---
@@ -176,7 +176,7 @@ User or packager launches the application and identifies it visually through ded
 - **FR-019**: System MUST maintain in-memory session cache during app session tracking edits and dirty state without leaving temporary files on disk (per Principle IV)
 - **FR-020**: System MUST reset session cache dirty state upon successful save with zero orphaned files
 - **FR-021**: System MUST support window resizing from compact to maximized view, with audio preview bar scaling accordingly
-- **FR-022**: System MUST include and support application branding assets (logo/icon) located under `img/logo/` (ICO for executable/favicons, PNGs at 128px, 256px, 512px, and main vector/raster export) for app packaging, desktop launcher metadata, and documentation branding
+- **FR-022**: System MUST include and support application branding assets (logo/icon) located under `assets/img/logo/` (ICO for executable/favicons, PNGs at 128px, 256px, 512px, and main vector/raster export) for app packaging, desktop launcher metadata, and documentation branding
 
 ### Key Entities
 

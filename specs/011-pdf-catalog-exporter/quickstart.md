@@ -37,7 +37,7 @@ ls -lh target/release/musicbox
    ```bash
    cargo run
    ```
-2. Load sample tracks by selecting directory `mp3-sample/`.
+2. Load sample tracks by selecting directory `assets/mp3-sample/`.
 3. In the toolbar, click **"Export Catalog..."**:
    - Verify modal opens centered and clean in dark/light mode.
    - Verify default format is **PDF (`.pdf`)**.
@@ -64,8 +64,8 @@ ls -lh target/release/musicbox
 Test command line generation:
 
 ```bash
-# Export 10x10 cm PDF from mp3-sample
-cargo run -- export-catalog ./mp3-sample -o /tmp/cli_catalog.pdf
+# Export 10x10 cm PDF from assets/mp3-sample
+cargo run -- export-catalog ./assets/mp3-sample -o /tmp/cli_catalog.pdf
 
 # Verify PDF header magic bytes
 head -c 5 /tmp/cli_catalog.pdf

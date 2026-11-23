@@ -26,7 +26,7 @@ Users open the desktop application and immediately see official branding. The wi
 
 **Acceptance Scenarios**:
 
-1. **Given** application launches on desktop, **When** window is displayed, **Then** the window manager and taskbar show the application icon (using `img/logo/ico/favicon.ico` or `img/logo/png/logo_mbo_128.png`).
+1. **Given** application launches on desktop, **When** window is displayed, **Then** the window manager and taskbar show the application icon (using `assets/img/logo/ico/favicon.ico` or `assets/img/logo/png/logo_mbo_128.png`).
 2. **Given** main application window, **When** examining top header area, **Then** a 24x24 or 28x28 logo image is displayed to the left of "MusicBox Organizer" title.
 
 ---
@@ -55,7 +55,7 @@ Users can easily access the source repository and documentation from the app. A 
 
 ### Functional Requirements
 
-- **FR-001**: Application window MUST set its window/favicon icon from available icon assets (`img/logo/ico/favicon.ico` or `img/logo/png/logo_mbo_128.png`).
+- **FR-001**: Application window MUST set its window/favicon icon from available icon assets (`assets/img/logo/ico/favicon.ico` or `assets/img/logo/png/logo_mbo_128.png`).
 - **FR-002**: Application top header MUST display a compact branding logo alongside the application title.
 - **FR-003**: Application header MUST provide a `GitHub ↗` button in the top-right toolbar area styled consistently with existing header buttons.
 - **FR-004**: Clicking `GitHub ↗` button MUST invoke system default browser for `https://github.com/ijash/musicbox-organizer`.
@@ -72,4 +72,4 @@ Users can easily access the source repository and documentation from the app. A 
 ## Assumptions
 
 - Target repository URL is `https://github.com/ijash/musicbox-organizer` as defined in `Cargo.toml`.
-- Logo assets are loaded from `img/logo/` relative to working directory or bundled binary location.
+- Logo assets are loaded from `assets/img/logo/` relative to working directory or bundled binary location.

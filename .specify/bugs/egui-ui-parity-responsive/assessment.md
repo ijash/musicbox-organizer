@@ -13,7 +13,7 @@ Triage and propose remediation for 9 `eframe`/`egui` GUI regressions found durin
 1. **Undo/Redo missing glyphs (`□`)**: `egui`'s default font lacks the current Unicode codepoints used for Undo/Redo (`⮌` / `⮎`). Replace with glyphs guaranteed supported by `egui`'s built-in font (e.g. `↩` / `↪` or `←` / `→`).
 2. **Scan Folder initial directory**: Set `rfd::FileDialog::new().set_directory(std::env::current_dir())` so "Scan Folder..." opens directly in the current working directory.
 3. **Auto-load current folder on startup**: On app initialization (`MusicBoxApp::new`), auto-load existing `playlist.txt` or scan MP3s in the current working directory (matching pre-010 startup behavior).
-4. **Missing window favicon & header logo (Feature 005 regression)**: Inspect `specs/005-ui-branding-github-link/` and `img/logo/` assets; embed and attach the app icon via `ViewportBuilder::with_icon(...)` and display the small app logo in the header bar.
+4. **Missing window favicon & header logo (Feature 005 regression)**: Inspect `specs/005-ui-branding-github-link/` and `assets/img/logo/` assets; embed and attach the app icon via `ViewportBuilder::with_icon(...)` and display the small app logo in the header bar.
 5. **Auto-detect removable devices on startup**: Trigger initial device discovery (`refresh_devices()`) automatically inside `MusicBoxApp::new()` so connected USB/SD drives appear immediately without clicking "Scan Devices".
 6. **Minimum window size `300x400px`**: Allow resizing the window down to `300x400px` (`ViewportBuilder::with_min_inner_size([300.0, 400.0])`); wrap the playlist area in a `ScrollArea` so it shrinks gracefully.
 7. **Responsive wrapping / stacking (no overlap or clipping)**: Use `ui.horizontal_wrapped(...)` across Header, Toolbar, Audio Preview Bar, and Export to Removable Media panel so buttons stack cleanly onto new lines when narrow — fixing `Export Text/RTF...` overlapping `Open` and fixing `Export Playlist` / `Eject` getting clipped.
@@ -56,7 +56,7 @@ During the rapid migration from GTK3 to `eframe`/`egui` in Feature 010, the core
 1. Glyphs were chosen from the Extended Miscellaneous Symbols block (`U+2B8C`, `U+2B8E`) which are absent from egui's embedded fonts (which only bundle basic arrow and symbol subsets like `↩` `U+21A9`, `↪` `U+21AA`).
 2. Directory context was omitted from `rfd` dialog builders.
 3. Startup hydration hooks present in CLI (`auto_load_project`) and GTK UI were not wired into `MusicBoxApp::default()` / `new()`.
-4. The window icon asset (`img/logo/png/logo_mbo_128.png`) was not decoded into `egui::IconData` on `ViewportBuilder`.
+4. The window icon asset (`assets/img/logo/png/logo_mbo_128.png`) was not decoded into `egui::IconData` on `ViewportBuilder`.
 5. Fixed `ui.horizontal(...)` containers with fixed spacers and right-to-left sub-layouts were used instead of responsive `ui.horizontal_wrapped(...)`.
 6. High confidence: all 9 issues stem from straightforward missing configurations and layout primitives in `src/ui/`.
 
@@ -66,7 +66,7 @@ During the rapid migration from GTK3 to `eframe`/`egui` in Feature 010, the core
 1. Replace Undo/Redo glyphs with standard `↩ Undo` / `↪ Redo`.
 2. Configure all `rfd::FileDialog` invocations with `.set_directory(cwd)`.
 3. In `MusicBoxApp::new()` and `MusicBoxApp::default()`, attempt loading `playlist.txt` from current working directory; if absent, scan current directory for MP3 files using `DirectoryScanner`.
-4. Embed `img/logo/png/logo_mbo_128.png` with `include_bytes!`; decode RGBA using `image::load_from_memory`; configure `ViewportBuilder::with_icon(...)`; render a 20x20 logo image in `render_header`.
+4. Embed `assets/img/logo/png/logo_mbo_128.png` with `include_bytes!`; decode RGBA using `image::load_from_memory`; configure `ViewportBuilder::with_icon(...)`; render a 20x20 logo image in `render_header`.
 5. Trigger initial `scan_devices()` during `MusicBoxApp` initialization so connected devices populate on launch.
 6. Lower `min_inner_size` to `[300.0, 400.0]` in `run_gui()`. Ensure table columns shrink gracefully.
 7. Replace `ui.horizontal` with `ui.horizontal_wrapped` across Header, Toolbar, Audio Bar, and Export Panel. Avoid conflicting `right_to_left` layouts in tight containers.

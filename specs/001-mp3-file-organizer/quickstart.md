@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - Rust toolchain (`cargo`, `rustc`)
-- Sample MP3 files (e.g. `mp3-sample/sample-3s.mp3`, `mp3-sample/sample-5s.mp3`)
+- Sample MP3 files (e.g. `assets/mp3-sample/sample-3s.mp3`, `assets/mp3-sample/sample-5s.mp3`)
 
 ## Validation Scenarios
 

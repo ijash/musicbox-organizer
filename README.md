@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/logo/png/logo_mbo_256.png" alt="MusicBox Organizer Logo" width="128" height="128" />
+  <img src="assets/img/logo/png/logo_mbo_256.png" alt="MusicBox Organizer Logo" width="128" height="128" />
 </p>
 
 # MusicBox Organizer
@@ -8,6 +8,7 @@ Lightweight, portable desktop MP3 playlist manager and ID3 tag editor designed f
 
 ## Overview
 
+![Musicbox Organizer](./assets/img/screenshot/musicbox-screenshot-overview-linux.png "Overview of Musicbox Organizer App")
 Primitive audio hardware (car head units, portable USB/SD players, microcontrollers, and portable speakers) sorts audio files strictly by raw ASCII byte order rather than smart numerical or metadata sorting.
 
 MusicBox Organizer guarantees exact sequential playback on any target player by prepending a clean 4-letter base-26 prefix with a sanitized title slug (`XXYY-<sanitized_id3_title>.mp3`, e.g., `AAAA-first_song.mp3` through `ZZZZ-last_song.mp3`).
@@ -186,7 +187,7 @@ git push origin v1.0.0
 - Multi-format playlist exporter (`.txt`, `.rtf`) to `playlist-text/` folder with clear-all behavior.
 - Primitive device compatibility audit CLI (`check-compat`).
 - GTK3 native desktop GUI with independent dark/light themes.
-- Application icon branding assets added under `img/logo/`.
+- Application icon branding assets added under `assets/img/logo/`.
 
 ## License
 

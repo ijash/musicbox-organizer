@@ -6,7 +6,7 @@
 ## 1. Window Icon / Favicon Loading in GTK3
 
 ### Decision
-Use `gtk::Window::set_icon_from_file("img/logo/png/logo_mbo_128.png")` (with fallback to `img/logo/ico/favicon.ico`).
+Use `gtk::Window::set_icon_from_file("assets/img/logo/png/logo_mbo_128.png")` (with fallback to `assets/img/logo/ico/favicon.ico`).
 
 ### Rationale
 - Standard GTK3 method supported by X11 and Wayland window managers.
@@ -18,7 +18,7 @@ Use `gtk::Window::set_icon_from_file("img/logo/png/logo_mbo_128.png")` (with fal
 ## 2. Header Branding Logo Rendering
 
 ### Decision
-Use `gtk::Image::from_file("img/logo/png/logo_mbo_128.png")` scaled with `gdk_pixbuf::Pixbuf::from_file_at_scale(path, 28, 28, true)` or an image widget embedded directly inside `header_box` next to `project_label`.
+Use `gtk::Image::from_file("assets/img/logo/png/logo_mbo_128.png")` scaled with `gdk_pixbuf::Pixbuf::from_file_at_scale(path, 28, 28, true)` or an image widget embedded directly inside `header_box` next to `project_label`.
 
 ### Rationale
 - Renders sharply at 24–28px height.

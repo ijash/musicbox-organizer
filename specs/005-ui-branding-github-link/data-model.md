@@ -10,8 +10,8 @@ Visual branding assets and remote URLs.
 
 | Field | Type | Default Value | Description |
 |---|---|---|---|
-| `icon_path` | `&str` | `"img/logo/png/logo_mbo_128.png"` | Window favicon / desktop icon |
-| `logo_header_path` | `&str` | `"img/logo/png/logo_mbo_128.png"` | In-app header logo |
+| `icon_path` | `&str` | `"assets/img/logo/png/logo_mbo_128.png"` | Window favicon / desktop icon |
+| `logo_header_path` | `&str` | `"assets/img/logo/png/logo_mbo_128.png"` | In-app header logo |
 | `github_url` | `&str` | `"https://github.com/ijash/musicbox-organizer"` | Repository & docs link |
 | `logo_size` | `(i32, i32)` | `(26, 26)` | Header logo render dimensions |
 

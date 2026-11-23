@@ -93,7 +93,7 @@ The `AudioProcessor` trait already defines the interface (`normalize_volume`, `t
 
 - **SC-001**: Normalization reaches target loudness within ±0.5 dB without clipping on synthetic PCM test buffers.
 - **SC-002**: Silence trimming removes leading/trailing silence while preserving ~50 ms padding and channel alignment on synthetic PCM test buffers.
-- **SC-003**: Real MP3 integration tests using copies of `mp3-sample/` files in `tempfile::tempdir()` produce valid playable MP3 output with preserved ID3 tags and zero leftover temp files.
+- **SC-003**: Real MP3 integration tests using copies of `assets/mp3-sample/` files in `tempfile::tempdir()` produce valid playable MP3 output with preserved ID3 tags and zero leftover temp files.
 - **SC-004**: Headless GTK GUI test verifies DSP toolbar button opens dialog and cancel works cleanly.
 - **SC-005**: Release binary size remains < 2.5 MB (currently 1.9 MB).
 - **SC-006**: All existing 50 tests continue to pass.

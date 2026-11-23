@@ -6,7 +6,7 @@ description: Run and write fast, headless cross-platform GUI and service tests f
 # MusicBox Organizer Testing Guide (`egui_kittest` + Rust)
 
 ## Rules
-- Never modify original files in `mp3-sample/`; always copy fixtures into `tempfile::tempdir()`.
+- Never modify original files in `assets/mp3-sample/`; always copy fixtures into `tempfile::tempdir()`.
 - Prefer `egui_kittest::Harness` (AccessKit widget queries + state assertions) over brittle pixel snapshot PNGs so tests run fast and deterministically on Linux, Windows, and macOS without `xvfb-run`.
 - Stop `AudioPreviewPlayer` in tests/handlers before overwriting audio files.
 

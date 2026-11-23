@@ -11,7 +11,7 @@ Add application window favicon icon, render compact branding logo in the top-lef
 
 **Language/Version**: Rust 2021 edition (Rust 1.75+)
 **Primary Dependencies**: `gtk = "0.17"` (Linux native UI)
-**Storage**: Static image assets in `img/logo/`
+**Storage**: Static image assets in `assets/img/logo/`
 **Testing**: Manual GUI validation + `cargo test` suite
 **Target Platform**: Linux (GTK3), Windows, macOS
 **Project Type**: Desktop Application

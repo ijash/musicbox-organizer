@@ -23,7 +23,7 @@
 ## Requirement Consistency
 
 - [ ] CHK007 - Do button visual styles for `GitHub ↗` match existing toolbar and header button conventions? [Consistency, Spec §FR-003]
-- [ ] CHK008 - Are logo asset file paths consistent with repository layout under `img/logo/`? [Consistency, Spec §FR-001]
+- [ ] CHK008 - Are logo asset file paths consistent with repository layout under `assets/img/logo/`? [Consistency, Spec §FR-001]
 
 ## Measurability & Acceptance Criteria Quality
 
