@@ -8,6 +8,7 @@ Lightweight, portable desktop MP3 playlist manager and ID3 tag editor designed f
 
 ## Overview
 
+![Musicbox Organizer](./assets/img/screenshot/musicbox-screenshot-overview-linux.png "Overview of Musicbox Organizer App")
 Primitive audio hardware (car head units, portable USB/SD players, microcontrollers, and portable speakers) sorts audio files strictly by raw ASCII byte order rather than smart numerical or metadata sorting.
 
 MusicBox Organizer guarantees exact sequential playback on any target player by prepending a clean 4-letter base-26 prefix with a sanitized title slug (`XXYY-<sanitized_id3_title>.mp3`, e.g., `AAAA-first_song.mp3` through `ZZZZ-last_song.mp3`).
